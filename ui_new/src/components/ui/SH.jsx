@@ -5,13 +5,13 @@ import { Icon } from '../shared/Icon';
 export const SH = ({ title, right, navItems = [], activePath = '/', showNewDashboard = false }) => {
   if (navItems.length) {
     return (
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 10, borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
             {navItems.map((item) => {
               const active = activePath === item.to || (item.to === '/' && activePath === '/');
               return (
-                <Link key={item.to} to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: active ? 'var(--cyan)' : 'var(--muted2)', fontSize: 13, fontWeight: active ? 600 : 500, paddingBottom: 10, borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }}>
+                <Link key={item.to} to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: active ? 'var(--cyan)' : 'var(--muted2)', fontSize: 13, fontWeight: active ? 600 : 500, paddingBottom: 8, borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }}>
                   <Icon name={item.icon} size={13} color={active ? 'var(--cyan)' : 'var(--muted)'} />
                   {item.label}
                 </Link>
@@ -19,14 +19,15 @@ export const SH = ({ title, right, navItems = [], activePath = '/', showNewDashb
             })}
           </div>
           {showNewDashboard && (
-            <Link to="/dash-wizard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 13px', borderRadius: 9, border: '1px solid rgba(0,229,255,0.28)', background: 'rgba(0,229,255,0.08)', color: 'var(--cyan)', fontSize: 12.5, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-              <Icon name="plus" size={13} color="var(--cyan)" />
+            <Link to="/dash-wizard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.28)', background: 'rgba(0,229,255,0.08)', color: 'var(--cyan)', fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <Icon name="plus" size={12} color="var(--cyan)" />
               New Dashboard
             </Link>
           )}
         </div>
-        <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,229,255,0.18)', background: 'rgba(0,229,255,0.06)', color: 'var(--muted2)', fontSize: 12.5, lineHeight: 1.5 }}>
-          <strong style={{ color: 'var(--cyan)' }}>Synthetic dashboard preview.</strong> Metrics, incidents, pull requests, repositories, deployments, contributors, and summaries shown here are scripted demo content only.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7, color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--cyan)', opacity: 0.9, flexShrink: 0 }} />
+          <span><strong style={{ color: 'var(--cyan)', fontWeight: 600 }}>Synthetic preview</strong> · scripted demo metrics, activity, contributors, and summaries only</span>
         </div>
       </div>
     );
