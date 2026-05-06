@@ -3,15 +3,21 @@ import React, { useState } from 'react';
 import { Icon } from '../../components/shared/Icon';
 
 const sources = [
-  { id: 'github', icon: 'github', name: 'GitHub', desc: 'Repos, PRs, CI workflows', color: '#E8EDF5', cli: 'github --org my-org' },
-  { id: 'jira',   icon: 'jira',   name: 'Jira',   desc: 'Issues, sprints, backlogs', color: '#2684FF', cli: 'jira --url https://your-domain.atlassian.net' },
-  { id: 'gitlab', icon: 'gitlab', name: 'GitLab', desc: 'Merge requests & pipelines', color: '#FC6D26', cli: 'gitlab --host https://gitlab.com' },
-  { id: 'linear', icon: 'linear', name: 'Linear', desc: 'Projects, cycles & issues', color: '#5E6AD2', cli: 'linear --api-key' },
-  { id: 'slack',  icon: 'slack',  name: 'Slack',  desc: 'Team communications', color: '#4A154B', cli: 'slack --token' },
-  { id: 'pagerduty', icon: 'pagerduty', name: 'PagerDuty', desc: 'Incidents & on-call', color: '#06AC38', cli: 'pagerduty --integration-key' },
+  { id: 'github', icon: 'github', name: 'GitHub', desc: 'Synthetic repo, PR, and CI preview', color: '#E8EDF5', cli: 'metraly demo source github --synthetic' },
+  { id: 'jira',   icon: 'jira',   name: 'Jira',   desc: 'Synthetic issues, sprints, and backlog preview', color: '#2684FF', cli: 'metraly demo source jira --synthetic' },
+  { id: 'gitlab', icon: 'gitlab', name: 'GitLab', desc: 'Synthetic merge request and pipeline preview', color: '#FC6D26', cli: 'metraly demo source gitlab --synthetic' },
+  { id: 'linear', icon: 'linear', name: 'Linear', desc: 'Synthetic projects, cycles, and issue preview', color: '#5E6AD2', cli: 'metraly demo source linear --synthetic' },
+  { id: 'slack',  icon: 'slack',  name: 'Slack',  desc: 'Synthetic team communication preview', color: '#4A154B', cli: 'metraly demo source slack --synthetic' },
+  { id: 'pagerduty', icon: 'pagerduty', name: 'PagerDuty', desc: 'Synthetic incident and on-call preview', color: '#06AC38', cli: 'metraly demo source pagerduty --synthetic' },
 ];
 
-const steps = ['Select Sources', 'Authenticate', 'Configure', 'Review'];
+const steps = ['Select Sources', 'Preview Connection', 'Configure', 'Review'];
+
+const SafetyNotice = () => (
+  <div style={{ marginBottom: 18, padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,229,255,0.18)', background: 'rgba(0,229,255,0.06)', color: 'var(--muted2)', fontSize: 12.5, lineHeight: 1.5 }}>
+    <strong style={{ color: 'var(--cyan)' }}>Connector setup preview.</strong> This public demo does not connect to real services. Do not enter real credentials, tokens, repository names, customer data, secrets, or personal information.
+  </div>
+);
 
 // ---------- Step indicator with animated lines ----------
 const StepIndicator = ({ step }) => (
@@ -59,10 +65,11 @@ const StepIndicator = ({ step }) => (
 const SourceSelectionStep = ({ selected, setSelected }) => (
   <div className="wizard-step" style={{ width: '100%', maxWidth: 680, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
     <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Choose your data sources</div>
-      <div style={{ fontSize: 13, color: 'var(--muted)' }}>Select the tools your team uses. You can add more later.</div>
+      <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Choose synthetic demo sources</div>
+      <div style={{ fontSize: 13, color: 'var(--muted)' }}>Select mock sources for this synthetic preview. No real data source is contacted.</div>
     </div>
     <div style={{ padding: '24px 28px' }}>
+      <SafetyNotice />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {sources.map(src => {
           const sel = selected.includes(src.id);
@@ -107,10 +114,11 @@ const AuthenticateStep = ({ selected, connected, setConnected }) => {
   return (
     <div className="wizard-step" style={{ width: '100%', maxWidth: 680, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
       <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Authenticate</div>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Grant read-only access to your selected tools.</div>
+        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Preview connection</div>
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>No real authentication is performed. This step only simulates a connector flow.</div>
       </div>
       <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <SafetyNotice />
         {selectedSources.map(src => (
           <div key={src.id} style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ width: 36, height: 36, borderRadius: 8, background: `${src.color}15`, border: `1px solid ${src.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -130,13 +138,13 @@ const AuthenticateStep = ({ selected, connected, setConnected }) => {
                 fontSize: 13, fontWeight: 600,
               }}
             >
-              {connected[src.id] ? 'Connected ✓' : 'Connect →'}
+              {connected[src.id] ? 'Simulated ✓' : 'Preview connection →'}
             </button>
           </div>
         ))}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--muted)', background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: 10, marginTop: 8, border: '1px solid var(--border)' }}>
-          <div>$ metraly auth {firstSource.cli}</div>
-          <div style={{ color: 'var(--success)' }}>✓ Waiting for OAuth callback on localhost:7842…</div>
+          <div>$ {firstSource.cli}</div>
+          <div style={{ color: 'var(--success)' }}>✓ Simulated connector preview. No OAuth request is sent.</div>
         </div>
       </div>
       <div style={{ padding: '16px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
@@ -148,23 +156,24 @@ const AuthenticateStep = ({ selected, connected, setConnected }) => {
 
 // ---------- Step 2: Configure ----------
 const ConfigureStep = () => {
-  const [syncInterval, setSyncInterval] = useState('Every 5 minutes');
-  const [repos, setRepos] = useState('All repos in org');
+  const [syncInterval, setSyncInterval] = useState('Synthetic refresh');
+  const [repos, setRepos] = useState('Demo repos only');
   const [includeArchived, setIncludeArchived] = useState(false);
-  const [backfill, setBackfill] = useState('90 days');
+  const [backfill, setBackfill] = useState('Demo 90 days');
 
   return (
     <div className="wizard-step" style={{ width: '100%', maxWidth: 680, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
       <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Configure sync settings</div>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Set refresh intervals and which repos to include.</div>
+        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Configure synthetic demo settings</div>
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>These controls change the preview UI only. They do not configure real sync jobs.</div>
       </div>
       <div style={{ padding: '24px 28px' }}>
+        <SafetyNotice />
         {[
-          { label: 'Sync interval', value: syncInterval, setter: setSyncInterval, options: ['Every 5 minutes', 'Every 15 minutes', 'Every hour'] },
-          { label: 'Repositories', value: repos, setter: setRepos, options: ['All repos in org', 'Selected repos only'] },
-          { label: 'Include archived repos', value: includeArchived, setter: setIncludeArchived, type: 'toggle' },
-          { label: 'Historical backfill', value: backfill, setter: setBackfill, options: ['30 days', '90 days', '1 year'] },
+          { label: 'Refresh mode', value: syncInterval, setter: setSyncInterval, options: ['Synthetic refresh', 'Manual preview', 'Static snapshot'] },
+          { label: 'Repositories', value: repos, setter: setRepos, options: ['Demo repos only', 'Sample monorepo', 'Sample service set'] },
+          { label: 'Include archived demo repos', value: includeArchived, setter: setIncludeArchived, type: 'toggle' },
+          { label: 'Historical demo window', value: backfill, setter: setBackfill, options: ['Demo 30 days', 'Demo 90 days', 'Demo 1 year'] },
         ].map((row, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
             <span style={{ fontSize: 13.5, color: 'var(--text)' }}>{row.label}</span>
@@ -203,16 +212,16 @@ const ReviewStep = ({ selected }) => {
   return (
     <div className="wizard-step" style={{ width: '100%', maxWidth: 680, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
       <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Review & activate</div>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Everything looks good. Metraly will begin indexing shortly.</div>
+        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>Review synthetic setup</div>
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Synthetic setup is ready. Demo metrics are already preloaded.</div>
       </div>
       <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
         <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(0,200,83,0.12)', border: '1px solid rgba(0,200,83,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="check" size={28} color="var(--success)" />
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 18, color: 'var(--text)', marginBottom: 6 }}>You're all set</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 380 }}>Metraly will begin indexing your repositories. First metrics appear in ~2 minutes.</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 18, color: 'var(--text)', marginBottom: 6 }}>Synthetic preview ready</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 420 }}>No real repositories are indexed in this demo. Synthetic metrics and sample activity are preloaded.</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 340 }}>
           {selectedSources.map(src => (
@@ -220,8 +229,8 @@ const ReviewStep = ({ selected }) => {
               <Icon name={src.icon} size={15} color={src.color} />
               <span style={{ fontSize: 13, color: 'var(--text)' }}>{src.name}</span>
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', animation: 'pulse-dot 2s infinite' }} />
-                <span style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>Connecting</span>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)' }} />
+                <span style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>Simulated</span>
               </div>
             </div>
           ))}
@@ -259,8 +268,7 @@ export const WizardScreen = () => {
   const handleNext = () => {
     if (step < steps.length - 1 && canGoNext()) setStep(s => s + 1);
     else if (step === steps.length - 1) {
-      // Final action
-      window.location.href = '/';
+      window.location.href = '#/';
     }
   };
 
