@@ -1,6 +1,6 @@
 # Phase 4C: Dashboard Editing And Wizard Reuse
 
-**Status:** Draft  
+**Status:** Complete
 **Goal:** Make dashboard editing real by reusing the existing wizard components, wiring the Customize sidebar to the backend, and persisting create/edit flows through one shared editor model.
 
 ## Scope

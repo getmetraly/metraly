@@ -1,6 +1,6 @@
 # Phase 4: Dashboard Data Path
 
-**Status:** Draft  
+**Status:** Complete
 **Goal:** Replace mock dashboard flows with backend-backed data, add the minimum auth bridge needed for the UI to consume protected preview APIs, and unify dashboard creation/editing around shared components.
 
 ## Requirements

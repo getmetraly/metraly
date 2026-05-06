@@ -1,7 +1,7 @@
 # GSD State: Metraly
 
 **Initialized:** 2026-05-05
-**Current focus:** Phase 4 - Dashboard Data Path
+**Current focus:** Phase 5 - Preview Ingestion
 
 ## Project Reference
 
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 | 1 | Complete | Runtime Foundation |
 | 2 | Complete | Auth And Access |
 | 3 | Complete | Sandbox Onboarding |
-| 4 | Pending | Dashboard Data Path |
+| 4 | Complete | Dashboard Data Path |
 | 5 | Pending | Preview Ingestion |
 | 6 | Pending | Community GA Polish |
 | 7 | Pending | Licensing And Pro Gate |
@@ -49,10 +49,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 
 ## Next Action
 
-Phase 4 planning is complete. Begin Phase 4 execution:
+Phase 4 execution is complete. Begin Phase 5 planning or execution:
 
 ```text
-$gsd-execute-phase 4
+$gsd-discuss-phase 5
 ```
 
 ## Accumulated Context
@@ -67,8 +67,9 @@ $gsd-execute-phase 4
 - 2026-05-06: Phase 3 discuss-phase context captured in `.planning/phases/03-sandbox-onboarding/03-CONTEXT.md`.
 - 2026-05-06: Phase 3 research and plan artifacts created in `.planning/phases/03-sandbox-onboarding/`.
 - 2026-05-06: Phase 3 execution completed; Sandbox Inc. seed data, first-run choice flow, demo banner, setup wizard exit, and verification artifacts were implemented.
+- 2026-05-06: Phase 4 execution completed; dashboard definitions, widget data, metric endpoints, auth-aware UI loading, and shared dashboard editor flows now use backend-backed data.
 
 ### Resume Points
 
-- Stopped at: Phase 3 complete
-- Resume with: `$gsd-execute-phase 4`
+- Stopped at: Phase 4 complete
+- Resume with: `$gsd-discuss-phase 5`

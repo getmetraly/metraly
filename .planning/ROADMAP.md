@@ -84,6 +84,8 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 ## Phase 4: Dashboard Data Path
 
+**Status:** Complete (2026-05-06)
+
 **Goal:** Replace mock dashboard flows with backend-backed data.
 
 **Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06

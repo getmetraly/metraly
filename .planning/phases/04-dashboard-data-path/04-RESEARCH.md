@@ -1,6 +1,6 @@
 # Phase 4 Research: Dashboard Data Path
 
-**Status:** Draft  
+**Status:** Complete
 **Focus:** backend-backed dashboard data, metrics, templates, and minimal UI auth bridge.
 
 ## Research Summary
@@ -58,4 +58,3 @@ Do not turn that into a broader auth revamp.
 3. Add a frontend client layer that understands auth headers and backend base URLs.
 4. Migrate dashboard hooks off `mockApi`.
 5. Keep non-dashboard mock surfaces intact until their own phase.
-

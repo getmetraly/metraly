@@ -33,12 +33,12 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 
 ### Metrics And Dashboards
 
-- [ ] **DASH-01**: UI dashboard screens fetch dashboard definitions from backend API instead of mock-only data.
-- [ ] **DASH-02**: UI dashboard widgets fetch metric/widget data from backend API instead of mock-only data.
-- [ ] **DASH-03**: Backend exposes DORA and core delivery metric endpoints backed by TimescaleDB data.
-- [ ] **DASH-04**: User can list, create, update, and share dashboards through service-backed API handlers.
-- [ ] **DASH-05**: Dashboard updates use optimistic locking and return a conflict when the version is stale.
-- [ ] **DASH-06**: Community dashboard templates exist for CTO/VP, Engineering Manager, Tech Lead, Developer, and DevOps/SRE views.
+- [x] **DASH-01**: UI dashboard screens fetch dashboard definitions from backend API instead of mock-only data.
+- [x] **DASH-02**: UI dashboard widgets fetch metric/widget data from backend API instead of mock-only data.
+- [x] **DASH-03**: Backend exposes DORA and core delivery metric endpoints backed by TimescaleDB data.
+- [x] **DASH-04**: User can list, create, update, and share dashboards through service-backed API handlers.
+- [x] **DASH-05**: Dashboard updates use optimistic locking and return a conflict when the version is stale.
+- [x] **DASH-06**: Community dashboard templates exist for CTO/VP, Engineering Manager, Tech Lead, Developer, and DevOps/SRE views.
 
 ### Source Ingestion
 
@@ -136,12 +136,12 @@ Deferred beyond the first full roadmap baseline.
 | ONBD-03 | Phase 3 | Complete |
 | ONBD-04 | Phase 3 | Complete |
 | ONBD-05 | Phase 3 | Complete |
-| DASH-01 | Phase 4 | Pending |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| DASH-04 | Phase 4 | Pending |
-| DASH-05 | Phase 4 | Pending |
-| DASH-06 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Complete |
+| DASH-02 | Phase 4 | Complete |
+| DASH-03 | Phase 4 | Complete |
+| DASH-04 | Phase 4 | Complete |
+| DASH-05 | Phase 4 | Complete |
+| DASH-06 | Phase 4 | Complete |
 | ING-01 | Phase 5 | Pending |
 | ING-02 | Phase 5 | Pending |
 | ING-03 | Phase 5 | Pending |
@@ -180,4 +180,4 @@ Deferred beyond the first full roadmap baseline.
 
 ---
 *Requirements defined: 2026-05-05*
-*Last updated: 2026-05-05 after initialization*
+*Last updated: 2026-05-06 after Phase 4 completion*

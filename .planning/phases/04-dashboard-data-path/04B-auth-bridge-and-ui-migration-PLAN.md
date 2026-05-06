@@ -1,6 +1,6 @@
 # Wave 2: Auth Bridge And UI Migration
 
-**Status:** Draft  
+**Status:** Complete
 **Goal:** Make the UI consume the real dashboard surface through a minimal auth-aware client layer.
 
 ## Scope
@@ -24,4 +24,3 @@
 
 This wave is intentionally narrow.
 It exists to make the dashboard data path real, not to redesign auth or build enterprise login flows.
-

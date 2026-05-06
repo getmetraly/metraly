@@ -1,6 +1,6 @@
 # Phase 4 Context: Dashboard Data Path
 
-**Status:** Draft  
+**Status:** Complete
 **Goal:** Replace mock dashboard flows with backend-backed data and add the minimum auth bridge needed for the UI to consume protected preview APIs.
 
 ## Phase Intent

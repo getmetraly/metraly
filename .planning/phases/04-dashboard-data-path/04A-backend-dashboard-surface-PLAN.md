@@ -1,6 +1,6 @@
 # Wave 1: Backend Dashboard Surface
 
-**Status:** Draft  
+**Status:** Complete
 **Goal:** Expose the dashboard, template, and metric data surface from the real backend services.
 
 ## Scope
@@ -24,4 +24,3 @@
 
 This wave should not touch frontend mock removal yet.
 Its job is to make the real surface available and trustworthy first.
-
