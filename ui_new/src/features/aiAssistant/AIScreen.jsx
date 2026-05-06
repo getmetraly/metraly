@@ -99,20 +99,20 @@ export const AIScreen = () => {
       </div>
 
       <div style={{ padding: '8px 28px 12px', borderTop: '1px solid var(--border)', background: 'rgba(11,15,25,0.96)', backdropFilter: 'blur(10px)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {promptSuggestions.map(question => (
-            <button key={question} onClick={() => setInput(question)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px', fontSize: 11, color: 'var(--muted2)', cursor: 'pointer' }}>
-              {question}
-            </button>
-          ))}
-        </div>
-
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: '6px 14px' }}>
           <Icon name="sparkles" size={15} color="var(--purple)" />
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyPress} placeholder="Ask about synthetic demo metrics…" disabled={isLoading} style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 13.5, fontFamily: 'var(--font-body)', lineHeight: 1.4, padding: '8px 0' }} />
           <button onClick={sendMessage} disabled={isLoading || !input.trim()} style={{ padding: '6px 14px', borderRadius: 8, cursor: isLoading || !input.trim() ? 'default' : 'pointer', background: 'var(--grad)', border: 'none', color: '#fff', fontSize: 12.5, fontWeight: 600, opacity: isLoading || !input.trim() ? 0.6 : 1 }}>
             Send
           </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {promptSuggestions.map(question => (
+            <button key={question} onClick={() => setInput(question)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px', fontSize: 11, color: 'var(--muted2)', cursor: 'pointer' }}>
+              {question}
+            </button>
+          ))}
         </div>
       </div>
     </div>
