@@ -4,7 +4,7 @@
 
 > **Your data, your AI, your servers — by design, not as an afterthought.**
 
-**Metraly** is an open-core, self-hosted engineering analytics platform that helps you track team productivity, delivery performance, and developer experience — without sending your data to a third party. It brings together metrics from Git, CI/CD, and project management tools, turns them into actionable dashboards, and offers AI-powered insights you can run on your own infrastructure.
+**Metraly** is an open-core, self-hosted engineering analytics platform that helps you track team productivity, delivery performance, and developer experience — without sending your data to a third party. It brings together metrics from Git, CI/CD, and project management tools, turns them into actionable dashboards, and is being built to support AI-assisted insights on your own infrastructure.
 
 ## 🤔 Why Metraly? (vs. SaaS competitors)
 
@@ -14,8 +14,8 @@ Most engineering metrics tools (LinearB, Waydev, Code Climate Velocity, Swarmia,
 | :--- | :--- | :--- |
 | **Data ownership** | Your data lives on the vendor’s cloud; you’re bound by their retention policies and data processing agreements. | You host it yourself. All data stays in your PostgreSQL/Redis, on your infrastructure. Full GDPR / compliance control. |
 | **Customization** | Limited to what the vendor allows. Custom metrics and dashboards often require enterprise plans. | Completely extensible. Build **custom plugins**, dashboards, and data sources using simple Go interfaces. White-label the UI. |
-| **AI & LLM integration** | AI features are typically closed-source, using your data to train proprietary models (often without clear opt-out). | Built-in AI-assistant and smart insights run locally against your data. Bring your own LLM or use built-in lightweight models. No data ever leaves your environment. |
-| **Extensibility** | Closed ecosystems. Integrations are slow to add. | Open plugin architecture (data sources, widgets, alert exporters). Plugins can be written in Go or compiled to WASM and executed in a secure sandbox. |
+| **AI & LLM integration** | AI features are typically closed-source, using your data to train proprietary models (often without clear opt-out). | AI and LLM workflows are designed to run locally against your data. Bring your own LLM or use built-in lightweight models. The design keeps data inside your environment. |
+| **Extensibility** | Closed ecosystems. Integrations are slow to add. | A planned plugin architecture covers data sources, widgets, and alert exporters. Plugins are intended to be written in Go or compiled to WASM and executed in a secure sandbox. |
 | **Transparency** | You can't see how metrics are calculated or how data is transformed. | Open-core. Every core calculation is visible and auditable. You can fork, modify, and contribute back. |
 | **Vendor lock-in** | High. Migrating historical data away is often impossible. | None. Your default Community Preview data is in PostgreSQL/TimescaleDB and Redis. Future raw event ingestion may add ClickHouse as an optional store. |
 
@@ -28,9 +28,9 @@ Metraly is being designed as the central hub for engineering productivity. Here'
 - **Classic metrics** – PR throughput, cycle time, deployment frequency, change failure rate, lead time for changes (DORA).
 - **Team-level dashboards** – Per-team overviews, velocity trends, comparison views, and blocked work analysis.
 - **Role-based perspectives** – Tailored views for individual contributors, engineering managers, and VPs of Engineering.
-- **Extensible plugin system** – Add your own data sources, custom widgets, and alert exporters without touching the core code.
-- **AI-powered analytics** – Automated anomaly detection, NLP-based natural language querying, and predictive velocity forecasting.
-- **Enterprise readiness** – SSO (OIDC), RBAC, audit logging, air-gapped deployment, and white-labeling.
+- **Extensible plugin system** – A planned plugin surface for custom data sources, widgets, and alert exporters.
+- **AI-powered analytics** – A planned AI surface for anomaly detection, natural-language querying, and forecasting.
+- **Enterprise readiness** – Planned SSO (OIDC), RBAC, audit logging, air-gapped deployment, and white-labeling.
 
 The roadmap below outlines the major pillars currently in development or fully designed.
 
@@ -60,7 +60,7 @@ The roadmap below outlines the major pillars currently in development or fully d
 
 ### 🧩 Custom Plugins
 
-Metraly ships an extensible plugin system with a **three-tier runtime** so plugin authors can pick the right trade-off between performance, isolation, and language ecosystem. The full architectural decision (ADR-001) and plugin spec live in the Metraly documentation repository.
+Metraly is being designed with an extensible plugin system and a **three-tier runtime** so plugin authors can pick the right trade-off between performance, isolation, and language ecosystem. The full architectural decision (ADR-001) and plugin spec live in the Metraly documentation repository.
 
 - **Six plugin types**: data sources (Jira, GitHub, Linear, Sentry, custom HTTP), processors, AI engines, dashboard widgets, notifiers (Slack, Teams, PagerDuty), and actions (restart CI, create ticket, reassign reviewer).
 - **Three execution tiers**:
@@ -68,26 +68,26 @@ Metraly ships an extensible plugin system with a **three-tier runtime** so plugi
   - **Tier 2 — WASM (via [`wazero`](https://wazero.io/))** for community plugins in Go, Rust, or AssemblyScript with built-in memory and CPU isolation.
   - **Tier 3 — Docker + gRPC** for plugins in any language (Python, TypeScript, Ruby, Java) with full process and network isolation.
 - **Defense-in-depth security**: Ed25519-signed `.mpack` packages, strict manifest validation, container/sandbox isolation with CPU & memory caps, egress allow-listing, Vault-injected secrets, and a tamper-resistant audit trail for every plugin action.
-- **Plugin SDK** ([`getmetraly/plugin-sdk`](https://github.com/getmetraly/plugin-sdk)) — Go and Rust SDKs plus a CLI (`metraly plugin init|build|package|publish`). Hello-world to working plugin in under 10 minutes.
+- **Plugin SDK** ([`getmetraly/plugin-sdk`](https://github.com/getmetraly/plugin-sdk)) — Go and Rust SDKs plus a CLI (`metraly plugin init|build|package|publish`). SDK and CLI details are part of the broader plugin plan.
 - **Marketplace Hub** (planned): a community registry to browse, install, and update plugins straight from the UI. Air-gapped deployments can mirror the Hub locally.
 
 ### 🤖 AI Features
 
-Metraly treats AI not as a black-box magic wand, but as a transparent, self-hosted engineering analyst.
+Metraly is being designed around a transparent, self-hosted AI workflow for engineering analysis.
 
-- **Smart insights**: Automatically detects delivery bottlenecks (e.g., "PR review times increased by 35% this sprint"), imbalanced review load, and flaky CI/CD steps. Provides natural language explanations, not just charts.
-- **AI assistant**: Ask questions in plain English — "Which team had the highest deployment frequency last month?", "Show me the repos where cycle time is above 3 days", "Which epics are at risk of slipping?".
-- **Predictive analytics**: Uses historical team performance to forecast sprint completion probability and highlight risky release trains before they derail.
-- **BYO-LLM**: Supports plugging in your own LLM endpoint (OpenAI-compatible) or can run local models. No telemetry data leaks to external AI providers.
+- **Smart insights**: The planned system will surface delivery bottlenecks, imbalanced review load, and flaky CI/CD steps with natural-language explanations.
+- **AI assistant**: The planned assistant will answer questions in plain English about delivery and team performance.
+- **Predictive analytics**: Future AI work may forecast sprint completion probability and highlight risky release trains before they derail.
+- **BYO-LLM**: The design supports plugging in your own LLM endpoint (OpenAI-compatible) or running local models.
 
 ### 🏢 Enterprise Capabilities
 
-For organizations rolling Metraly out to hundreds of teams, the “Enterprise” feature set provides everything needed for compliant, production-grade operations.
+For organizations rolling Metraly out to hundreds of teams, the “Enterprise” feature set is planned to cover compliant, production-grade operations.
 
 - **Authentication & authorization**: Local seeded admin login is wired for compose-based preview; Single Sign-On via OIDC (Okta, Azure AD, Keycloak) and full RBAC (Admin, Editor, Viewer) with team-level scoping remain part of the enterprise path.
-- **Audit & compliance**: Immutable activity log for every user action, exportable to external SIEMs. Configurable data retention policies.
-- **White-labeling**: Replace logos, colours, and domain names. Create private dashboard templates for consistent reporting across the company.
-- **High availability**: Designed around TimescaleDB for time-series data and Kubernetes-native deployment with Helm. ClickHouse is deferred as a future raw-event ingestion option.
+- **Audit & compliance**: An immutable activity log and exportable SIEM integration are part of the planned enterprise surface.
+- **White-labeling**: White-label controls and private dashboard templates are part of the enterprise roadmap.
+- **High availability**: The architecture is designed around TimescaleDB for time-series data and Kubernetes-native deployment with Helm. ClickHouse is deferred as a future raw-event ingestion option.
 
 ## 🚧 Future Directions
 
