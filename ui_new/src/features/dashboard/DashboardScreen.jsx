@@ -1,8 +1,15 @@
 import React from 'react';
-import { StatCard, AIInsightCard } from '../../components/ui';
-import { Icon } from '../../components/shared/Icon';
+import { StatCard, AIInsightCard, SH } from '../../components/ui';
 import { useTweaks } from '../../context/TweaksContext';
-import { makeTimeSeries } from '../../utils/seeds';
+
+const navItems = [
+  { to: '/', label: 'Overview', icon: 'home' },
+  { to: '/dash-cto', label: 'CTO', icon: 'trendingUp' },
+  { to: '/dash-vp', label: 'VP Eng', icon: 'users' },
+  { to: '/dash-tl', label: 'Tech Lead', icon: 'gitPR' },
+  { to: '/dash-devops', label: 'DevOps', icon: 'cpu' },
+  { to: '/dash-ic', label: 'My View', icon: 'activity' },
+];
 
 const metrics = [
   { icon: 'gitPR', label: 'Synthetic PRs awaiting review', value: '14', trend: '+3 today', trendDir: 'down', color: 'cyan', sparkData: [4,7,5,9,6,8,11,14] },
@@ -32,9 +39,7 @@ export const DashboardScreen = () => {
 
   return (
     <div style={{ padding, overflow: 'auto', flex: 1 }}>
-      <div style={{ marginBottom: 18, padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,229,255,0.18)', background: 'rgba(0,229,255,0.06)', color: 'var(--muted2)', fontSize: 12.5, lineHeight: 1.5 }}>
-        <strong style={{ color: 'var(--cyan)' }}>Synthetic dashboard preview.</strong> Metrics, activity, incidents, repositories, commits, pull requests, and insights shown here are scripted demo content only.
-      </div>
+      <SH navItems={navItems} activePath="/" showNewDashboard />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap, marginBottom: gap * 2 }}>
         {metrics.map((m, i) => (
