@@ -17,8 +17,7 @@ export const Topbar = ({ title, subtitle }) => {
       padding: `0 ${paddingX}px`,
       gap: 16,
       flexShrink: 0,
-      background: 'rgba(11,15,25,0.6)',
-      backdropFilter: 'blur(8px)',
+      background: 'var(--glass)',
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 16, color: 'var(--text)' }}>{title}</div>

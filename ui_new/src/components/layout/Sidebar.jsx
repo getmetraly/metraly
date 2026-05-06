@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "../shared/Icon";
 import { useTweaks } from "../../context/TweaksContext";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
-export const Sidebar = ({ active, onNav }) => {
+export const Sidebar = () => {
   const { tweaks } = useTweaks();
   const collapsed = tweaks.sidebarCollapsed;
   const density = tweaks.density;
@@ -212,65 +212,37 @@ export const Sidebar = ({ active, onNav }) => {
               Pinned
             </div>
             {pinnedItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onNav(item.id)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 9,
-                  padding: pad.item,
-                  borderRadius: 8,
-                  border: "none",
-                  cursor: "pointer",
-                  marginBottom: 2,
-                  background:
-                    active === item.id ? "rgba(0,229,255,0.1)" : "transparent",
-                  color: active === item.id ? "var(--cyan)" : "var(--muted2)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13,
-                  fontWeight: active === item.id ? 500 : 400,
-                  transition: "all 0.15s",
-                  textAlign: "left",
-                  position: "relative",
-                }}
-              >
-                {active === item.id && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 3,
-                      height: 14,
-                      borderRadius: 2,
-                      background: "var(--cyan)",
-                    }}
+                <NavLink
+                  key={item.id}
+                  to={item.id === "dashboard" ? "/" : `/${item.id}`}
+                  style={({ isActive }) => ({
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    padding: pad.item,
+                    borderRadius: 8,
+                    border: "none",
+                    cursor: "pointer",
+                    marginBottom: 2,
+                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
+                    color: isActive ? "var(--cyan)" : "var(--muted2)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    fontWeight: isActive ? 500 : 400,
+                    transition: "all 0.15s",
+                    textAlign: "left",
+                    position: "relative",
+                    textDecoration: "none",
+                  })}
+                >
+                  <Icon
+                    name={item.icon}
+                    size={15}
                   />
-                )}
-                <span style={{ fontSize: 12 }}>📌</span>
-                {!collapsed && item.label}
-                {!collapsed && (
-                  <button
-                    onClick={(e) => togglePin(item.id, e)}
-                    title="Unpin"
-                    style={{
-                      marginLeft: "auto",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "rgba(0,229,255,0.5)",
-                      fontSize: 12,
-                      padding: "0 2px",
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </button>
-            ))}
+                  <span style={{ marginLeft: 9 }}>{item.label}</span>
+                </NavLink>
+              ))}
             <div
               style={{
                 height: 1,
@@ -303,112 +275,92 @@ export const Sidebar = ({ active, onNav }) => {
                     {sec.label}
                   </div>
                 )}
-                {unpinnedItems.map((item) => {
-                  const isActive = active === item.id;
-                  return (
-                    <NavLink
-                      key={item.id}
-                      to={item.id}
-                      className={({ isActive }) => (isActive ? "active" : "")}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: collapsed ? 0 : 9,
-                        justifyContent: collapsed ? "center" : "flex-start",
-                        padding: collapsed ? "10px 0" : pad.item,
-                        borderRadius: 8,
-                        border: "none",
-                        cursor: "pointer",
-                        marginBottom: 2,
-                        background: isActive
-                          ? "rgba(0,229,255,0.1)"
-                          : "transparent",
-                        color: isActive ? "var(--cyan)" : "var(--muted2)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: 13.5,
-                        fontWeight: isActive ? 500 : 400,
-                        transition: "all 0.18s ease",
-                        textAlign: "left",
-                        position: "relative",
-                      }}
-                    >
-                      {isActive && !collapsed && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            left: 0,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            width: 3,
-                            height: 16,
-                            borderRadius: 2,
-                            background: "var(--cyan)",
-                          }}
-                        />
-                      )}
-                      <Icon
-                        name={item.icon}
-                        size={15}
-                        color={isActive ? "var(--cyan)" : "currentColor"}
-                      />
-                      {!collapsed && (
-                        <span style={{ marginLeft: collapsed ? 0 : 9 }}>
-                          {item.label}
-                        </span>
-                      )}
-                      {!collapsed && hoveredPin === item.id && (
-                        <button
-                          onClick={(e) => togglePin(item.id, e)}
-                          title={
-                            pinned.includes(item.id) ? "Unpin" : "Pin to top"
-                          }
-                          style={{
-                            marginLeft: "auto",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            color: pinned.includes(item.id)
-                              ? "var(--cyan)"
-                              : "var(--muted)",
-                            fontSize: 12,
-                          }}
-                        >
-                          📌
-                        </button>
-                      )}
-                    </NavLink>
-                  );
-                })}
-                {newDashboardItem && !collapsed && (
-                  <button
-                    onClick={() => onNav(newDashboardItem.id)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 9,
-                      padding: pad.item,
-                      borderRadius: 8,
-                      border: "1px dashed rgba(0,229,255,0.2)",
-                      cursor: "pointer",
-                      marginTop: 4,
-                      background:
-                        active === newDashboardItem.id
-                          ? "rgba(0,229,255,0.1)"
-                          : "rgba(0,229,255,0.06)",
-                      color: "var(--cyan)",
-                      fontSize: 13.5,
-                      fontWeight: 500,
-                    }}
-                  >
+                {unpinnedItems.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    to={item.id === "dashboard" ? "/" : `/${item.id}`}
+                  style={({ isActive }) => ({
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: collapsed ? 0 : 9,
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    padding: collapsed ? "10px 0" : pad.item,
+                    borderRadius: 8,
+                    border: "none",
+                    cursor: "pointer",
+                    marginBottom: 2,
+                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
+                    color: isActive ? "var(--cyan)" : "var(--muted2)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13.5,
+                    fontWeight: isActive ? 500 : 400,
+                    transition: "all 0.18s ease",
+                    textAlign: "left",
+                    position: "relative",
+                    textDecoration: "none",
+                  })}
+                >
                     <Icon
-                      name={newDashboardItem.icon}
+                      name={item.icon}
                       size={15}
-                      color="var(--cyan)"
                     />
-                    {newDashboardItem.label}
-                  </button>
+                    {!collapsed && (
+                      <span style={{ marginLeft: collapsed ? 0 : 9 }}>
+                        {item.label}
+                      </span>
+                    )}
+                    {!collapsed && hoveredPin === item.id && (
+                      <button
+                        onClick={(e) => togglePin(item.id, e)}
+                        title={
+                          pinned.includes(item.id) ? "Unpin" : "Pin to top"
+                        }
+                        style={{
+                          marginLeft: "auto",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: pinned.includes(item.id)
+                            ? "var(--cyan)"
+                            : "var(--muted)",
+                          fontSize: 12,
+                        }}
+                      >
+                        📌
+                      </button>
+                    )}
+                  </NavLink>
+                ))}
+                {newDashboardItem && !collapsed && (
+                  <NavLink
+                     to="/dash-wizard"
+                     style={({ isActive }) => ({
+                       width: "100%",
+                       display: "flex",
+                       alignItems: "center",
+                       gap: 9,
+                       padding: pad.item,
+                       borderRadius: 8,
+                       border: "1px dashed rgba(0,229,255,0.2)",
+                       cursor: "pointer",
+                       marginTop: 4,
+                       background: isActive
+                         ? "rgba(0,229,255,0.1)"
+                         : "rgba(0,229,255,0.06)",
+                       color: "var(--cyan)",
+                       fontSize: 13.5,
+                       fontWeight: 500,
+                       textDecoration: "none",
+                     })}
+                   >
+                     <Icon
+                       name={newDashboardItem.icon}
+                       size={15}
+                       color="var(--cyan)"
+                     />
+                     {newDashboardItem.label}
+                   </NavLink>
                 )}
               </div>
             );
@@ -432,50 +384,32 @@ export const Sidebar = ({ active, onNav }) => {
                   {sec.label}
                 </div>
               )}
-              {sec.items.map((item) => {
-                const isActive = active === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onNav(item.id)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: collapsed ? 0 : 9,
-                      justifyContent: collapsed ? "center" : "flex-start",
-                      padding: collapsed ? "10px 0" : pad.item,
-                      borderRadius: 8,
-                      border: "none",
-                      cursor: "pointer",
-                      marginBottom: 2,
-                      background: isActive
-                        ? "rgba(0,229,255,0.1)"
-                        : "transparent",
-                      color: isActive ? "var(--cyan)" : "var(--muted2)",
-                      fontSize: 13.5,
-                      fontWeight: isActive ? 500 : 400,
-                      position: "relative",
-                    }}
-                  >
-                    {isActive && !collapsed && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: 3,
-                          height: 16,
-                          borderRadius: 2,
-                          background: "var(--cyan)",
-                        }}
-                      />
-                    )}
+              {sec.items.map((item) => (
+                <NavLink
+                  key={item.id}
+                  to={item.id === "dashboard" ? "/" : `/${item.id}`}
+                  style={({ isActive }) => ({
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: collapsed ? 0 : 9,
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    padding: collapsed ? "10px 0" : pad.item,
+                    borderRadius: 8,
+                    border: "none",
+                    cursor: "pointer",
+                    marginBottom: 2,
+                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
+                    color: isActive ? "var(--cyan)" : "var(--muted2)",
+                    fontSize: 13.5,
+                    fontWeight: isActive ? 500 : 400,
+                    position: "relative",
+                    textDecoration: "none",
+                  })}
+                >
                     <Icon
                       name={item.icon}
                       size={15}
-                      color={isActive ? "var(--cyan)" : "currentColor"}
                     />
                     {!collapsed && (
                       <span style={{ marginLeft: collapsed ? 0 : 9 }}>
@@ -498,13 +432,12 @@ export const Sidebar = ({ active, onNav }) => {
                         NEW
                       </div>
                     )}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
-      </nav>
+                  </NavLink>
+                ))}
+               </div>
+            );
+          })}
+       </nav>
 
       {/* User footer – hidden when collapsed for simplicity */}
       {!collapsed && (

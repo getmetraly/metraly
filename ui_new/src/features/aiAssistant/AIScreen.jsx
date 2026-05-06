@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../components/shared/Icon';
+import { useTweaks } from '../../context/TweaksContext';
 
 // Scripted demo response. This public demo does not call a live AI model.
 const simulateAIResponse = async (userMessage) => {
@@ -19,6 +20,9 @@ const simulateAIResponse = async (userMessage) => {
 };
 
 export const AIScreen = () => {
+  const { tweaks } = useTweaks();
+  const density = tweaks.density;
+  const padding = { compact: '16px 20px', comfortable: '24px 28px', spacious: '32px 36px' }[density];
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Synthetic AI preview. Responses in this demo are scripted output based on sample metrics, not live AI inference or real company data." },
@@ -64,7 +68,7 @@ export const AIScreen = () => {
       </div>
 
       {/* Messages area */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+       <div style={{ flex: 1, overflow: 'auto', padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {messages.map((m, i) => (
           <div
             key={i}

@@ -38,7 +38,7 @@ export const CTODashboard = () => {
   const lastMTTR = mttr.length ? mttr[mttr.length - 1].toFixed(0) : "18";
 
   const { tweaks } = useTweaks();
-  const gap = { compact: 12, comfortable: 16, spacious: 24 }[tweaks.density];
+  const gridGap = { compact: 12, comfortable: 16, spacious: 24 }[tweaks.density];
   const padding = {
     compact: "16px 20px",
     comfortable: "24px 28px",
@@ -49,10 +49,9 @@ export const CTODashboard = () => {
     <div
       style={{
         padding,
-        gap,
+        gap: gridGap,
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
-        gap,
       }}
     >
       {/* 4 StatCard’а */}
