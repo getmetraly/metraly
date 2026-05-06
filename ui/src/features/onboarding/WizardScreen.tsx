@@ -262,20 +262,17 @@ const ReviewStep: React.FC<{ selected: string[] }> = ({ selected }) => {
   );
 };
 
-const OnboardingChecklist: React.FC<{ step: number; selected: string[] }> = ({ step, selected }) => {
-  const selectedSources = sources.filter((src) => selected.includes(src.id));
+const OnboardingChecklist: React.FC<{ step: number }> = ({ step }) => {
   const items = [
     {
       label: 'Choose demo or setup',
-      done: step > 0 || selected.length > 0,
+      done: step > 0,
       detail: 'Pick a starting mode and keep the path visible.',
     },
     {
       label: 'Select sources',
-      done: selected.length > 0,
-      detail: selectedSources.length > 0
-        ? `${selectedSources.length} source${selectedSources.length === 1 ? '' : 's'} selected`
-        : 'Add Git, Jira, or another source to continue.',
+      done: step > 0,
+      detail: 'Add Git, Jira, or another source to continue.',
     },
     {
       label: 'Authenticate and configure',
@@ -305,9 +302,6 @@ const OnboardingChecklist: React.FC<{ step: number; selected: string[] }> = ({ s
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Onboarding checklist</div>
           <div style={{ fontSize: 12, color: 'var(--muted2)' }}>Keep the path from demo mode to live setup visible.</div>
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-          {selectedSources.length} source{selectedSources.length === 1 ? '' : 's'} selected
         </div>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
@@ -446,7 +440,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({
           </button>
         </div>
       )}
-      <OnboardingChecklist step={step} selected={selected} />
+      <OnboardingChecklist step={step} />
       <StepIndicator step={step} />
       <div className="wizard-step" key={step} style={{ width: '100%', maxWidth: 680 }}>
         {renderStepContent()}
