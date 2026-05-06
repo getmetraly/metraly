@@ -1,7 +1,7 @@
 # GSD State: Metraly
 
 **Initialized:** 2026-05-05
-**Current focus:** Phase 6 - Community GA Polish
+**Current focus:** Phase 7 - Licensing And Pro Gate
 
 ## Project Reference
 
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 | 3 | Complete | Sandbox Onboarding |
 | 4 | Complete | Dashboard Data Path |
 | 5 | Complete | Preview Ingestion |
-| 6 | Pending | Community GA Polish |
+| 6 | Complete | Community GA Polish |
 | 7 | Pending | Licensing And Pro Gate |
 | 8 | Pending | Private AI Core |
 | 9 | Pending | Plugin Runtime |
@@ -49,10 +49,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 
 ## Next Action
 
-Phase 5 execution is complete. Begin Phase 6 planning or execution:
+Phase 6 execution is complete. Begin Phase 7 planning or execution:
 
 ```text
-$gsd-discuss-phase 6
+$gsd-discuss-phase 7
 ```
 
 ## Accumulated Context
@@ -69,8 +69,9 @@ $gsd-discuss-phase 6
 - 2026-05-06: Phase 3 execution completed; Sandbox Inc. seed data, first-run choice flow, demo banner, setup wizard exit, and verification artifacts were implemented.
 - 2026-05-06: Phase 4 execution completed; dashboard definitions, widget data, metric endpoints, auth-aware UI loading, and shared dashboard editor flows now use backend-backed data.
 - 2026-05-06: Phase 5 execution completed; preview ingestion now accepts Git and PM events, writes activity plus curated metric points, and keeps the raw event store out of the default runtime.
+- 2026-05-06: Phase 6 execution completed; metrics CSV export, onboarding checklist, local notification-channel configuration, and docs status separation now round out the Community GA polish surface.
 
 ### Resume Points
 
-- Stopped at: Phase 5 complete
-- Resume with: `$gsd-discuss-phase 6`
+- Stopped at: Phase 6 complete
+- Resume with: `$gsd-discuss-phase 7`

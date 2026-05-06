@@ -126,9 +126,16 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 ## Phase 6: Community GA Polish
 
+**Status:** Complete (2026-05-06)
+
 **Goal:** Turn preview into a useful Community GA product surface.
 
 **Requirements:** CGA-01, CGA-02, CGA-03, CGA-04, CGA-05
+
+**Plans:**
+
+- `06A-export-and-checklist` — Complete. CSV export from the metrics explorer and the onboarding checklist polish.
+- `06B-alerts-and-docs` — Complete. Notification-channel configuration and README status snapshot cleanup.
 
 **Success criteria:**
 1. Dashboard builder v1 supports basic add/move/resize workflows.
@@ -197,10 +204,10 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 ## Next Phase
 
-**Phase 6: Community GA Polish** should be planned next.
+**Phase 7: Licensing And Pro Gate** should be planned next.
 
 Recommended next command:
 
 ```text
-$gsd-discuss-phase 6
+$gsd-discuss-phase 7
 ```

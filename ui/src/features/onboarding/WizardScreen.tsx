@@ -262,6 +262,94 @@ const ReviewStep: React.FC<{ selected: string[] }> = ({ selected }) => {
   );
 };
 
+const OnboardingChecklist: React.FC<{ step: number; selected: string[] }> = ({ step, selected }) => {
+  const selectedSources = sources.filter((src) => selected.includes(src.id));
+  const items = [
+    {
+      label: 'Choose demo or setup',
+      done: step > 0 || selected.length > 0,
+      detail: 'Pick a starting mode and keep the path visible.',
+    },
+    {
+      label: 'Select sources',
+      done: selected.length > 0,
+      detail: selectedSources.length > 0
+        ? `${selectedSources.length} source${selectedSources.length === 1 ? '' : 's'} selected`
+        : 'Add Git, Jira, or another source to continue.',
+    },
+    {
+      label: 'Authenticate and configure',
+      done: step > 1,
+      detail: 'Grant access and set sync cadence before the first import.',
+    },
+    {
+      label: 'Switch to real data',
+      done: step > 3,
+      detail: 'Finish setup and move into the preview dashboard.',
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 680,
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: 14,
+        border: '1px solid var(--border)',
+        background: 'var(--glass)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Onboarding checklist</div>
+          <div style={{ fontSize: 12, color: 'var(--muted2)' }}>Keep the path from demo mode to live setup visible.</div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+          {selectedSources.length} source{selectedSources.length === 1 ? '' : 's'} selected
+        </div>
+      </div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {items.map((item) => (
+          <div
+            key={item.label}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: item.done ? '1px solid rgba(0,200,83,0.18)' : '1px solid var(--border)',
+              background: item.done ? 'rgba(0,200,83,0.04)' : 'rgba(255,255,255,0.02)',
+            }}
+          >
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: item.done ? 'var(--success)' : 'transparent',
+                border: item.done ? 'none' : '1px solid var(--border2)',
+              }}
+            >
+              {item.done ? <Icon name="check" size={11} color="#0B0F19" /> : <span style={{ fontSize: 11, color: 'var(--muted)' }}>•</span>}
+            </div>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>{item.label}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--muted2)', lineHeight: 1.45 }}>{item.detail}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ---------- Main Wizard Screen ----------
 interface WizardScreenProps {
   onUseDemo?: () => void;
@@ -358,6 +446,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({
           </button>
         </div>
       )}
+      <OnboardingChecklist step={step} selected={selected} />
       <StepIndicator step={step} />
       <div className="wizard-step" key={step} style={{ width: '100%', maxWidth: 680 }}>
         {renderStepContent()}

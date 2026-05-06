@@ -228,7 +228,22 @@ function defaultFilters(): DashboardFilters {
 
 function resolveDashboardApiId(id: string): string {
   if (id === 'overview') {
-    return 'dash-overview';
+    return 'sandbox-overview';
+  }
+  if (id === 'cto') {
+    return 'sandbox-cto';
+  }
+  if (id === 'vp') {
+    return 'sandbox-vp';
+  }
+  if (id === 'tl') {
+    return 'sandbox-tl';
+  }
+  if (id === 'devops') {
+    return 'sandbox-devops';
+  }
+  if (id === 'ic') {
+    return 'sandbox-ic';
   }
   return id;
 }

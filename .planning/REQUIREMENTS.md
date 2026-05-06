@@ -50,11 +50,11 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 
 ### Community GA
 
-- [ ] **CGA-01**: Dashboard builder v1 supports adding, arranging, and resizing widgets.
-- [ ] **CGA-02**: User can export core metric data or reports in at least one portable format.
-- [ ] **CGA-03**: User can configure at least one alert/notification channel.
-- [ ] **CGA-04**: Onboarding progress checklist guides user from demo mode to real data.
-- [ ] **CGA-05**: Community docs accurately distinguish implemented, designed, and future features.
+- [x] **CGA-01**: Dashboard builder v1 supports adding, arranging, and resizing widgets.
+- [x] **CGA-02**: User can export core metric data or reports in at least one portable format.
+- [x] **CGA-03**: User can configure at least one alert/notification channel.
+- [x] **CGA-04**: Onboarding progress checklist guides user from demo mode to real data.
+- [x] **CGA-05**: Community docs accurately distinguish implemented, designed, and future features.
 
 ### Licensing And Pro
 
@@ -147,11 +147,11 @@ Deferred beyond the first full roadmap baseline.
 | ING-03 | Phase 5 | Complete |
 | ING-04 | Phase 5 | Complete |
 | ING-05 | Phase 5 | Complete |
-| CGA-01 | Phase 6 | Pending |
-| CGA-02 | Phase 6 | Pending |
-| CGA-03 | Phase 6 | Pending |
-| CGA-04 | Phase 6 | Pending |
-| CGA-05 | Phase 6 | Pending |
+| CGA-01 | Phase 6 | Complete |
+| CGA-02 | Phase 6 | Complete |
+| CGA-03 | Phase 6 | Complete |
+| CGA-04 | Phase 6 | Complete |
+| CGA-05 | Phase 6 | Complete |
 | LIC-01 | Phase 7 | Pending |
 | LIC-02 | Phase 7 | Pending |
 | LIC-03 | Phase 7 | Pending |
@@ -180,4 +180,4 @@ Deferred beyond the first full roadmap baseline.
 
 ---
 *Requirements defined: 2026-05-05*
-*Last updated: 2026-05-06 after Phase 5 completion*
+*Last updated: 2026-05-06 after Phase 6 completion*

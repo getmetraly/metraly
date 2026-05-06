@@ -236,7 +236,11 @@ func main() {
 		KeyManager:   deps.keyManager,
 		AuthSvc:      deps.authSvc,
 		DashboardSvc: deps.dashboardSvc,
+		TemplateSvc:  deps.templateSvc,
+		MetricsSvc:   deps.metricsSvc,
 		IngestionSvc: deps.ingestionSvc,
+		ActivityRepo: deps.activityRepo,
+		InsightRepo:  deps.insightRepo,
 	})
 
 	// Swagger documentation

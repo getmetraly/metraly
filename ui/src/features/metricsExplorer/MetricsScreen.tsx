@@ -254,7 +254,7 @@ export const MetricsScreen = () => {
           </button>
 
           <div style={{ flex: 1 }} />
-          <ExportBar />
+          <ExportBar metricId={selected} timeRange={timeRange} team={team} repo={repo} values={slicedData} />
     <button
     style={{
       display: 'flex',

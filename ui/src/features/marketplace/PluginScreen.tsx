@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Icon } from '../../components/shared/Icon';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 
 const plugins = [
   { name: 'GitHub Advanced',  cat: 'Sources',   icon: 'github',   desc: 'Deep PR analytics, CODEOWNERS, security alerts and advanced workflow metrics.',  rating: 4.9, installs: '12.4k', installed: true,  color: '#E8EDF5' },
@@ -15,10 +16,40 @@ const plugins = [
 
 const filters = ['All', 'Sources', 'Exporters', 'AI', 'Alerts'];
 
+type NotificationChannelId = 'slack' | 'pagerduty';
+
+interface NotificationChannelConfig {
+  enabled: boolean;
+  destination: string;
+  cadence: 'Daily' | 'Weekly';
+}
+
+const defaultNotificationChannels: Record<NotificationChannelId, NotificationChannelConfig> = {
+  slack: {
+    enabled: true,
+    destination: '#engineering-health',
+    cadence: 'Daily',
+  },
+  pagerduty: {
+    enabled: false,
+    destination: 'Primary on-call',
+    cadence: 'Weekly',
+  },
+};
+
 export const PluginScreen = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [channels, setChannels] = useLocalStorage<Record<NotificationChannelId, NotificationChannelConfig>>(
+    'metraly.notification-channels',
+    defaultNotificationChannels,
+  );
+
+  const activeChannels = useMemo(
+    () => (Object.entries(channels) as [NotificationChannelId, NotificationChannelConfig][]).filter(([, channel]) => channel.enabled),
+    [channels],
+  );
 
   const filteredPlugins = plugins.filter(p => {
     const matchesFilter = filter === 'All' || p.cat === filter;
@@ -29,6 +60,119 @@ export const PluginScreen = () => {
 
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '24px 28px' }}>
+      <div
+        className="fade-up"
+        style={{
+          marginBottom: 18,
+          padding: 18,
+          borderRadius: 14,
+          border: '1px solid var(--border)',
+          background: 'var(--glass)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Notification channels</div>
+            <div style={{ fontSize: 12, color: 'var(--muted2)' }}>Configure a Slack digest or PagerDuty bridge for alerts.</div>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+            {activeChannels.length} active
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          {(Object.entries(channels) as [NotificationChannelId, NotificationChannelConfig][]).map(([id, channel]) => {
+            const label = id === 'slack' ? 'Slack' : 'PagerDuty';
+            const icon = id === 'slack' ? 'slack' : 'pagerduty';
+            const accent = id === 'slack' ? '#4A154B' : '#06AC38';
+            return (
+              <div
+                key={id}
+                style={{
+                  padding: 14,
+                  borderRadius: 12,
+                  border: channel.enabled ? `1px solid ${accent}33` : '1px solid var(--border)',
+                  background: channel.enabled ? `${accent}0a` : 'rgba(255,255,255,0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: `${accent}18`, border: `1px solid ${accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name={icon} size={16} color={accent} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--muted2)' }}>Digest and incident routing</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], enabled: !prev[id].enabled } }))}
+                    style={{
+                      width: 40,
+                      height: 22,
+                      borderRadius: 999,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: channel.enabled ? 'var(--cyan)' : 'rgba(255,255,255,0.14)',
+                      position: 'relative',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: channel.enabled ? 20 : 2,
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        background: 'white',
+                        transition: 'left 0.15s ease',
+                      }}
+                    />
+                  </button>
+                </div>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Destination</span>
+                  <input
+                    value={channel.destination}
+                    onChange={(e) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], destination: e.target.value } }))}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--glass2)',
+                      color: 'var(--text)',
+                      fontSize: 12.5,
+                      outline: 'none',
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Cadence</span>
+                  <select
+                    value={channel.cadence}
+                    onChange={(e) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], cadence: e.target.value as NotificationChannelConfig['cadence'] } }))}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--glass2)',
+                      color: 'var(--text)',
+                      fontSize: 12.5,
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                  </select>
+                </label>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Search and filters bar */}
       <div className="fade-up" style={{ display: 'flex', gap: 12, marginBottom: 22, alignItems: 'center' }}>
         <div style={{

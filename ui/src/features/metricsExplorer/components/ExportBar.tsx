@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Icon } from '../../../components/shared/Icon';
+import { buildMetricCsv, downloadMetricCsv } from '../export';
 
-export const ExportBar = () => {
+interface ExportBarProps {
+  metricId: string;
+  timeRange: string;
+  team: string;
+  repo: string;
+  values: number[];
+}
+
+export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team, repo, values }) => {
   const [shown, setShown] = useState(false);
+  const csv = useMemo(() => buildMetricCsv({ metricId, timeRange, team, repo, values }), [metricId, timeRange, team, repo, values]);
   return (
     <div style={{ position: 'relative' }}>
       <button
@@ -45,7 +55,12 @@ export const ExportBar = () => {
           {['CSV', 'PDF Report', 'Slack Digest'].map(opt => (
             <div
               key={opt}
-              onClick={() => setShown(false)}
+              onClick={() => {
+                if (opt === 'CSV') {
+                  downloadMetricCsv(`${metricId}-${timeRange}.csv`, csv);
+                }
+                setShown(false);
+              }}
               style={{
                 padding: '9px 14px',
                 cursor: 'pointer',

@@ -23,17 +23,18 @@ Metraly must give teams a trustworthy self-hosted view of engineering delivery h
 
 ### Active
 
-- [ ] Community Preview provides an honest end-to-end self-hosted demo path.
-- [ ] API runtime wires config, database, migrations, Redis, repositories, services, auth, and seed data.
-- [ ] Sandbox Inc. demo data produces meaningful first insight in under 5 minutes.
-- [ ] Documentation and commands match the actual Community Preview stack.
-- [ ] License metadata and Go source headers use `AGPL-3.0-or-later`.
 - [ ] Full product roadmap sequences Community, Pro, Plugin, AI, and Enterprise work without losing the privacy-first core.
 
 ### Validated
 
+- ✓ Community Preview provides an honest end-to-end self-hosted demo path — validated in Phases 3 through 5.
+- ✓ API runtime wires config, database, migrations, Redis, repositories, services, auth, and seed data — validated in Phases 1, 2, and 5.
+- ✓ Sandbox Inc. demo data produces meaningful first insight in under 5 minutes — validated in Phase 3.
+- ✓ Documentation and commands match the actual Community Preview stack — validated in Phase 1.
+- ✓ License metadata and Go source headers use `AGPL-3.0-or-later` — validated in Phase 1.
 - ✓ UI consumes backend data for dashboard and metrics flows instead of mock-only data — validated in Phase 4: Dashboard Data Path
 - ✓ Preview ingestion accepts Git and PM event paths and writes curated metric points — validated in Phase 5: Preview Ingestion
+- ✓ Community GA polish now covers CSV export, onboarding checklist, local notification-channel config, and implementation-vs-future docs separation — validated in Phase 6: Community GA Polish
 
 ### Out of Scope
 
@@ -90,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-06 after Phase 5 completion*
+*Last updated: 2026-05-06 after Phase 6 completion*

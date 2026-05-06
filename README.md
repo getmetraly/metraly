@@ -34,6 +34,30 @@ Metraly is being designed as the central hub for engineering productivity. Here'
 
 The roadmap below outlines the major pillars currently in development or fully designed.
 
+### Status Snapshot
+
+**Implemented now**
+
+- Seeded local auth and backend-backed dashboards
+- Metrics explorer and dashboard editor flows
+- Preview ingestion for Git and PM events
+- CSV export from the metrics explorer
+- Onboarding progress checklist in the setup wizard
+- Local notification-channel configuration for Slack and PagerDuty
+
+**Designed next**
+
+- License-gated Community/Pro boundaries
+- Grounded AI assistant flows
+- Plugin runtime hardening and marketplace operations
+- Enterprise SSO, audit, and compliance surfaces
+
+**Future directions**
+
+- Broader export/report formats
+- Additional alert destinations and automation hooks
+- Raw event store support for high-volume dirty ingestion
+
 ### 🧩 Custom Plugins
 
 Metraly ships an extensible plugin system with a **three-tier runtime** so plugin authors can pick the right trade-off between performance, isolation, and language ecosystem. The full architectural decision (ADR-001) and plugin spec live in the Metraly documentation repository.
