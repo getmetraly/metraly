@@ -14,27 +14,24 @@ import { WizardScreen } from "./features/onboarding/WizardScreen";
 import { PlaceholderScreen } from "./components/ui/PlaceholderScreen";
 
 const routeConfig = {
-  "/": ["Overview", "Last updated 2 min ago"],
-  "/dash-cto": [
-    "CTO Dashboard",
-    "Strategic health, DORA trends, team velocity",
-  ],
-  "/dash-v-p": ["VP Engineering", "Delivery health & team performance"],
-  "/dash-t-l": ["Tech Lead", "CI health, PR queue & sprint progress"],
-  "/dash-devops": ["DevOps / SRE", "Deploy frequency, MTTR & incidents"],
-  "/dash-ic": ["My Dashboard", "Personal metrics & sprint tasks"],
-  "/dash-wizard": ["New Dashboard", "Build a custom dashboard"],
-  "/metrics": ["Metrics Explorer", "DORA, CI/CD, PR & custom metrics"],
-  "/ai": ["AI Assistant", "Private · On-premise inference"],
-  "/plugins": ["Plugin Marketplace", "Browse & install integrations"],
-  "/wizard": ["Connect Sources", "Onboarding wizard"],
-  "/settings": ["Settings", "Platform configuration"],
+  "/": ["Overview", "Synthetic demo data · not live company data"],
+  "/dash-cto": ["CTO Dashboard", "Synthetic DORA trends, health score, and team velocity"],
+  "/dash-vp": ["VP Engineering", "Synthetic delivery health and team performance"],
+  "/dash-tl": ["Tech Lead", "Synthetic CI health, PR queue, and sprint progress"],
+  "/dash-devops": ["DevOps / SRE", "Synthetic deploy frequency, MTTR, and incident trends"],
+  "/dash-ic": ["My Dashboard", "Synthetic personal metrics and sprint tasks"],
+  "/dash-wizard": ["Dashboard Preview", "Synthetic dashboard builder preview"],
+  "/metrics": ["Metrics Explorer", "Synthetic DORA, CI/CD, PR, and custom metrics"],
+  "/ai": ["Synthetic AI Preview", "Scripted demo · not live inference"],
+  "/plugins": ["Plugin Preview", "Mock listings · install flow not implemented"],
+  "/wizard": ["Connector Setup Preview", "Synthetic flow · do not enter credentials or tokens"],
+  "/settings": ["Settings", "Demo configuration preview"],
 };
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const path = location.hash ? location.hash.slice(1).split("?")[0] : "/";
-  const [title, subtitle] = routeConfig[path] || ["Metraly", ""];
+  const path = location.pathname || "/";
+  const [title, subtitle] = routeConfig[path] || ["Metraly", "Synthetic demo preview"];
 
   return (
     <TweaksProvider>
@@ -50,7 +47,6 @@ const AppLayout = ({ children }) => {
           }}
         >
           <Topbar title={title} subtitle={subtitle} />
-          <DashboardNav />
           <div style={{ flex: 1, overflow: "auto" }}>{children}</div>
         </div>
       </div>
@@ -64,8 +60,8 @@ const App = () => {
       <Routes>
         <Route path="/" element={<DashboardScreen />} />
         <Route path="/dash-cto" element={<RoleDashboardScreen />} />
-        <Route path="/dash-v-p" element={<RoleDashboardScreen />} />
-        <Route path="/dash-t-l" element={<RoleDashboardScreen />} />
+        <Route path="/dash-vp" element={<RoleDashboardScreen />} />
+        <Route path="/dash-tl" element={<RoleDashboardScreen />} />
         <Route path="/dash-devops" element={<RoleDashboardScreen />} />
         <Route path="/dash-ic" element={<RoleDashboardScreen />} />
         <Route path="/dash-wizard" element={<DashboardWizardScreen />} />
