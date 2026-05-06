@@ -51,6 +51,11 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/api/v1/health | grep -q '\"status\":\"ok\"'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     networks:
       - metraly
 
@@ -61,7 +66,8 @@ services:
     ports:
       - "${UI_PORT:-3000}:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - metraly
 

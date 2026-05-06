@@ -28,7 +28,7 @@ React UI
   -> PostgreSQL/TimescaleDB + Redis
 ```
 
-Collectors should either be deferred or connected through a small stable ingestion path. ClickHouse should not be required in this milestone.
+Collectors should either be deferred or connected through a small stable ingestion path. A raw event store should not be required in this milestone.
 
 ## Future Event Architecture
 
@@ -36,7 +36,7 @@ Future storage direction from user decision:
 
 ```text
 Collectors/webhooks
-  -> raw/dirty events in ClickHouse or equivalent event store
+  -> raw/dirty events in a deferred raw event store or equivalent event store
   -> normalization/aggregation jobs
   -> curated metrics in TimescaleDB
   -> API dashboards and AI insights

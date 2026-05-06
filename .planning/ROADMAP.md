@@ -15,7 +15,7 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 | 2 | Auth And Access | Expose a usable auth/access surface | AUTH-01..AUTH-05 | partial |
 | 3 | Sandbox Onboarding | Deliver first-run demo and measurable first insight | ONBD-01..ONBD-05 | yes |
 | 4 | Dashboard Data Path | Replace mock dashboard flows with backend-backed data | DASH-01..DASH-06 | yes |
-| 5 | Preview Ingestion | Add minimal source/metric ingestion without ClickHouse dependency | ING-01..ING-05 | partial |
+| 5 | Preview Ingestion | Add minimal source/metric ingestion without a raw event store dependency | ING-01..ING-05 | partial |
 | 6 | Community GA Polish | Add builder/export/alerts/docs polish | CGA-01..CGA-05 | yes |
 | 7 | Licensing And Pro Gate | Implement license validation, limits, and tier UX | LIC-01..LIC-04 | yes |
 | 8 | Private AI Core | Implement grounded AI and Dual-LLM safety | AI-01..AI-05 | yes |
@@ -31,10 +31,10 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 **Requirements:** FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05
 
 **Success criteria:**
-1. `make docker-up` starts only the intended Community Preview dependencies: API, UI, Postgres/TimescaleDB, Redis.
+1. `make up` starts only the intended Community Preview dependencies: API, UI, Postgres/TimescaleDB, Redis.
 2. API startup applies migrations and fails clearly on migration/config/database errors.
 3. `cmd/api/main.go` wires config, DB, Redis, repos, caches, services, and handlers through one dependency path.
-4. README, Makefile, and moved app documentation no longer imply ClickHouse is required for the default preview.
+4. README, Makefile, and moved app documentation no longer imply a raw event store is required for the default preview.
 5. Go source headers and Swagger license metadata use `AGPL-3.0-or-later`.
 
 **Plans:**
@@ -49,7 +49,7 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 **Cross-cutting constraints:**
 - Postgres and migrations are mandatory startup dependencies; Redis is optional only with visible degraded cache behavior.
-- ClickHouse must not be required for the default Community Preview runtime.
+- A raw event store must not be required for the default Community Preview runtime.
 - Phase 1 must not expand into Sandbox Inc. onboarding, full dashboard data-path migration, ingestion, Pro licensing, AI, plugins, or Enterprise scope.
 
 ## Phase 2: Auth And Access
@@ -96,9 +96,20 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 5. Stale dashboard updates return version conflict.
 6. Persona templates render in UI from backend seed/template data.
 
+**Plans:**
+
+**Wave 1**
+- `04A-backend-dashboard-surface` — backend dashboard/template/metric surface, version conflicts, widget data.
+
+**Wave 2**
+- `04B-auth-bridge-and-ui-migration` — minimal auth bridge and UI migration off `mockApi`.
+
+**Wave 3**
+- `04C-dashboard-editing-and-wizard-reuse` — shared dashboard editor shell, Customize sidebar, API-backed create/update/layout save flow, and widget/settings component reuse across dashboard edit and wizard creation.
+
 ## Phase 5: Preview Ingestion
 
-**Goal:** Add minimal source and metric ingestion without requiring ClickHouse.
+**Goal:** Add minimal source and metric ingestion without requiring a raw event store.
 
 **Requirements:** ING-01, ING-02, ING-03, ING-04, ING-05
 
@@ -106,8 +117,8 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 1. At least one Git provider event path can feed preview metrics.
 2. At least one PM path or explicit demo substitute supports task/blocker metrics.
 3. Metric aggregation writes curated points to TimescaleDB.
-4. Default compose and tests pass without ClickHouse.
-5. Architecture docs describe future ClickHouse raw-event role without making it current scope.
+4. Default compose and tests pass without a raw event store.
+5. Architecture docs describe future raw event store role without making it current scope.
 
 ## Phase 6: Community GA Polish
 

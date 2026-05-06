@@ -49,8 +49,8 @@ Current runtime target:
 
 Current project decision from initialization:
 
-- ClickHouse is deferred for Community Preview.
-- Future architecture may add ClickHouse for raw/dirty event ingestion, with curated aggregates copied into TimescaleDB for API/dashboard queries.
+- Raw/dirty event ingestion is deferred from Community Preview.
+- Future architecture may add a separate raw-event store, with curated aggregates copied into TimescaleDB for API/dashboard queries.
 
 ## Build And Run Commands
 
@@ -59,8 +59,8 @@ Primary commands are in `Makefile`:
 - `make build` builds `./cmd/api`.
 - `make test` runs `go test -v ./...`.
 - `make lint` runs `go vet ./...` and `staticcheck` when installed.
-- `make docker-up` starts Redis, TimescaleDB/Postgres, API, and UI.
-- `make docker-test-data` still targets ClickHouse containers and is stale relative to the current compose file.
+- `make up` starts Redis, TimescaleDB/Postgres, API, and UI.
+- The old data-target command from earlier planning is stale relative to the current compose file.
 
 ## Configuration
 
@@ -79,7 +79,7 @@ The main entry point `cmd/api/main.go` currently constructs only the JWT key man
 
 ## Important Stack Drift
 
-- `README.md` still mentions ClickHouse as a current quick-start service, but `docker-compose.yaml` no longer starts ClickHouse.
+- `README.md` still needs periodic alignment with the current compose stack and the deferred raw-event-store decision.
 - `../docs/STATUS.md` is the canonical external project status; it identifies the code as an early prototype with several fully designed but unimplemented systems.
 - `../docs/tech/app/docs/architecture.md` and `../docs/tech/app/BACKEND_PLAN.md` describe a more complete backend than the currently wired `cmd/api/main.go`.
 - `AGENTS.md` requires Go source files to use `AGPL-3.0-or-later`; some existing Go files are missing the required SPDX header.

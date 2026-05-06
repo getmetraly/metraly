@@ -43,4 +43,4 @@
 - Individual developer surveillance/scoring.
 - Cloud-first architecture that requires customer code/metadata to leave their environment.
 - Black-box AI insights without grounding.
-- Full ClickHouse dependency in the initial Community Preview runtime.
+- Full raw event store dependency in the initial Community Preview runtime.

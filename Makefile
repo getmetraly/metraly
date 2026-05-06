@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint up down dev logs ps docker-build docker-up docker-down docker-logs ui-run
+.PHONY: build run stop clean test lint up down dev logs ps ui-run
 
 # Defaults
 APP_NAME := metraly
@@ -45,53 +45,19 @@ up:
 	$(DOCKER_COMPOSE) up -d --build
 
 # Canonical local stop command
-down: docker-down
+down:
+	@echo "Stopping services..."
+	$(DOCKER_COMPOSE) down
 
 # Alias for one-shot local startup
 dev: up
 
 # Canonical local logs command
-logs: docker-logs
-
-# Canonical local status command
-ps: docker-ps
-
-# Docker: build all
-docker-build:
-	@echo "Building Docker images..."
-	DOCKER_BUILDKIT=1 $(DOCKER_COMPOSE) build --parallel
-
-# Docker: start all services (legacy alias; prefer `make up`)
-docker-up:
-	@echo "Starting services..."
-	$(DOCKER_COMPOSE) up -d
-	@echo "Started Community Preview services: api, ui, postgres/timescaledb, redis"
-	@echo "UI: http://localhost:$(UI_PORT)"
-	@echo "API health: http://localhost:$(API_PORT)/api/v1/health"
-
-# Docker: stop all services (legacy alias; prefer `make down`)
-docker-down:
-	@echo "Stopping services..."
-	$(DOCKER_COMPOSE) down
-
-# Docker: rebuild and start
-docker-restart: docker-down docker-up
-
-# Docker: rebuild API only
-docker-build-api:
-	@echo "Building API image..."
-	DOCKER_BUILDKIT=1 $(DOCKER_COMPOSE) build api
-
-# Docker: restart API
-docker-restart-api: docker-build-api
-	$(DOCKER_COMPOSE) up -d api
-
-# Docker: show logs (legacy alias; prefer `make logs`)
-docker-logs:
+logs:
 	$(DOCKER_COMPOSE) logs -f
 
-# Docker: show status (legacy alias; prefer `make ps`)
-docker-ps:
+# Canonical local status command
+ps:
 	$(DOCKER_COMPOSE) ps
 
 # Health check
@@ -124,14 +90,7 @@ help:
 	@echo "  ui-run             - Run UI locally"
 	@echo "  test               - Run tests"
 	@echo "  lint               - Run linter"
-	@echo "  docker-up          - Legacy alias for up"
-	@echo "  docker-down        - Legacy alias for down"
 	@echo "  dev                - Alias for up"
-	@echo "  docker-restart     - Restart all Docker services"
-	@echo "  docker-build-api   - Rebuild API only"
-	@echo "  docker-restart-api - Restart API only"
-	@echo "  docker-logs        - Legacy alias for logs"
-	@echo "  docker-ps          - Legacy alias for ps"
 	@echo "  health             - Check API health"
 	@echo "  dashboard          - Check dashboard data"
 	@echo "  clean              - Clean build artifacts"

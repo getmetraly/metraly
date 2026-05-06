@@ -14,7 +14,7 @@ The current codebase models integrations for source control, CI/CD, project mana
 |-------------|----------------|----------|
 | PostgreSQL/TimescaleDB | Present in compose and migrations | `docker-compose.yaml`, `cmd/api/migrations/*.sql` |
 | Redis | Present in compose and cache/token code | `docker-compose.yaml`, `cmd/api/cache/*.go`, `cmd/api/auth/token_store.go` |
-| ClickHouse | Collector code references it, compose does not run it | `collectors/git/main.go`, `Makefile` |
+| Raw event store (deferred) | Collector code references future raw-event ingestion, compose does not run it | `collectors/git/main.go`, planning docs |
 | Docker Compose | Primary local deployment | `docker-compose.yaml` |
 
 ## Auth Integrations
@@ -112,7 +112,7 @@ Important docs consumed by planning:
 
 ## Integration Decisions For Planning
 
-- Community Preview should defer ClickHouse in the runnable app.
+- Community Preview should defer the raw-event store in the runnable app.
 - TimescaleDB should be the near-term metrics query store.
-- ClickHouse remains a future candidate for raw event storage and dirty ingestion buffers.
+- A future raw event store remains a candidate for dirty ingestion buffers.
 - `../docs/STATUS.md` should drive roadmap truth when moved app docs disagree.

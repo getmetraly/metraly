@@ -15,6 +15,9 @@
 8. `GET /api/v1/dora` and metric endpoints return TimescaleDB-backed values.
 9. `useDashboard` and `useDashboardOverview` no longer depend on `mockApi` for the dashboard surface.
 10. The frontend can authenticate well enough to load the backend dashboard surface.
+11. The dashboard Customize flow opens the shared sidebar/editor and can add, remove, reorder, and resize widgets.
+12. Dashboard wizard creation and dashboard edit flows persist the correct widget set, layout, and properties through the backend API.
+13. Shared editor components and styles are reused between the wizard and the dashboard screen instead of duplicating the same markup twice.
 
 ## Test/Check Expectations
 
@@ -22,5 +25,5 @@
 - service tests for version conflict and template caching behavior;
 - metric service tests for backend-backed timeseries and breakdowns;
 - UI hook/client tests for authenticated dashboard loads;
+- UI component tests for shared editor/sidebar reuse and customize flow behavior;
 - build verification for the UI after the mock replacement.
-

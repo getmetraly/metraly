@@ -27,11 +27,11 @@ Phase 1 passes verification. The API runtime now composes Postgres-backed reposi
 |---------|--------|
 | `GOCACHE=/tmp/go-build go test ./...` | PASS |
 | `GOCACHE=/tmp/go-build go vet ./...` | PASS |
-| `make -n docker-up` | PASS |
+| `make -n up` | PASS |
 | `make -n health` | PASS |
 | `docker compose config` | PASS |
 | Header verification over `*.go` files | PASS, empty output |
 
 ## Notes
 
-Docker Compose smoke was not made a blocking gate for this execution. The remaining ClickHouse mentions under the sibling docs repository are historical cleanup artifacts, not active app runtime instructions.
+Docker Compose smoke was not made a blocking gate for this execution. The remaining mentions under the sibling docs repository are historical cleanup artifacts, not active app runtime instructions.

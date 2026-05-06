@@ -89,7 +89,7 @@ Key gaps for Community Preview:
 - UI still depends on mock API paths; no contract tests tie UI types to Go responses.
 - Collector services are not tested as deployable services.
 - No tests currently enforce SPDX headers across Go files.
-- No tests enforce that ClickHouse is absent from default Community Preview runtime.
+- No tests enforce that the current compose stack remains aligned with the deferred raw-event-store decision.
 - No test covers Time-to-First-Insight or the onboarding KPI from `../docs/product/onboarding.md`.
 
 ## Recommended Test Strategy

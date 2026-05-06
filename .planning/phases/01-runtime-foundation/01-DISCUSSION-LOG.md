@@ -83,5 +83,5 @@
 - Full backend path cleanup.
 - Sandbox Inc. demo path.
 - UI migration off mock data.
-- Source ingestion and ClickHouse future raw-event architecture.
+- Source ingestion and future raw-event architecture.
 - Broad documentation honesty pass.

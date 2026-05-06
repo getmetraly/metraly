@@ -100,16 +100,16 @@ Collectors are separate Go services and modules. The Git collector is the most c
 - Reads YAML config from `collectors/git/config.yaml`.
 - Exposes `/webhook/github`, `/webhook/gitlab`, and `/metrics`.
 - Transforms webhook payloads into generic `Event` records.
-- Writes events to ClickHouse and DLQ tables in `collectors/git/main.go`.
+- Writes events to the current downstream sink and DLQ tables in `collectors/git/main.go`.
 
-Planning decision: the current Community Preview roadmap should not require ClickHouse in the app runtime. A future event pipeline can reintroduce ClickHouse as a raw event store and keep TimescaleDB as the curated metric store.
+Planning decision: the current Community Preview roadmap should not require a raw event store in the app runtime. A future event pipeline can add one as the raw event store and keep TimescaleDB as the curated metric store.
 
 ## Architectural Tensions
 
 - There are two backend realities: planned layered architecture and current in-memory/static handler implementation.
 - UI reads mostly mock data even though backend repos/services exist.
 - README/docs promise broader capabilities than the current executable app.
-- ClickHouse appears in collectors and Makefile but not in compose.
+- A deferred raw-event-store concept appears in collector planning but not in compose.
 - `../docs/STATUS.md` is more accurate than moved app README for maturity and should govern planning.
 
 ## Recommended Direction
@@ -120,4 +120,4 @@ For Community Preview, converge the app around a minimal real vertical slice:
 2. Replace in-memory dashboard handlers with service-backed handlers.
 3. Move UI dashboard/overview hooks off `mockApi`.
 4. Implement Sandbox Inc. demo data in Timescale/Postgres.
-5. Keep ClickHouse out of the default compose until raw event ingestion becomes a committed phase.
+5. Keep any deferred raw-event-store out of the default compose until raw event ingestion becomes a committed phase.

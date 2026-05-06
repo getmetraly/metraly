@@ -50,7 +50,7 @@ Turn the demo experience into an onboarding path with a measurable setup target.
 ## Cross-Cutting Constraints
 
 - Keep Phase 3 synthetic and demo-focused; do not introduce the backend dashboard rewrite from Phase 4.
-- Do not require ClickHouse for the default community preview flow.
+- Do not require a raw event store for the default community preview flow.
 - Do not turn the setup wizard into real source ingestion plumbing; it should guide the user toward setup, not implement the whole integration stack.
 - Keep the first useful insight grounded in visible data and avoid fake placeholder commentary.
 - Preserve the current app’s local/demo ergonomics so the phase remains quick to verify.

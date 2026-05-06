@@ -5,7 +5,7 @@
 
 ## Key Findings
 
-**Stack:** Go API, React/Vite UI, PostgreSQL/TimescaleDB, Redis, Docker Compose. ClickHouse is deferred for Community Preview but remains a future raw-event storage candidate.
+**Stack:** Go API, React/Vite UI, PostgreSQL/TimescaleDB, Redis, Docker Compose. A raw event store is deferred for Community Preview but remains a future raw-event storage candidate.
 
 **Current maturity:** early prototype with strong architecture docs. Some backend layers and UI screens exist, but runtime wiring and data flow are incomplete.
 
@@ -13,7 +13,7 @@
 
 **Differentiators:** self-hosted by architecture, Dual-LLM AI security, and 3-tier plugin runtime. These are strategic moats but mostly future implementation.
 
-**Watch out for:** mock data drift, ClickHouse confusion, license metadata inconsistency, missing Go headers, incomplete runtime wiring, and overbuilding Pro before Community Preview.
+**Watch out for:** mock data drift, raw-event-store confusion, license metadata inconsistency, missing Go headers, incomplete runtime wiring, and overbuilding Pro before Community Preview.
 
 ## Roadmap Consequence
 

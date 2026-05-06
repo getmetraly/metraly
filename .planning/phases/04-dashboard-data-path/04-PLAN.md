@@ -1,7 +1,7 @@
 # Phase 4: Dashboard Data Path
 
 **Status:** Draft  
-**Goal:** Replace mock dashboard flows with backend-backed data and add the minimum auth bridge needed for the UI to consume protected preview APIs.
+**Goal:** Replace mock dashboard flows with backend-backed data, add the minimum auth bridge needed for the UI to consume protected preview APIs, and unify dashboard creation/editing around shared components.
 
 ## Requirements
 
@@ -21,6 +21,8 @@
 5. Stale dashboard updates return a version conflict.
 6. Persona templates come from backend template data, not frontend-only seed arrays.
 7. The frontend can authenticate to the preview API with a minimal token/session bridge.
+8. Dashboard editing and dashboard creation reuse the same widget/settings/sidebar components so the codebase does not split into separate editor implementations.
+9. The dashboard customize flow and dashboard wizard both persist the correct widget set, layout, and dashboard properties through the backend API.
 
 ## Execution Plan
 
@@ -51,10 +53,25 @@ Move the UI onto the backend surface and make the preview shell auth-aware.
 - Make the overview and dashboard tabs load backend definitions and widget data without depending on `mockApi`.
 - Add UI tests that cover authenticated dashboard loading and the no-token/expired-token behavior that blocks backend access cleanly.
 
+### Wave 3: Dashboard Editing And Wizard Reuse
+
+**Plan file:** `04C-dashboard-editing-and-wizard-reuse-PLAN.md`
+
+Unify the dashboard customize flow and the dashboard wizard around shared editor components and API-backed save flows.
+
+- Keep `WizardSidebar`, `WizardWidgetPicker`, `WizardSettings`, `WizardPreviewGrid`, and the widget preview pieces as the shared editor core.
+- Move widget/layout/metadata state into one shared editor model so the wizard and dashboard screen serialize the same payloads.
+- Turn the `Customize` entry point in `DashboardScreen` into the editor shell for an existing dashboard, with widget add/remove/reorder, settings, and save behavior driven by the backend API.
+- Make the dashboard wizard save a new dashboard through the API with the selected widgets, layout, and properties instead of only updating local state.
+- Remove Overview-specific edit branches once the shared editor model covers the same flow and models.
+- Collapse dead or non-working editor-only components once the shared editor path covers them.
+- Extract duplicated editor styles into a small shared style module only where it reduces code duplication without introducing a larger styling rewrite.
+- Add tests that cover the shared editor components, the customize sidebar, and the create/update payloads.
+
 ## Cross-Cutting Constraints
 
 - Use the existing Phase 2 auth surface; do not redesign auth or expand into enterprise SSO.
-- Keep ClickHouse out of the default community preview data path.
+- Keep a raw event store out of the default community preview data path.
 - Do not change the first-run onboarding flow from Phase 3 unless it is strictly needed to reach backend-backed dashboards.
 - Preserve the existing widget response shape so the renderer does not need a rewrite.
 - Keep the dashboard update conflict semantics explicit and testable.
@@ -100,5 +117,4 @@ Plan quality should be checked against these gates before implementation starts:
 ## Notes
 
 Phase 4 should make the dashboard experience real without turning into a full product rewrite.
-The measure of success is simple: the same screens and interactions should now be driven by the backend, and the UI should be able to authenticate and load them without `mockApi`.
-
+The measure of success is simple: the same screens and interactions should now be driven by the backend, and the UI should be able to authenticate, edit dashboards, and load them without `mockApi`.

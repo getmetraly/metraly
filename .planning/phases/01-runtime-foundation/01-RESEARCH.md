@@ -86,14 +86,14 @@ Existing migration tests use Testcontainers. Phase 1 should add focused tests th
 
 Current stale runtime references:
 
-- `Makefile` sets `CLICKHOUSE_HOST`/`CLICKHOUSE_PORT` in `run`.
-- `Makefile docker-up` waits for ClickHouse even though compose does not define it.
-- `Makefile docker-test-data` writes into `metraly-clickhouse-1`, which does not exist in default compose.
-- `README.md` says Docker starts ClickHouse and lists ClickHouse HTTP.
-- `README.md` describes ClickHouse as part of the default database stack.
-- `CLAUDE.md` says `make docker-up` starts ClickHouse.
+- `Makefile` previously set a raw event store host/port in `run`.
+- `Makefile up` waits for a raw event store even though compose does not define it.
+- `Makefile` previously had a test-data target that wrote into a missing runtime service.
+- `README.md` previously said Docker started a raw event store and listed a raw-event service HTTP link.
+- `README.md` previously described a raw event store as part of the default database stack.
+- `CLAUDE.md` previously said the start command included a raw event store.
 
-Docs should preserve the future ClickHouse role only as deferred ingestion architecture, not as a Community Preview dependency.
+Docs should preserve the future raw event store role only as deferred ingestion architecture, not as a Community Preview dependency.
 
 ### License Compliance
 
@@ -141,21 +141,21 @@ Required verification:
 - `go test ./...`
 - `go vet ./...`
 - `rg -L "^// SPDX-License-Identifier: AGPL-3.0-or-later" -g '*.go'` returns no Go files, or an equivalent script confirms every Go file starts with the required header.
-- `rg -n "ClickHouse|CLICKHOUSE|clickhouse" README.md CLAUDE.md Makefile ../docs/tech/app -g '*.md'` shows only explicit deferred/future ClickHouse references, not default Community Preview runtime claims.
+- `rg -n "raw event store|old test data target" README.md CLAUDE.md Makefile ../docs/tech/app -g '*.md'` shows only explicit deferred/future raw-event references, not default Community Preview runtime claims.
 - Startup tests prove Postgres/migration errors block server startup.
 - Handler tests prove dashboards use service/repo path rather than package-level in-memory state.
 
 Docker Compose smoke is useful but can remain manual if local Docker is unavailable:
 
-- `make docker-up`
+- `make up`
 - `curl -f http://localhost:8000/api/v1/health`
-- `make docker-down`
+- `make down`
 
 ## Out Of Scope
 
 - Sandbox Inc. demo data and first-run onboarding.
 - UI migration off mock APIs.
 - Full metrics/DORA service-backed dashboard data path.
-- ClickHouse collector rewrite.
+- raw event store collector rewrite.
 - License manager or Pro feature gates.
 - AI, plugin runtime, and Enterprise readiness.

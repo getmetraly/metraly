@@ -107,3 +107,25 @@ make docker-test-data   # Insert test data
 - **When adding a new `.go` file** – insert the header at the very top of the file before the `package` clause.
 - **Existing files** – must already contain the header; if any are missing, add it.
 - **Swagger docs** – include the license line `// @license AGPL-3.0-or-later` in `cmd/api/main.go`.
+
+
+<claude-mem-context>
+# Memory Context
+
+# [app] recent context, 2026-05-06 9:32pm GMT+3
+
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 5 obs (2,554t read) | 137,577t work | 98% savings
+
+### May 6, 2026
+112 7:27p 🔵 Metraly Project Planning Structure Discovered
+113 7:28p 🔵 Metraly Project State: HANDOFF.json Is Stale — Phases 2, 3, 4 All Complete
+114 " 🔵 Metraly docs/STATUS.md Refactored Into Modular Status Files
+115 7:31p 🔵 Metraly Phase 4 Target: UI Uses mockApi for Dashboard Saves, API Client for Reads
+116 " 🔵 All Go Backend Tests Pass; Remaining mockApi Calls Identified for Phase 4
+
+Access 138k tokens of past work via get_observations([IDs]) or mem-search skill.
+</claude-mem-context>

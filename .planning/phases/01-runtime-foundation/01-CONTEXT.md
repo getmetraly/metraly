@@ -24,7 +24,7 @@ This phase does not add new product capabilities beyond the existing foundation.
 ### Documentation Cleanup Scope
 
 - **D-04:** Limit Phase 1 documentation cleanup to runtime mismatches that affect Community Preview truthfulness.
-- **D-05:** Clean up ClickHouse/default stack drift in `README.md`, `CLAUDE.md`, `Makefile`, and moved app docs under `../docs/tech/app/` where those docs describe the current default runtime.
+- **D-05:** Clean up raw-event-store/default stack drift in `README.md`, `CLAUDE.md`, `Makefile`, and moved app docs under `../docs/tech/app/` where those docs describe the current default runtime.
 - **D-06:** Do not perform a broad "honesty pass" across all strategic docs in this phase. `../docs/STATUS.md` remains canonical when docs disagree.
 
 ### Runtime Wiring Boundary
@@ -67,9 +67,9 @@ This phase does not add new product capabilities beyond the existing foundation.
 
 ### Codebase Map
 
-- `.planning/codebase/STACK.md` — Current stack, dependencies, config, and ClickHouse drift.
+- `.planning/codebase/STACK.md` — Current stack, dependencies, config, and raw-event-store drift.
 - `.planning/codebase/ARCHITECTURE.md` — Intended backend layers and missing runtime wiring.
-- `.planning/codebase/INTEGRATIONS.md` — Postgres/Redis/ClickHouse integration state and API/UI integration drift.
+- `.planning/codebase/INTEGRATIONS.md` — Postgres/Redis/raw-event-store integration state and API/UI integration drift.
 - `.planning/codebase/CONCERNS.md` — Known high-priority issues Phase 1 addresses.
 - `.planning/codebase/STRUCTURE.md` — Current app and moved documentation structure.
 - `.planning/codebase/CONVENTIONS.md` — Go conventions, header requirement, workflow conventions.
@@ -78,8 +78,8 @@ This phase does not add new product capabilities beyond the existing foundation.
 ### Canonical Product/Status Docs
 
 - `../docs/STATUS.md` — Canonical source of truth for implemented vs designed vs future status.
-- `../docs/decisions/2026-05-04.md` — Founder decisions, including AGPLv3, roadmap reality, and ClickHouse-related product context.
-- `../docs/tech/stack.md` — Broader target stack context; do not let it override Phase 1 decision to defer ClickHouse.
+- `../docs/decisions/2026-05-04.md` — Founder decisions, including AGPLv3, roadmap reality, and raw-event-store-related product context.
+- `../docs/tech/stack.md` — Broader target stack context; do not let it override Phase 1 decision to defer a raw event store.
 - `../docs/tech/app/BACKEND_PLAN.md` — Historical detailed backend plan; useful but not canonical when it conflicts with current roadmap/context.
 - `../docs/tech/app/docs/architecture.md` — Historical app architecture notes.
 
@@ -88,7 +88,7 @@ This phase does not add new product capabilities beyond the existing foundation.
 - `AGENTS.md` — Required Go license header and project workflow rules.
 - `README.md` — Root user-facing docs retained in app; clean only runtime mismatches in this phase.
 - `CLAUDE.md` — Retained agent-facing docs; clean runtime mismatches in this phase.
-- `Makefile` — Developer commands, including stale ClickHouse target.
+- `Makefile` — Developer commands, including stale raw-event-store target.
 - `Dockerfile` — API image build/runtime behavior.
 - `docker-compose.yaml` — Current default Community Preview service composition.
 
@@ -122,7 +122,7 @@ This phase does not add new product capabilities beyond the existing foundation.
 
 - `cmd/api/main.go`: primary target for runtime dependency wiring.
 - `cmd/api/handlers/dashboards.go`: in-memory dashboard handler that may be replaced if service-backed wiring is straightforward.
-- `Makefile`: stale ClickHouse-oriented `docker-test-data` target and documentation text.
+- `Makefile`: stale raw-event-store-oriented test-data target and documentation text.
 - `README.md` and `CLAUDE.md`: retained documentation with runtime mismatch risk.
 - `../docs/tech/app/*`: moved app-origin docs; update only runtime mismatch claims in this phase.
 - `cmd/api/main.go` Swagger annotation and docs path: align with docs move and license decision.
@@ -145,7 +145,7 @@ This phase does not add new product capabilities beyond the existing foundation.
 - Full endpoint/data-path cleanup across legacy/static endpoints — belongs to Phase 4 Dashboard Data Path or later backend cleanup.
 - Sandbox Inc. seed/demo behavior — belongs to Phase 3 Sandbox Onboarding.
 - UI migration off `mockApi` — belongs to Phase 4.
-- Source ingestion and ClickHouse future raw-event architecture — belongs to Phase 5 or later.
+- Source ingestion and future raw-event architecture — belongs to Phase 5 or later.
 - Broad documentation honesty pass across all strategy/product docs — outside Phase 1.
 
 </deferred>

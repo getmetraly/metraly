@@ -43,8 +43,8 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 
 - Use `../docs/STATUS.md` as source of truth when documents conflict.
 - Use `AGPL-3.0-or-later`.
-- Defer ClickHouse for Community Preview.
-- Preserve future ClickHouse role for dirty/raw event ingestion into TimescaleDB aggregates.
+- Defer a raw event store for Community Preview.
+- Preserve future raw event store role for dirty/raw event ingestion into TimescaleDB aggregates.
 - Work in current `app/` workspace for this initialization.
 
 ## Next Action

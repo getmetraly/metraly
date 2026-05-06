@@ -12,7 +12,7 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 - [x] **FOUND-01**: Developer can run the default local stack with API, UI, PostgreSQL/TimescaleDB, and Redis using Docker Compose.
 - [x] **FOUND-02**: API startup applies embedded SQL migrations before serving application routes.
 - [x] **FOUND-03**: API startup wires config, Postgres pool, Redis clients, repositories, caches, services, and handlers through one runtime path.
-- [x] **FOUND-04**: README, Makefile, and moved app documentation match the actual default stack and do not require ClickHouse for Community Preview.
+- [x] **FOUND-04**: README, Makefile, and moved app documentation match the actual default stack and do not require a raw event store for Community Preview.
 - [x] **FOUND-05**: Every Go source file starts with the required `AGPL-3.0-or-later` SPDX header.
 
 ### Authentication And Access
@@ -45,8 +45,8 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 - [ ] **ING-01**: Preview source ingestion supports at least one Git provider path for PR/commit events.
 - [ ] **ING-02**: Preview source ingestion supports at least one issue/project-management path or an explicit demo substitute.
 - [ ] **ING-03**: Ingested or seeded raw activity is transformed into curated TimescaleDB metric points.
-- [ ] **ING-04**: ClickHouse is not required in the default Community Preview deployment.
-- [ ] **ING-05**: Architecture documents preserve future ClickHouse option for dirty/raw events feeding TimescaleDB aggregates.
+- [ ] **ING-04**: A raw event store is not required in the default Community Preview deployment.
+- [ ] **ING-05**: Architecture documents preserve future raw event store option for dirty/raw events feeding TimescaleDB aggregates.
 
 ### Community GA
 
@@ -111,7 +111,7 @@ Deferred beyond the first full roadmap baseline.
 
 | Feature | Reason |
 |---------|--------|
-| ClickHouse in Community Preview runtime | Deferred by user; future role is raw/dirty event storage feeding TimescaleDB aggregates |
+| Deferred raw event store in Community Preview runtime | Deferred by user; future role is raw/dirty event storage feeding TimescaleDB aggregates |
 | Individual developer scoring | Conflicts with trust, personas, and anti-surveillance positioning |
 | SaaS-first architecture | Conflicts with self-hosted/privacy-first core value |
 | Full Enterprise compliance before Community Preview | Requires stable product surface first |

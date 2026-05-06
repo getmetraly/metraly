@@ -15,15 +15,15 @@
 ## Stack Decisions For Roadmap
 
 - Keep Community Preview on PostgreSQL/TimescaleDB + Redis only.
-- Do not require ClickHouse in the default preview stack.
-- Preserve future ClickHouse option for raw event ingestion and dirty event buffering.
+- Do not require a raw event store in the default preview stack.
+- Preserve future raw event store option for raw event ingestion and dirty event buffering.
 - Keep Go backend and React frontend; do not introduce a new primary framework for Community Preview.
 - Prefer wiring existing repo/service/cache code before adding new platform abstractions.
 
 ## Known Drift
 
-- Local README and Makefile references still need review where they describe ClickHouse as if it is currently part of the default stack.
-- `../docs/tech/stack.md` treats ClickHouse as OLAP storage, but user decision defers it for now.
+- Local README and Makefile references still need review where they describe a raw event store as if it is currently part of the default stack.
+- `../docs/tech/stack.md` treats a raw event store as OLAP storage, but user decision defers it for now.
 - UI dependency list is minimal and does not include drag/drop grid or chart libraries despite roadmap language around dashboard builder.
 
 ## Recommendation

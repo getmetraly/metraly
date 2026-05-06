@@ -37,17 +37,16 @@ Impact: Community Preview can look functional while not proving the backend data
 
 Impact: behavior, tests, and UI expectations can diverge.
 
-### 4. ClickHouse Drift
+### 4. Deferred Raw Event Store Drift
 
-ClickHouse is referenced in:
+A future raw-event store is referenced in:
 
 - `README.md`
-- `Makefile` targets such as `docker-test-data`
 - `collectors/git/main.go`
 
 But `docker-compose.yaml` starts Redis, Postgres/TimescaleDB, API, and UI only.
 
-User decision: defer ClickHouse for Community Preview. Future option: add ClickHouse for raw/dirty events and aggregate into TimescaleDB.
+User decision: keep raw/dirty event ingestion out of Community Preview. Future option: add a separate raw-event store and aggregate into TimescaleDB.
 
 ### 5. License Header Non-Compliance
 
@@ -83,13 +82,13 @@ Impact: protected endpoints exist without a complete user-facing auth flow.
 
 ### 10. Collector Shutdown And Connection Patterns
 
-`collectors/git/main.go` opens ClickHouse connections per saved event and uses `context.Background()` inside `saveEvent`. The HTTP server is not gracefully shut down through the root context.
+`collectors/git/main.go` writes each saved event through a direct collector sink path and uses `context.Background()` inside `saveEvent`. The HTTP server is not gracefully shut down through the root context.
 
 Impact: inefficient ingestion and harder graceful shutdown once collectors are productionized.
 
 ### 11. Makefile Has Stale Targets
 
-`make docker-test-data` attempts to write to a ClickHouse container that is not present in current compose.
+An old data-target command still appears in historical planning context even though it no longer matches current compose.
 
 Impact: developer onboarding commands can fail or mislead.
 
@@ -119,5 +118,5 @@ Impact: UI-heavy phases need manual verification until a test harness is added.
 3. Replace in-memory dashboard handlers with service-backed handlers.
 4. Replace UI mock data for dashboard overview with real API endpoints.
 5. Implement Sandbox Inc. seed data in Postgres/TimescaleDB.
-6. Update README/Makefile to reflect ClickHouse deferral.
+6. Update README/Makefile to reflect raw-event-store deferral.
 7. Add backend integration and frontend smoke tests for the Community Preview path.

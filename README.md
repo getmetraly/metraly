@@ -79,16 +79,24 @@ Beyond the immediate roadmap, we’re actively exploring several strategic initi
 The fastest way to get a local Metraly instance up and running.
 
 ```bash
+# from a fresh clone
 git clone https://github.com/getmetraly/metraly.git
 cd metraly
 make up
 ```
 
-This builds and starts the API, React UI, Postgres/TimescaleDB, and Redis in one command.
+This builds and starts the API, React UI, Postgres/TimescaleDB, and Redis in one command. The UI waits for the API healthcheck, so the first browser load should not race backend startup.
 
 - **UI**: [http://localhost:3000](http://localhost:3000)
 - **API Health**: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
 - **Local login**: `admin@metraly.local` / `admin123`
+
+If you want a clean stop/restart cycle:
+
+```bash
+make down
+make up
+```
 
 ## 🛠️ Development
 
@@ -107,9 +115,9 @@ make test        # Run tests (19 tests currently)
 make lint        # Run linter
 make run         # Build and run API locally (without Docker)
 make up          # Build and start the full Docker stack
-make docker-up   # Legacy alias for starting all services in Docker
-make docker-down # Stop and remove Docker services
-make docker-logs # Watch logs from all services in real time
+make down        # Stop the Docker stack
+make logs        # Follow Docker logs
+make ps          # Show Docker service status
 ```
 
 ## 💻 Tech Stack

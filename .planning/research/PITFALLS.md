@@ -11,11 +11,11 @@ Risk: UI screens and handlers look complete while data still comes from `mockApi
 
 Prevention: every Community Preview requirement should include source-of-data criteria.
 
-### Stack Drift Around ClickHouse
+### Stack Drift Around a Deferred Raw Event Store
 
-Risk: docs, Makefile, collectors, and compose disagree on whether ClickHouse is required.
+Risk: docs, Makefile, collectors, and compose disagree on whether a raw event store is required.
 
-Prevention: update roadmap and implementation plans to defer ClickHouse for Community Preview and document future raw-event role.
+Prevention: update roadmap and implementation plans to defer the raw event store for Community Preview and document future raw-event role.
 
 ### License Metadata Drift
 

@@ -30,7 +30,7 @@ It should also add the smallest possible frontend auth/session bridge so the UI 
 
 - Not the auth redesign itself.
 - Not enterprise SSO, SCIM, or broader role policy.
-- Not collector ingestion or ClickHouse reintroduction.
+- Not collector ingestion or raw event store reintroduction.
 - Not AI insight redesign.
 - Not plugin runtime work.
 - Not a new dashboard design system.
@@ -63,4 +63,3 @@ Do not expand auth into a new enterprise initiative.
 - If dashboard updates omit version checks, stale writes will silently overwrite data.
 - If auth is not bridged into the UI, protected preview routes cannot be exercised end to end.
 - If widget data is wired without preserving the existing widget response shape, `DashboardRenderer` will break.
-

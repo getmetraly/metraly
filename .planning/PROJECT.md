@@ -33,7 +33,7 @@ Metraly must give teams a trustworthy self-hosted view of engineering delivery h
 
 ### Out of Scope
 
-- ClickHouse in Community Preview runtime — deferred; may return later as raw/dirty event storage feeding TimescaleDB aggregates.
+- Deferred raw event store in Community Preview runtime — may return later as raw/dirty event storage feeding TimescaleDB aggregates.
 - Individual developer surveillance/scoring — conflicts with product trust and personas.
 - Managed SaaS-first architecture — conflicts with self-hosted/privacy positioning.
 - Pro AI, plugin runtime, and Enterprise compliance in the first executable phase — planned later after Community Preview foundation.
@@ -51,7 +51,7 @@ Metraly must give teams a trustworthy self-hosted view of engineering delivery h
 
 - **License**: Use `AGPL-3.0-or-later` in source headers and planning docs — user-confirmed.
 - **Canonical status**: Treat `../docs/STATUS.md` as source of truth when local README or moved app documentation disagrees — user-confirmed.
-- **Storage**: Use Postgres/TimescaleDB + Redis for Community Preview; defer ClickHouse — user-confirmed.
+- **Storage**: Use Postgres/TimescaleDB + Redis for Community Preview; defer a raw event store — user-confirmed.
 - **Product positioning**: Preserve self-hosted/privacy-first architecture — core product value.
 - **Workflow**: GSD settings are YOLO, coarse granularity, parallel execution, commit docs, research, plan check, verifier — user-confirmed.
 - **Tooling**: `gsd-sdk` is not available in PATH, so GSD artifacts are maintained manually in this session.
@@ -65,7 +65,7 @@ Metraly must give teams a trustworthy self-hosted view of engineering delivery h
 | Use `../docs/STATUS.md` as canonical | It reconciles docs/code maturity and roadmap truth | — Pending |
 | Nearest milestone is Community Preview | Need a runnable, honest preview before Pro/Enterprise | — Pending |
 | Roadmap covers full product | User wants full-product planning, not only next slice | — Pending |
-| Defer ClickHouse | Keep Community Preview stack simpler; preserve future raw-event option | — Pending |
+| Defer raw event store | Keep Community Preview stack simpler; preserve future raw-event option | — Pending |
 | Use `AGPL-3.0-or-later` | User-confirmed project license metadata target | — Pending |
 
 ## Evolution
