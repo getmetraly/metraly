@@ -65,8 +65,8 @@ export const AIScreen = () => {
   };
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ flex: '1 0%', minHeight: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', lineHeight: 1.35, marginBottom: 4 }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple)', opacity: 0.9, flexShrink: 0 }} />
           <span><strong style={{ color: 'var(--purple)', fontWeight: 600 }}>Synthetic AI preview</strong> · scripted responses only · no live AI inference</span>
@@ -94,7 +94,7 @@ export const AIScreen = () => {
           </div>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: '1 1 auto', minHeight: 24 }} />
         <div ref={messagesEndRef} />
       </div>
 
