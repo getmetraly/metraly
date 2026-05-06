@@ -1,6 +1,6 @@
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTweaks } from "../../context/TweaksContext";
-import { SH } from "../../components/ui/SH";
+import { Icon } from "../../components/shared/Icon";
 import { CTODashboard } from "./CTODashboard";
 import { VPDashboard } from "./VPDashboard";
 import { TLDashboard } from "./TLDashboard";
@@ -15,39 +15,23 @@ const dashboardMap = {
   "/dash-ic": ICDashboard,
 };
 
-const dashboardHeaderMap = {
-  "/dash-cto": {
-    title: "CTO synthetic dashboard",
-    right: "Demo data · leadership view",
-  },
-  "/dash-vp": {
-    title: "VP Engineering synthetic dashboard",
-    right: "Demo data · delivery health",
-  },
-  "/dash-tl": {
-    title: "Tech Lead synthetic dashboard",
-    right: "Demo data · team execution",
-  },
-  "/dash-devops": {
-    title: "DevOps / SRE synthetic dashboard",
-    right: "Demo data · reliability preview",
-  },
-  "/dash-ic": {
-    title: "Individual contributor synthetic dashboard",
-    right: "Demo data · personal view",
-  },
-};
+const navItems = [
+  { to: "/", label: "Overview", icon: "home" },
+  { to: "/dash-cto", label: "CTO", icon: "trendingUp" },
+  { to: "/dash-vp", label: "VP Eng", icon: "users" },
+  { to: "/dash-tl", label: "Tech Lead", icon: "gitPR" },
+  { to: "/dash-devops", label: "DevOps", icon: "cpu" },
+  { to: "/dash-ic", label: "My View", icon: "activity" },
+];
 
 export const RoleDashboardScreen = () => {
   const location = useLocation();
   const { tweaks } = useTweaks();
   const density = tweaks.density;
   const padding = { compact: '16px 20px', comfortable: '24px 28px', spacious: '32px 36px' }[density];
-  const gap = { compact: 10, comfortable: 12, spacious: 16 }[density];
 
   const path = location.pathname || "/dash-cto";
   const DashboardComponent = dashboardMap[path];
-  const header = dashboardHeaderMap[path];
 
   if (!DashboardComponent) {
     return (
@@ -60,10 +44,50 @@ export const RoleDashboardScreen = () => {
 
   return (
     <div style={{ flex: 1, padding, overflow: 'auto' }}>
-      <SH title={header.title} right={header.right} />
-      <div style={{ marginTop: gap }}>
-        <DashboardComponent />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 18,
+          paddingBottom: 10,
+          marginBottom: 20,
+          borderBottom: '1px solid var(--border)',
+          overflowX: 'auto',
+        }}
+      >
+        {navItems.map((item) => {
+          const active = path === item.to || (item.to === '/' && path === '/');
+
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                textDecoration: 'none',
+                color: active ? 'var(--cyan)' : 'var(--muted2)',
+                fontSize: 13,
+                fontWeight: active ? 600 : 500,
+                paddingBottom: 10,
+                borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Icon
+                name={item.icon}
+                size={13}
+                color={active ? 'var(--cyan)' : 'var(--muted)'}
+              />
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
+
+      <DashboardComponent />
     </div>
   );
 };
