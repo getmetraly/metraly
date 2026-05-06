@@ -1,17 +1,14 @@
 // src/features/dashboardWizard/components/PreviewPanel.jsx
 import React from 'react';
 import { Icon } from '../../../components/shared/Icon';
-import { AreaChart, BarChart, Heatmap, Sparkline, Gauge } from '../../../components/charts';
+import { Heatmap, Sparkline } from '../../../components/charts';
 import { Leaderboard } from '../../../components/ui/Leaderboard';
 import { makeTimeSeries, makeHeatData } from '../../../utils/seeds';
 
-// Вспомогательные генераторы данных для превью
 const sparkA = makeTimeSeries(12, 4, 1.2, 0.05, 1);
 const sparkB = makeTimeSeries(12, 88, 5, 0.2, 2);
 const sparkC = makeTimeSeries(12, 22, 6, -0.3, 3);
-const areaData = makeTimeSeries(16, 4.2, 1.5, 0.03, 10);
 const heatData = makeHeatData(3, 16, 0.4, 33);
-const deployHeat = makeHeatData(7, 16, 0.45, 66);
 
 export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
   const hasWidget = (id) => widgets.includes(id);
@@ -23,26 +20,25 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
         padding: '12px 18px', borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(11,15,25,0.6)',
       }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--cyan)', animation: 'pulse-dot 2s infinite' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--cyan)' }} />
         <span style={{ fontSize: 12.5, fontFamily: 'var(--font-head)', fontWeight: 600, color: 'var(--text)' }}>
-          {name || 'My Dashboard'} — Preview
+          {name || 'Synthetic Dashboard'} — Preview
         </span>
         <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
-          {widgetCount} widget{widgetCount !== 1 ? 's' : ''}
+          {widgetCount} preview widget{widgetCount !== 1 ? 's' : ''}
         </span>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
         {widgetCount === 0 ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, opacity: 0.5 }}>
             <Icon name="layers" size={32} color="var(--muted)" />
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Add widgets to see a preview</span>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Add synthetic widgets to see a preview</span>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {/* DORA Overview */}
             {hasWidget('dora-overview') && (
               <div style={{ gridColumn: widgetSizes['dora-overview'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>DORA Overview</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Synthetic DORA Overview</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                   {[['4.2/day','Deploy Freq','#00E5FF'],['38h','Lead Time','#B44CFF'],['3.2%','CFR','#FF9100'],['18 min','MTTR','#00C853']].map(([v,l,c],i) => (
                     <div key={i} style={{ textAlign: 'center', padding: '8px 0' }}>
@@ -55,15 +51,14 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
               </div>
             )}
 
-            {/* Stat‑карточки (deploy-freq, ci-pass-rate, lead-time, mttr-trend, velocity, burndown) */}
             {widgets.filter(id => ['deploy-freq','ci-pass-rate','lead-time','mttr-trend','velocity','burndown'].includes(id)).map(id => {
               const cfgs = {
-                'deploy-freq':  { icon:'zap',       color:'#00E5FF', label:'Deploy Frequency', val:'4.2', unit:'/day', spark: sparkA },
-                'ci-pass-rate': { icon:'activity',  color:'#00C853', label:'CI Pass Rate',     val:'92',  unit:'%',   spark: sparkB },
-                'lead-time':    { icon:'clock',     color:'#B44CFF', label:'Lead Time',        val:'22',  unit:'hrs', spark: sparkC },
-                'mttr-trend':   { icon:'activity',  color:'#FF9100', label:'MTTR',             val:'18',  unit:'min', spark: makeTimeSeries(12,28,8,-0.8,55) },
-                'velocity':     { icon:'trendingUp',color:'#00E5FF', label:'Sprint Velocity',  val:'76',  unit:'pts', spark: makeTimeSeries(12,70,8,0.4,77) },
-                'burndown':     { icon:'chart',     color:'#B44CFF', label:'Remaining',        val:'8',   unit:'pts', spark: makeTimeSeries(12,50,5,-4,88) },
+                'deploy-freq':  { icon:'zap',       color:'#00E5FF', label:'Synthetic Deploy Frequency', val:'4.2', unit:'/day', spark: sparkA },
+                'ci-pass-rate': { icon:'activity',  color:'#00C853', label:'Synthetic CI Pass Rate',     val:'92',  unit:'%',   spark: sparkB },
+                'lead-time':    { icon:'clock',     color:'#B44CFF', label:'Synthetic Lead Time',        val:'22',  unit:'hrs', spark: sparkC },
+                'mttr-trend':   { icon:'activity',  color:'#FF9100', label:'Synthetic MTTR',             val:'18',  unit:'min', spark: makeTimeSeries(12,28,8,-0.8,55) },
+                'velocity':     { icon:'trendingUp',color:'#00E5FF', label:'Synthetic Sprint Velocity',  val:'76',  unit:'pts', spark: makeTimeSeries(12,70,8,0.4,77) },
+                'burndown':     { icon:'chart',     color:'#B44CFF', label:'Synthetic Remaining Work',   val:'8',   unit:'pts', spark: makeTimeSeries(12,50,5,-4,88) },
               };
               const cfg = cfgs[id];
               if (!cfg) return null;
@@ -82,23 +77,22 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
               );
             })}
 
-            {/* Team Heatmap */}
             {hasWidget('team-heatmap') && (
               <div style={{ gridColumn: widgetSizes['team-heatmap'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Team Activity Heatmap</div>
-                <Heatmap data={heatData} rows={3} cols={16} labelRows={['Platform','Backend','Mobile']} color="var(--cyan)" cellSize={14} gap={3} />
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Synthetic Team Activity Heatmap</div>
+                <Heatmap data={heatData} rows={3} cols={16} labelRows={['Platform sample','Backend sample','Mobile sample']} color="var(--cyan)" cellSize={14} gap={3} />
               </div>
             )}
 
             {hasWidget('leaderboard') && (
               <div style={{ gridColumn: widgetSizes['leaderboard'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
                 <Leaderboard
-                  title="Top Contributors"
+                  title="Synthetic Contributors"
                   items={[
-                    { name: 'Alex Kim', value: 42 },
-                    { name: 'Jamie Chen', value: 37 },
-                    { name: 'Taylor Smith', value: 29 },
-                    { name: 'Morgan Lee', value: 24 },
+                    { name: 'Demo User A', value: 42 },
+                    { name: 'Demo User B', value: 37 },
+                    { name: 'Demo User C', value: 29 },
+                    { name: 'Demo User D', value: 24 },
                   ]}
                   unit="pts"
                   color="var(--cyan)"
@@ -106,11 +100,10 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
               </div>
             )}
 
-            {/* PR Queue */}
             {hasWidget('pr-queue') && (
               <div style={{ gridColumn: widgetSizes['pr-queue'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>PR Review Queue</div>
-                {[ ['feat/auth-tokens','@j.kim','3h'], ['fix/rate-limit','@s.chen','8h'], ['refactor/api','@m.patel','19h'] ].map(([pr,a,age],i) => (
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Synthetic PR Review Queue</div>
+                {[ ['sample/checkout-flow','demo.user.a','3h'], ['sample/rate-limit','demo.user.b','8h'], ['sample/api-layer','demo.user.c','19h'] ].map(([pr,a,age],i) => (
                   <div key={i} style={{ display:'flex', gap:10, fontSize:11.5, padding:'5px 0', borderBottom:'1px solid var(--border)', color:'var(--muted2)' }}>
                     <span style={{ flex:1, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pr}</span>
                     <span style={{ fontFamily:'var(--font-mono)' }}>{a}</span>
@@ -120,11 +113,10 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
               </div>
             )}
 
-            {/* Failing Builds */}
             {hasWidget('failing-builds') && (
               <div style={{ gridColumn: widgetSizes['failing-builds'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Recent Build Failures</div>
-                {[ ['integration-tests','api-gateway','2h'], ['docker-build','monorepo','5h'], ['e2e-suite','frontend','9h'] ].map(([wf,repo,ago],i) => (
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Synthetic Build Failures</div>
+                {[ ['sample-integration-tests','demo-api','2h'], ['sample-container-build','demo-monorepo','5h'], ['sample-e2e-suite','demo-frontend','9h'] ].map(([wf,repo,ago],i) => (
                   <div key={i} style={{ display:'flex', gap:10, fontSize:11.5, padding:'5px 0', borderBottom:'1px solid var(--border)' }}>
                     <div style={{ width:6, height:6, borderRadius:'50%', background:'#FF1744', flexShrink:0, marginTop:4 }}/>
                     <span style={{ flex:1, color:'var(--text)' }}>{wf}</span>
@@ -135,31 +127,28 @@ export const PreviewPanel = ({ template, widgets, widgetSizes = {}, name }) => {
               </div>
             )}
 
-            {/* AI Summary */}
             {hasWidget('ai-summary') && (
               <div style={{ gridColumn: widgetSizes['ai-summary'] !== 'sm' ? 'span 2' : 'span 1', background: 'rgba(180,76,255,0.06)', border: '1px solid rgba(180,76,255,0.2)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10 }}>
                 <Icon name="sparkles" size={14} color="var(--purple)" />
                 <div style={{ fontSize: 12, color: 'var(--muted2)', lineHeight: 1.5 }}>
-                  AI insights will appear here based on your selected metrics and time range.
+                  Scripted AI summary preview based on synthetic widget selections. No live AI inference is performed.
                 </div>
               </div>
             )}
 
-            {/* Anomaly Detector */}
             {hasWidget('anomaly') && (
               <div style={{ gridColumn: widgetSizes['anomaly'] !== 'sm' ? 'span 2' : 'span 1', background: 'rgba(255,145,0,0.06)', border: '1px solid rgba(255,145,0,0.2)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10 }}>
                 <Icon name="brain" size={14} color="#FF9100" />
                 <div style={{ fontSize: 12, color: 'var(--muted2)', lineHeight: 1.5 }}>
-                  ML anomaly detector will flag metric changes outside normal variance.
+                  Synthetic anomaly preview using scripted metric-change examples. Not live ML detection.
                 </div>
               </div>
             )}
 
-            {/* Blocked Tasks */}
             {hasWidget('blocked-tasks') && (
               <div style={{ gridColumn: widgetSizes['blocked-tasks'] !== 'sm' ? 'span 2' : 'span 1', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Blocked Tasks</div>
-                {[ ['Auth migration','Backend','High'], ['iOS release blocker','Mobile','Critical'], ['Data pipeline v2','Data','Med'] ].map(([t,team,pri],i) => (
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>Synthetic Blocked Tasks</div>
+                {[ ['Sample auth migration','Backend sample','High'], ['Sample mobile release','Mobile sample','Critical'], ['Sample data pipeline','Data sample','Med'] ].map(([t,team,pri],i) => (
                   <div key={i} style={{ display:'flex', gap:8, fontSize:11.5, padding:'5px 0', borderBottom:'1px solid var(--border)', alignItems:'center' }}>
                     <div style={{ width:6, height:6, borderRadius:'50%', background: pri==='Critical'?'#FF1744': pri==='High'?'#FF9100':'#6B7A9A', flexShrink:0 }}/>
                     <span style={{ flex:1, color:'var(--text)' }}>{t}</span>
