@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
-import { TweaksProvider } from "./context/TweaksContext"; // убедитесь, что путь верный
+import { TweaksProvider } from "./context/TweaksContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Topbar } from "./components/layout/Topbar";
 import { DashboardScreen } from "./features/dashboard/DashboardScreen";
@@ -19,8 +19,8 @@ const routeConfig = {
     "CTO Dashboard",
     "Strategic health, DORA trends, team velocity",
   ],
-  "/dash-vp": ["VP Engineering", "Delivery health & team performance"],
-  "/dash-tl": ["Tech Lead", "CI health, PR queue & sprint progress"],
+  "/dash-v-p": ["VP Engineering", "Delivery health & team performance"],
+  "/dash-t-l": ["Tech Lead", "CI health, PR queue & sprint progress"],
   "/dash-devops": ["DevOps / SRE", "Deploy frequency, MTTR & incidents"],
   "/dash-ic": ["My Dashboard", "Personal metrics & sprint tasks"],
   "/dash-wizard": ["New Dashboard", "Build a custom dashboard"],
@@ -31,17 +31,28 @@ const routeConfig = {
   "/settings": ["Settings", "Platform configuration"],
 };
 
-// Обёртка для шапки и боковой панели
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const [title, subtitle] = routeConfig[location.pathname] || ["Metraly", ""];
+  const path = location.hash ? location.hash.slice(1).split("?")[0] : "/";
+  const [title, subtitle] = routeConfig[path] || ["Metraly", ""];
 
   return (
     <TweaksProvider>
-      <Sidebar />
-      <div className="main-content">
-        <Topbar title={title} subtitle={subtitle} />
-        {children}
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+        <Sidebar />
+        <div
+          className="main-content"
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <Topbar title={title} subtitle={subtitle} />
+          <DashboardNav />
+          <div style={{ flex: 1, overflow: "auto" }}>{children}</div>
+        </div>
       </div>
     </TweaksProvider>
   );
@@ -53,8 +64,8 @@ const App = () => {
       <Routes>
         <Route path="/" element={<DashboardScreen />} />
         <Route path="/dash-cto" element={<RoleDashboardScreen />} />
-        <Route path="/dash-vp" element={<RoleDashboardScreen />} />
-        <Route path="/dash-tl" element={<RoleDashboardScreen />} />
+        <Route path="/dash-v-p" element={<RoleDashboardScreen />} />
+        <Route path="/dash-t-l" element={<RoleDashboardScreen />} />
         <Route path="/dash-devops" element={<RoleDashboardScreen />} />
         <Route path="/dash-ic" element={<RoleDashboardScreen />} />
         <Route path="/dash-wizard" element={<DashboardWizardScreen />} />
@@ -68,4 +79,4 @@ const App = () => {
   );
 };
 
-export default App; // ← ВОТ ЭТО БЫЛО ПРОПУЩЕНО
+export default App;

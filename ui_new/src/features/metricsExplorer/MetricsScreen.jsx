@@ -1,6 +1,7 @@
 // src/features/metricsExplorer/MetricsScreen.jsx
 import React, { useState } from 'react';
 import { Icon } from '../../components/shared/Icon';
+import { useTweaks } from '../../context/TweaksContext';
 import { AreaChart } from '../../components/charts/AreaChart';
 import { makeTimeSeries } from '../../utils/seeds';
 import { FilterPill } from './components/FilterPill';
@@ -80,6 +81,9 @@ const REPOS = ['All repos', 'monorepo', 'api-gateway', 'frontend-app', 'mobile-a
 
 // ---------- Main Component ----------
 export const MetricsScreen = () => {
+  const { tweaks } = useTweaks();
+  const density = tweaks.density;
+  const padding = { compact: '16px 20px', comfortable: '24px 28px', spacious: '32px 36px' }[density];
   const [selected, setSelected] = useState('deploy-freq');
   const [timeRange, setTimeRange] = useState('30d');
   const [compareMode, setCompareMode] = useState(false);
@@ -278,7 +282,7 @@ export const MetricsScreen = () => {
         </div>
 
         {/* Scrolling content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '18px 20px' }}>
+        <div style={{ flex: 1, overflow: 'auto', padding }}>
           {isDORA && (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>

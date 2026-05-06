@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../components/shared/Icon';
+import { useTweaks } from '../../context/TweaksContext';
 
 // Simulate AI response (you can later replace with real API)
 const simulateAIResponse = async (userMessage) => {
@@ -19,6 +20,9 @@ const simulateAIResponse = async (userMessage) => {
 };
 
 export const AIScreen = () => {
+  const { tweaks } = useTweaks();
+  const density = tweaks.density;
+  const padding = { compact: '16px 20px', comfortable: '24px 28px', spacious: '32px 36px' }[density];
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Hi! I'm your Metraly AI assistant. Ask me anything about your engineering metrics, build trends, team health, or deployment patterns." },
@@ -60,7 +64,7 @@ export const AIScreen = () => {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Messages area */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+       <div style={{ flex: 1, overflow: 'auto', padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {messages.map((m, i) => (
           <div
             key={i}
