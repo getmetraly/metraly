@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = '', onNav }) => {
   const { tweaks } = useTweaks();
   const collapsed = tweaks.sidebarCollapsed;
   const density = tweaks.density;
+  const [hoveredPin, setHoveredPin] = useState<string | null>(null);
 
   // Density padding mapping
   const densityPadding = {
@@ -36,8 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = '', onNav }) => {
     localStorage.setItem('metraly-pinned', JSON.stringify(pinned));
   }, [pinned]);
 
-  const togglePin = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const togglePin = (id: string) => {
     setPinned((prev: string[]) => prev.includes(id) ? prev.filter((x: string) => x !== id) : [...prev, id]);
   };
 
@@ -154,7 +154,22 @@ const pinnedItems: SidebarItem[] = pinned
                 <span style={{ fontSize: 12 }}>📌</span>
                 {!collapsed && item.label}
                 {!collapsed && (
-                  <button onClick={e => togglePin(item.id, e)} title="Unpin" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,229,255,0.5)', fontSize: 12, padding: '0 2px' }}>×</button>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Unpin"
+                    onClick={(e) => { e.stopPropagation(); togglePin(item.id); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        togglePin(item.id);
+                      }
+                    }}
+                    title="Unpin"
+                    style={{ marginLeft: 'auto', cursor: 'pointer', color: 'rgba(0,229,255,0.5)', fontSize: 12, padding: '0 2px', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    ×
+                  </span>
                 )}
               </button>
             ))}
@@ -170,8 +185,14 @@ const pinnedItems: SidebarItem[] = pinned
                 {!collapsed && <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--muted)', textTransform: 'uppercase', padding: '0 8px', marginBottom: 4 }}>{sec.label}</div>}
                 {unpinnedItems.map(item => {
                   const isActive = active === item.id;
+                  const isHovered = hoveredPin === item.id;
                   return (
-<button key={item.id} onClick={() => onNav?.(item.id)} style={{
+                    <button
+                      key={item.id}
+                      onClick={() => onNav?.(item.id)}
+                      onMouseEnter={() => setHoveredPin(item.id)}
+                      onMouseLeave={() => setHoveredPin(null)}
+                      style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 9,
                       justifyContent: collapsed ? 'center' : 'flex-start',
                       padding: collapsed ? '10px 0' : pad.item,
@@ -180,12 +201,38 @@ const pinnedItems: SidebarItem[] = pinned
                       color: isActive ? 'var(--cyan)' : 'var(--muted2)',
                       fontFamily: 'var(--font-body)', fontSize: 13.5, fontWeight: isActive ? 500 : 400,
                       transition: 'all 0.18s ease', textAlign: 'left', position: 'relative',
-                    }}>
+                      }}>
                       {isActive && !collapsed && <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 16, borderRadius: 2, background: 'var(--cyan)' }}/>}
                       <Icon name={item.icon} size={15} color={isActive ? 'var(--cyan)' : 'currentColor'}/>
                       {!collapsed && <span style={{ marginLeft: collapsed ? 0 : 9 }}>{item.label}</span>}
-                      {!collapsed && hoveredPin === item.id && (
-                        <button onClick={e => togglePin(item.id, e)} title={pinned.includes(item.id) ? 'Unpin' : 'Pin to top'} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: pinned.includes(item.id) ? 'var(--cyan)' : 'var(--muted)', fontSize: 12 }}>📌</button>
+                      {!collapsed && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={pinned.includes(item.id) ? 'Unpin' : 'Pin to top'}
+                          onClick={(e) => { e.stopPropagation(); togglePin(item.id); }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              togglePin(item.id);
+                            }
+                          }}
+                          title={pinned.includes(item.id) ? 'Unpin' : 'Pin to top'}
+                          style={{
+                            marginLeft: 'auto',
+                            display: isHovered ? 'inline-flex' : 'none',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            color: pinned.includes(item.id) ? 'var(--cyan)' : 'var(--muted)',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          📌
+                        </span>
                       )}
                     </button>
                   );

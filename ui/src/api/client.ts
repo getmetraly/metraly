@@ -226,6 +226,13 @@ function defaultFilters(): DashboardFilters {
   };
 }
 
+function resolveDashboardApiId(id: string): string {
+  if (id === 'overview') {
+    return 'dash-overview';
+  }
+  return id;
+}
+
 function isSystemTemplateId(id: string): boolean {
   return ['overview', 'cto', 'vp', 'tl', 'devops', 'ic'].includes(id);
 }
@@ -407,7 +414,7 @@ export async function getDashboardList(): Promise<DashboardIndexEntry[]> {
 }
 
 export async function getDashboard(id: string): Promise<Dashboard> {
-  const res = await client.get<ApiDashboard>(`/dashboards/${id}`);
+  const res = await client.get<ApiDashboard>(`/dashboards/${resolveDashboardApiId(id)}`);
   return mapDashboard(res.data);
 }
 
@@ -449,7 +456,7 @@ export async function shareDashboard(id: string, input: ShareDashboardRequest): 
 }
 
 export async function getDashboardData(dashboardId: string): Promise<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }> {
-  const res = await client.get<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }>(`/dashboards/${dashboardId}/data`);
+  const res = await client.get<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }>(`/dashboards/${resolveDashboardApiId(dashboardId)}/data`);
   return res.data;
 }
 
