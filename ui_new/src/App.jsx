@@ -23,8 +23,8 @@ const routeConfig = {
   "/dash-wizard": ["Dashboard Preview", "Synthetic dashboard builder preview"],
   "/metrics": ["Metrics Explorer", "Synthetic DORA, CI/CD, PR, and custom metrics"],
   "/ai": ["Synthetic AI Preview", "Scripted demo · not live inference"],
-  "/plugins": ["Plugin Preview", "Mock listings · install flow not implemented"],
-  "/wizard": ["Connector Setup Preview", "Synthetic flow · do not enter credentials or tokens"],
+  "/plugins": ["Plugin Preview", "Mock listings · setup flow not implemented"],
+  "/wizard": ["Connector Setup Preview", "Synthetic flow · do not enter credentials or secrets"],
   "/settings": ["Settings", "Demo configuration preview"],
 };
 
