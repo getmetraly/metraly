@@ -1,6 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useTweaks } from "../../context/TweaksContext";
-import { Icon } from "../../components/shared/Icon";
+import { SH } from "../../components/ui/SH";
 import { CTODashboard } from "./CTODashboard";
 import { VPDashboard } from "./VPDashboard";
 import { TLDashboard } from "./TLDashboard";
@@ -44,48 +44,11 @@ export const RoleDashboardScreen = () => {
 
   return (
     <div style={{ flex: 1, padding, overflow: 'auto' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          paddingBottom: 10,
-          marginBottom: 20,
-          borderBottom: '1px solid var(--border)',
-          overflowX: 'auto',
-        }}
-      >
-        {navItems.map((item) => {
-          const active = path === item.to || (item.to === '/' && path === '/');
-
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                textDecoration: 'none',
-                color: active ? 'var(--cyan)' : 'var(--muted2)',
-                fontSize: 13,
-                fontWeight: active ? 600 : 500,
-                paddingBottom: 10,
-                borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent',
-                transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <Icon
-                name={item.icon}
-                size={13}
-                color={active ? 'var(--cyan)' : 'var(--muted)'}
-              />
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
+      <SH
+        navItems={navItems}
+        activePath={path}
+        showNewDashboard
+      />
 
       <DashboardComponent />
     </div>
