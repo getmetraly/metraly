@@ -2,14 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "../shared/Icon";
 import { useTweaks } from "../../context/TweaksContext";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 export const Sidebar = () => {
   const { tweaks } = useTweaks();
   const collapsed = tweaks.sidebarCollapsed;
   const density = tweaks.density;
 
-  // Density padding mapping
   const densityPadding = {
     compact: { section: "4px 8px", item: "6px 8px" },
     comfortable: { section: "12px 10px", item: "8px 10px" },
@@ -17,7 +16,6 @@ export const Sidebar = () => {
   };
   const pad = densityPadding[density] || densityPadding.comfortable;
 
-  // Load pinned from localStorage (same as before)
   const [pinned, setPinned] = useState(() => {
     try {
       const saved = localStorage.getItem("metraly-pinned");
@@ -26,18 +24,10 @@ export const Sidebar = () => {
       return ["dash-cto", "dash-devops"];
     }
   });
-  const [hoveredPin, setHoveredPin] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("metraly-pinned", JSON.stringify(pinned));
   }, [pinned]);
-
-  const togglePin = (id, e) => {
-    e.stopPropagation();
-    setPinned((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
 
   const sections = [
     {
@@ -49,26 +39,21 @@ export const Sidebar = () => {
         { id: "dash-tl", icon: "gitPR", label: "Tech Lead" },
         { id: "dash-devops", icon: "cpu", label: "DevOps / SRE" },
         { id: "dash-ic", icon: "activity", label: "My View" },
-        {
-          id: "dash-wizard",
-          icon: "plus",
-          label: "New Dashboard",
-          accent: true,
-        },
+        { id: "dash-wizard", icon: "plus", label: "Dashboard Preview", accent: true },
       ],
     },
     {
       label: "Analytics",
       items: [
         { id: "metrics", icon: "bar2", label: "Metrics Explorer" },
-        { id: "ai", icon: "brain", label: "AI Assistant" },
+        { id: "ai", icon: "brain", label: "AI Preview" },
       ],
     },
     {
       label: "Configure",
       items: [
-        { id: "plugins", icon: "puzzle", label: "Marketplace" },
-        { id: "wizard", icon: "link", label: "Connect Sources" },
+        { id: "plugins", icon: "puzzle", label: "Plugin Preview" },
+        { id: "wizard", icon: "link", label: "Connector Preview" },
       ],
     },
     {
@@ -89,8 +74,56 @@ export const Sidebar = () => {
     (item) => !pinned.includes(item.id),
   );
 
-  // Sidebar width changes based on collapsed state
   const sidebarWidth = collapsed ? "64px" : "var(--sidebar-w)";
+
+  const navTo = (item) => (item.id === "dashboard" ? "/" : `/${item.id}`);
+
+  const renderNavItem = (item) => (
+    <NavLink
+      key={item.id}
+      to={navTo(item)}
+      style={({ isActive }) => ({
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: collapsed ? 0 : 9,
+        justifyContent: collapsed ? "center" : "flex-start",
+        padding: collapsed ? "10px 0" : pad.item,
+        borderRadius: 8,
+        border: item.accent ? "1px dashed rgba(0,229,255,0.2)" : "none",
+        cursor: "pointer",
+        marginBottom: 2,
+        background: isActive ? "rgba(0,229,255,0.1)" : item.accent ? "rgba(0,229,255,0.06)" : "transparent",
+        color: isActive || item.accent ? "var(--cyan)" : "var(--muted2)",
+        fontFamily: "var(--font-body)",
+        fontSize: 13.5,
+        fontWeight: isActive ? 500 : 400,
+        transition: "all 0.18s ease",
+        textAlign: "left",
+        position: "relative",
+        textDecoration: "none",
+      })}
+    >
+      <Icon name={item.icon} size={15} color={item.accent ? "var(--cyan)" : undefined} />
+      {!collapsed && <span style={{ marginLeft: 9 }}>{item.label}</span>}
+      {item.id === "ai" && !collapsed && (
+        <div
+          style={{
+            marginLeft: "auto",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            background: "rgba(180,76,255,0.15)",
+            color: "var(--purple)",
+            border: "1px solid rgba(180,76,255,0.25)",
+            borderRadius: 4,
+            padding: "1px 5px",
+          }}
+        >
+          DEMO
+        </div>
+      )}
+    </NavLink>
+  );
 
   return (
     <aside
@@ -107,7 +140,6 @@ export const Sidebar = () => {
         overflowX: "hidden",
       }}
     >
-      {/* Logo area – reduced padding when collapsed */}
       <div
         style={{
           padding: collapsed ? "16px 0" : "20px 18px 16px",
@@ -172,7 +204,6 @@ export const Sidebar = () => {
                 height: 6,
                 borderRadius: "50%",
                 background: "var(--success)",
-                animation: "pulse-dot 2s ease infinite",
               }}
             />
             <span
@@ -182,7 +213,7 @@ export const Sidebar = () => {
                 fontFamily: "var(--font-mono)",
               }}
             >
-              All systems nominal
+              Demo environment
             </span>
           </div>
         )}
@@ -195,7 +226,6 @@ export const Sidebar = () => {
           padding: collapsed ? "8px 4px" : "12px 10px",
         }}
       >
-        {/* Pinned section – simplified when collapsed */}
         {pinnedItems.length > 0 && !collapsed && (
           <div style={{ marginBottom: 16 }}>
             <div
@@ -211,235 +241,33 @@ export const Sidebar = () => {
             >
               Pinned
             </div>
-            {pinnedItems.map((item) => (
-                <NavLink
-                  key={item.id}
-                  to={item.id === "dashboard" ? "/" : `/${item.id}`}
-                  style={({ isActive }) => ({
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    padding: pad.item,
-                    borderRadius: 8,
-                    border: "none",
-                    cursor: "pointer",
-                    marginBottom: 2,
-                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
-                    color: isActive ? "var(--cyan)" : "var(--muted2)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 13,
-                    fontWeight: isActive ? 500 : 400,
-                    transition: "all 0.15s",
-                    textAlign: "left",
-                    position: "relative",
-                    textDecoration: "none",
-                  })}
-                >
-                  <Icon
-                    name={item.icon}
-                    size={15}
-                  />
-                  <span style={{ marginLeft: 9 }}>{item.label}</span>
-                </NavLink>
-              ))}
-            <div
-              style={{
-                height: 1,
-                background: "var(--border)",
-                margin: "8px 8px 0",
-              }}
-            />
+            {pinnedItems.map(renderNavItem)}
+            <div style={{ height: 1, background: "var(--border)", margin: "8px 8px 0" }} />
           </div>
         )}
 
-        {sections.map((sec) => {
-          if (sec.label === "Dashboards") {
-            const newDashboardItem = sec.items.find(
-              (i) => i.id === "dash-wizard",
-            );
-            return (
-              <div key={sec.label} style={{ marginBottom: 16 }}>
-                {!collapsed && (
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.08em",
-                      color: "var(--muted)",
-                      textTransform: "uppercase",
-                      padding: "0 8px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {sec.label}
-                  </div>
-                )}
-                {unpinnedItems.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    to={item.id === "dashboard" ? "/" : `/${item.id}`}
-                  style={({ isActive }) => ({
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: collapsed ? 0 : 9,
-                    justifyContent: collapsed ? "center" : "flex-start",
-                    padding: collapsed ? "10px 0" : pad.item,
-                    borderRadius: 8,
-                    border: "none",
-                    cursor: "pointer",
-                    marginBottom: 2,
-                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
-                    color: isActive ? "var(--cyan)" : "var(--muted2)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 13.5,
-                    fontWeight: isActive ? 500 : 400,
-                    transition: "all 0.18s ease",
-                    textAlign: "left",
-                    position: "relative",
-                    textDecoration: "none",
-                  })}
-                >
-                    <Icon
-                      name={item.icon}
-                      size={15}
-                    />
-                    {!collapsed && (
-                      <span style={{ marginLeft: collapsed ? 0 : 9 }}>
-                        {item.label}
-                      </span>
-                    )}
-                    {!collapsed && hoveredPin === item.id && (
-                      <button
-                        onClick={(e) => togglePin(item.id, e)}
-                        title={
-                          pinned.includes(item.id) ? "Unpin" : "Pin to top"
-                        }
-                        style={{
-                          marginLeft: "auto",
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: pinned.includes(item.id)
-                            ? "var(--cyan)"
-                            : "var(--muted)",
-                          fontSize: 12,
-                        }}
-                      >
-                        📌
-                      </button>
-                    )}
-                  </NavLink>
-                ))}
-                {newDashboardItem && !collapsed && (
-                  <NavLink
-                     to="/dash-wizard"
-                     style={({ isActive }) => ({
-                       width: "100%",
-                       display: "flex",
-                       alignItems: "center",
-                       gap: 9,
-                       padding: pad.item,
-                       borderRadius: 8,
-                       border: "1px dashed rgba(0,229,255,0.2)",
-                       cursor: "pointer",
-                       marginTop: 4,
-                       background: isActive
-                         ? "rgba(0,229,255,0.1)"
-                         : "rgba(0,229,255,0.06)",
-                       color: "var(--cyan)",
-                       fontSize: 13.5,
-                       fontWeight: 500,
-                       textDecoration: "none",
-                     })}
-                   >
-                     <Icon
-                       name={newDashboardItem.icon}
-                       size={15}
-                       color="var(--cyan)"
-                     />
-                     {newDashboardItem.label}
-                   </NavLink>
-                )}
+        {sections.map((sec) => (
+          <div key={sec.label} style={{ marginBottom: 16 }}>
+            {!collapsed && (
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  padding: "0 8px",
+                  marginBottom: 4,
+                }}
+              >
+                {sec.label}
               </div>
-            );
-          }
+            )}
+            {(sec.label === "Dashboards" ? [...unpinnedItems, sec.items.find((i) => i.id === "dash-wizard")].filter(Boolean) : sec.items).map(renderNavItem)}
+          </div>
+        ))}
+      </nav>
 
-          // Other sections
-          return (
-            <div key={sec.label} style={{ marginBottom: 16 }}>
-              {!collapsed && (
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.08em",
-                    color: "var(--muted)",
-                    textTransform: "uppercase",
-                    padding: "0 8px",
-                    marginBottom: 4,
-                  }}
-                >
-                  {sec.label}
-                </div>
-              )}
-              {sec.items.map((item) => (
-                <NavLink
-                  key={item.id}
-                  to={item.id === "dashboard" ? "/" : `/${item.id}`}
-                  style={({ isActive }) => ({
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: collapsed ? 0 : 9,
-                    justifyContent: collapsed ? "center" : "flex-start",
-                    padding: collapsed ? "10px 0" : pad.item,
-                    borderRadius: 8,
-                    border: "none",
-                    cursor: "pointer",
-                    marginBottom: 2,
-                    background: isActive ? "rgba(0,229,255,0.1)" : "transparent",
-                    color: isActive ? "var(--cyan)" : "var(--muted2)",
-                    fontSize: 13.5,
-                    fontWeight: isActive ? 500 : 400,
-                    position: "relative",
-                    textDecoration: "none",
-                  })}
-                >
-                    <Icon
-                      name={item.icon}
-                      size={15}
-                    />
-                    {!collapsed && (
-                      <span style={{ marginLeft: collapsed ? 0 : 9 }}>
-                        {item.label}
-                      </span>
-                    )}
-                    {item.id === "ai" && !collapsed && (
-                      <div
-                        style={{
-                          marginLeft: "auto",
-                          fontSize: 10,
-                          fontFamily: "var(--font-mono)",
-                          background: "rgba(180,76,255,0.15)",
-                          color: "var(--purple)",
-                          border: "1px solid rgba(180,76,255,0.25)",
-                          borderRadius: 4,
-                          padding: "1px 5px",
-                        }}
-                      >
-                        NEW
-                      </div>
-                    )}
-                  </NavLink>
-                ))}
-               </div>
-            );
-          })}
-       </nav>
-
-      {/* User footer – hidden when collapsed for simplicity */}
       {!collapsed && (
         <div
           style={{
@@ -468,30 +296,10 @@ export const Sidebar = () => {
             JD
           </div>
           <div style={{ flex: 1 }}>
-            <div
-              style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text)" }}
-            >
-              Jamie Dev
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--muted)",
-                fontFamily: "var(--font-mono)",
-              }}
-            >
-              Admin
-            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text)" }}>Jamie Dev</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>Demo admin</div>
           </div>
-          <button
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--muted)",
-              padding: 4,
-            }}
-          >
+          <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
             <Icon name="settings" size={14} />
           </button>
         </div>
@@ -499,4 +307,3 @@ export const Sidebar = () => {
     </aside>
   );
 };
-
