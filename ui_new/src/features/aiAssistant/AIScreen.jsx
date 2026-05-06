@@ -1,27 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../components/shared/Icon';
 
-// Simulate AI response (you can later replace with real API)
+// Scripted demo response. This public demo does not call a live AI model.
 const simulateAIResponse = async (userMessage) => {
-  await new Promise(resolve => setTimeout(resolve, 800)); // fake latency
+  await new Promise(resolve => setTimeout(resolve, 800));
   const lower = userMessage.toLowerCase();
   if (lower.includes('ci') || lower.includes('build')) {
-    return "CI success rate is currently 92.4% over the last 7 days, which is 2.1% above the rolling average. The most common failure is in integration tests (mostly timeout issues).";
+    return "Synthetic demo result: CI success rate is 92.4% over the last 7 demo days, which is 2.1% above the scripted rolling average. The simulated failure pattern is integration-test timeouts.";
   } else if (lower.includes('deploy') || lower.includes('frequency')) {
-    return "Deployment frequency averages 4.2 deploys per day. That's up 8% from last month. Most deploys happen between 10am and 2pm UTC.";
+    return "Synthetic demo result: deployment frequency averages 4.2 deploys per day. The scripted demo trend is up 8% from the previous demo period.";
   } else if (lower.includes('pr') || lower.includes('pull request')) {
-    return "There are 8 open PRs awaiting review. The average PR cycle time is 22 hours, which is slightly above the team target of 18 hours.";
+    return "Synthetic demo result: 8 demo PRs are awaiting review. The scripted average PR cycle time is 22 hours, slightly above the sample team target of 18 hours.";
   } else if (lower.includes('lead') || lower.includes('time')) {
-    return "Lead time for changes is 38 hours (p50). The backend team has the best lead time (22h), frontend the longest (52h).";
+    return "Synthetic demo result: lead time for changes is 38 hours p50 in the sample data. Backend is shortest at 22h and frontend is longest at 52h.";
   } else {
-    return "I can help you with engineering metrics: CI, deployments, PRs, DORA, team velocity. What specific area would you like to explore?";
+    return "This is a scripted synthetic AI preview. Try asking about demo CI, deployments, PRs, DORA, or team velocity.";
   }
 };
 
 export const AIScreen = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: "Hi! I'm your Metraly AI assistant. Ask me anything about your engineering metrics, build trends, team health, or deployment patterns." },
+    { role: 'assistant', text: "Synthetic AI preview. Responses in this demo are scripted output based on sample metrics, not live AI inference or real company data." },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -44,7 +44,7 @@ export const AIScreen = () => {
       const reply = await simulateAIResponse(userMsg);
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I'm having trouble right now. Please try again later." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "Scripted demo response unavailable. Please try another sample question." }]);
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +59,10 @@ export const AIScreen = () => {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ margin: '16px 28px 0', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,229,255,0.18)', background: 'rgba(0,229,255,0.06)', color: 'var(--muted2)', fontSize: 12.5, lineHeight: 1.5 }}>
+        <strong style={{ color: 'var(--cyan)' }}>Synthetic AI preview.</strong> Scripted demo output only. Do not enter real company data, repository names, secrets, prompts, credentials, tokens, or personal information.
+      </div>
+
       {/* Messages area */}
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {messages.map((m, i) => (
@@ -153,11 +157,11 @@ export const AIScreen = () => {
         style={{
         display: 'flex',
         gap: 10,
-        alignItems: 'center',           // ← выравнивание по центру по вертикали
+        alignItems: 'center',
         background: 'var(--glass)',
         border: '1px solid var(--border)',
         borderRadius: 12,
-        padding: '6px 14px',            // уменьшили вертикальные отступы
+        padding: '6px 14px',
         }}
     >
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -180,7 +184,7 @@ export const AIScreen = () => {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKeyPress}
-        placeholder="Ask about your engineering metrics…"
+        placeholder="Ask about synthetic demo metrics…"
         disabled={isLoading}
         style={{
             flex: 1,
@@ -190,8 +194,8 @@ export const AIScreen = () => {
             color: 'var(--text)',
             fontSize: 13.5,
             fontFamily: 'var(--font-body)',
-            lineHeight: 1.4,             // фиксированная высота строки
-            padding: '8px 0',            // вертикальные отступы внутри поля
+            lineHeight: 1.4,
+            padding: '8px 0',
         }}
         />
         <button
@@ -214,7 +218,6 @@ export const AIScreen = () => {
         </button>
     </div>
 
-    {/* Примеры вопросов (как было) */}
     <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
         {['CI pass rate?', 'Deployment frequency', 'PR review time', 'Team velocity', 'DORA metrics', 'Recent failures'].map(question => (
         <button
@@ -239,7 +242,7 @@ export const AIScreen = () => {
     </div>
 
     <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>
-        Powered by your private on-premise AI · No data leaves your infra
+        Scripted synthetic preview · No live AI call in this demo
     </div>
     </div>
     </div>
