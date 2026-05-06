@@ -1,33 +1,29 @@
-import client, { USE_MOCK } from "../client";
 import {
   generateDeployFreq,
   generateLeadTime,
   generateCFR,
   generateMTTR,
-} from "../mocks/generators";
+} from '../mocks/generators';
+
+// Synthetic demo-only data providers.
+// No backend/API client is used in the public preview bundle.
+
 export const fetchDeployFrequency = async (
-  timeRange = "30d",
-  team = "All teams",
-  repo = "All repos",
+  timeRange = '30d',
+  team = 'All teams',
+  repo = 'All repos',
 ) => {
-  if (USE_MOCK) return generateDeployFreq(timeRange, team, repo);
-  const res = await client.get("/dora/deploy-frequency", {
-    params: { timeRange, team, repo },
-  });
-  return res.data.values;
+  return generateDeployFreq(timeRange, team, repo);
 };
-export const fetchLeadTime = async (timeRange) => {
-  if (USE_MOCK) return generateLeadTime(timeRange);
-  const res = await client.get("/dora/lead-time", { params: { timeRange } });
-  return res.data.values;
+
+export const fetchLeadTime = async (timeRange = '30d') => {
+  return generateLeadTime(timeRange);
 };
-export const fetchChangeFailureRate = async (timeRange) => {
-  if (USE_MOCK) return generateCFR(timeRange);
-  const res = await client.get("/dora/cfr", { params: { timeRange } });
-  return res.data.values;
+
+export const fetchChangeFailureRate = async (timeRange = '30d') => {
+  return generateCFR(timeRange);
 };
-export const fetchMTTR = async (timeRange) => {
-  if (USE_MOCK) return generateMTTR(timeRange);
-  const res = await client.get("/dora/mttr", { params: { timeRange } });
-  return res.data.values;
+
+export const fetchMTTR = async (timeRange = '30d') => {
+  return generateMTTR(timeRange);
 };
