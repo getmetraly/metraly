@@ -29,12 +29,6 @@ export const RoleDashboardScreen = () => {
   const { tweaks } = useTweaks();
   const density = tweaks.density;
 
-  const contentPadding = {
-    compact: '10px 20px 16px',
-    comfortable: '12px 28px 24px',
-    spacious: '16px 36px 32px',
-  }[density];
-
   const headerPadding = {
     compact: '8px 20px 0',
     comfortable: '10px 28px 0',
@@ -63,7 +57,7 @@ export const RoleDashboardScreen = () => {
         />
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: contentPadding }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <DashboardComponent />
       </div>
     </div>
