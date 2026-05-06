@@ -15,7 +15,7 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 | 2 | Auth And Access | Expose a usable auth/access surface | AUTH-01..AUTH-05 | partial |
 | 3 | Sandbox Onboarding | Deliver first-run demo and measurable first insight | ONBD-01..ONBD-05 | yes |
 | 4 | Dashboard Data Path | Replace mock dashboard flows with backend-backed data | DASH-01..DASH-06 | yes |
-| 5 | Preview Ingestion | Add minimal source/metric ingestion without a raw event store dependency | ING-01..ING-05 | partial |
+| 5 | Preview Ingestion | Add minimal source/metric ingestion without a raw event store dependency | ING-01..ING-05 | yes |
 | 6 | Community GA Polish | Add builder/export/alerts/docs polish | CGA-01..CGA-05 | yes |
 | 7 | Licensing And Pro Gate | Implement license validation, limits, and tier UX | LIC-01..LIC-04 | yes |
 | 8 | Private AI Core | Implement grounded AI and Dual-LLM safety | AI-01..AI-05 | yes |
@@ -111,6 +111,8 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 ## Phase 5: Preview Ingestion
 
+**Status:** Complete (2026-05-06)
+
 **Goal:** Add minimal source and metric ingestion without requiring a raw event store.
 
 **Requirements:** ING-01, ING-02, ING-03, ING-04, ING-05
@@ -195,10 +197,10 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 ## Next Phase
 
-**Phase 1: Runtime Foundation** should be planned first.
+**Phase 6: Community GA Polish** should be planned next.
 
 Recommended next command:
 
 ```text
-$gsd-plan-phase 1
+$gsd-discuss-phase 6
 ```

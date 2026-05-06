@@ -63,6 +63,7 @@ type RouterDeps struct {
 	DashboardSvc *biz.DashboardSvc
 	TemplateSvc  *biz.TemplateSvc
 	MetricsSvc   *biz.MetricsSvc
+	IngestionSvc *biz.IngestionSvc
 	ActivityRepo repo.ActivityRepo
 	InsightRepo  repo.AIInsightRepo
 }
@@ -92,6 +93,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 
 	dashboardHandler := handlers.NewDashboardHandler(deps.DashboardSvc)
 	previewHandler := handlers.NewPreviewHandler(deps.DashboardSvc, deps.TemplateSvc, deps.MetricsSvc, deps.ActivityRepo, deps.InsightRepo)
+	ingestionHandler := handlers.NewIngestionHandler(deps.IngestionSvc)
 
 	// Protected routes
 	if deps.KeyManager != nil {
@@ -106,6 +108,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
 			r.Get("/api/v1/dashboards/{id}/data", previewHandler.DashboardData)
 			r.Post("/api/v1/widgets/data", previewHandler.WidgetsData)
+			r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
+			r.Post("/api/v1/ingest/pm", ingestionHandler.PM)
 			r.Get("/api/v1/templates", previewHandler.Templates)
 			r.Get("/api/v1/dora", previewHandler.DORA)
 			r.Get("/api/v1/metrics", previewHandler.Metric)
@@ -124,6 +128,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 		r.Post("/api/v1/dashboards/{id}/fork", dashboardHandler.Fork)
 		r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
 		r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
+		r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
+		r.Post("/api/v1/ingest/pm", ingestionHandler.PM)
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
 		r.Post("/api/v1/dashboards", serviceUnavailableHandler)
@@ -230,6 +236,7 @@ func main() {
 		KeyManager:   deps.keyManager,
 		AuthSvc:      deps.authSvc,
 		DashboardSvc: deps.dashboardSvc,
+		IngestionSvc: deps.ingestionSvc,
 	})
 
 	// Swagger documentation

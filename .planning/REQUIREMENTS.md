@@ -42,11 +42,11 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 
 ### Source Ingestion
 
-- [ ] **ING-01**: Preview source ingestion supports at least one Git provider path for PR/commit events.
-- [ ] **ING-02**: Preview source ingestion supports at least one issue/project-management path or an explicit demo substitute.
-- [ ] **ING-03**: Ingested or seeded raw activity is transformed into curated TimescaleDB metric points.
-- [ ] **ING-04**: A raw event store is not required in the default Community Preview deployment.
-- [ ] **ING-05**: Architecture documents preserve future raw event store option for dirty/raw events feeding TimescaleDB aggregates.
+- [x] **ING-01**: Preview source ingestion supports at least one Git provider path for PR/commit events.
+- [x] **ING-02**: Preview source ingestion supports at least one issue/project-management path or an explicit demo substitute.
+- [x] **ING-03**: Ingested or seeded raw activity is transformed into curated TimescaleDB metric points.
+- [x] **ING-04**: A raw event store is not required in the default Community Preview deployment.
+- [x] **ING-05**: Architecture documents preserve future raw event store option for dirty/raw events feeding TimescaleDB aggregates.
 
 ### Community GA
 
@@ -142,11 +142,11 @@ Deferred beyond the first full roadmap baseline.
 | DASH-04 | Phase 4 | Complete |
 | DASH-05 | Phase 4 | Complete |
 | DASH-06 | Phase 4 | Complete |
-| ING-01 | Phase 5 | Pending |
-| ING-02 | Phase 5 | Pending |
-| ING-03 | Phase 5 | Pending |
-| ING-04 | Phase 5 | Pending |
-| ING-05 | Phase 5 | Pending |
+| ING-01 | Phase 5 | Complete |
+| ING-02 | Phase 5 | Complete |
+| ING-03 | Phase 5 | Complete |
+| ING-04 | Phase 5 | Complete |
+| ING-05 | Phase 5 | Complete |
 | CGA-01 | Phase 6 | Pending |
 | CGA-02 | Phase 6 | Pending |
 | CGA-03 | Phase 6 | Pending |
@@ -180,4 +180,4 @@ Deferred beyond the first full roadmap baseline.
 
 ---
 *Requirements defined: 2026-05-05*
-*Last updated: 2026-05-06 after Phase 4 completion*
+*Last updated: 2026-05-06 after Phase 5 completion*

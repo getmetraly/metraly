@@ -78,6 +78,19 @@ func TestNewRouterWithAuth(t *testing.T) {
 	}
 }
 
+func TestNewRouterIngestionRouteRequiresAuth(t *testing.T) {
+	km, _ := auth.NewKeyManager("")
+	r := NewRouter(RouterDeps{KeyManager: km})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/ingest/github", bytes.NewBufferString(`{"source":"github","eventType":"pull_request","team":"Atlas"}`))
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
 func TestNewRouter_DashboardServiceUnavailable(t *testing.T) {
 	r := NewRouter(RouterDeps{})
 

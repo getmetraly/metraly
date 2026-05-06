@@ -33,6 +33,7 @@ Metraly must give teams a trustworthy self-hosted view of engineering delivery h
 ### Validated
 
 - ✓ UI consumes backend data for dashboard and metrics flows instead of mock-only data — validated in Phase 4: Dashboard Data Path
+- ✓ Preview ingestion accepts Git and PM event paths and writes curated metric points — validated in Phase 5: Preview Ingestion
 
 ### Out of Scope
 
@@ -89,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-06 after Phase 4 completion*
+*Last updated: 2026-05-06 after Phase 5 completion*

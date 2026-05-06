@@ -42,10 +42,11 @@ type runtimeDeps struct {
 	keyManager   *auth.KeyManager
 	dashboardSvc *biz.DashboardSvc
 	metricsSvc   *biz.MetricsSvc
+	ingestionSvc *biz.IngestionSvc
 	templateSvc  *biz.TemplateSvc
 	authSvc      *auth.Service
-	activityRepo  repo.ActivityRepo
-	insightRepo   repo.AIInsightRepo
+	activityRepo repo.ActivityRepo
+	insightRepo  repo.AIInsightRepo
 	cleanup      func()
 }
 
@@ -125,6 +126,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		keyManager:   keyManager,
 		dashboardSvc: biz.NewDashboardSvc(dashboardRepo, dashboardCache),
 		metricsSvc:   biz.NewMetricsSvc(metricRepo, metricsCache),
+		ingestionSvc: biz.NewIngestionSvc(activityRepo, metricRepo),
 		templateSvc:  biz.NewTemplateSvc(dashboardRepo, templateCache),
 		activityRepo: activityRepo,
 		insightRepo:  insightRepo,

@@ -30,4 +30,11 @@ func TestProtectedRoutesHaveMiddleware(t *testing.T) {
 
 		assert.Equalf(t, "true", w.Header().Get("X-Auth-Checked"), "middleware missing on %s", p)
 	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/ingest/github", nil)
+	req.Header.Set("Authorization", "Bearer invalid-token")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, "true", w.Header().Get("X-Auth-Checked"))
 }
