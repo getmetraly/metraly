@@ -5,13 +5,13 @@ import { Icon } from '../shared/Icon';
 export const SH = ({ title, right, navItems = [], activePath = '/', showNewDashboard = false }) => {
   if (navItems.length) {
     return (
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 8, borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 4, borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
             {navItems.map((item) => {
               const active = activePath === item.to || (item.to === '/' && activePath === '/');
               return (
-                <Link key={item.to} to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: active ? 'var(--cyan)' : 'var(--muted2)', fontSize: 13, fontWeight: active ? 600 : 500, paddingBottom: 8, borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }}>
+                <Link key={item.to} to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: active ? 'var(--cyan)' : 'var(--muted2)', fontSize: 13, fontWeight: active ? 600 : 500, paddingBottom: 6, borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }}>
                   <Icon name={item.icon} size={13} color={active ? 'var(--cyan)' : 'var(--muted)'} />
                   {item.label}
                 </Link>
@@ -25,9 +25,9 @@ export const SH = ({ title, right, navItems = [], activePath = '/', showNewDashb
             </Link>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7, color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', lineHeight: 1.15 }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--cyan)', opacity: 0.9, flexShrink: 0 }} />
-          <span><strong style={{ color: 'var(--cyan)', fontWeight: 600 }}>Synthetic preview</strong> · scripted demo metrics, activity, contributors, and summaries only</span>
+          <span>Synthetic preview · scripted demo metrics, activity, contributors, and summaries only</span>
         </div>
       </div>
     );
