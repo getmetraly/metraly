@@ -25,6 +25,8 @@ import (
 	"github.com/getmetraly/metraly/cmd/api/config"
 	"github.com/getmetraly/metraly/cmd/api/handlers"
 	localMiddleware "github.com/getmetraly/metraly/cmd/api/middleware"
+	"github.com/getmetraly/metraly/cmd/api/repo"
+	"github.com/getmetraly/metraly/cmd/api/respond"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -57,7 +59,12 @@ func serviceUnavailableHandler(w http.ResponseWriter, r *http.Request) {
 
 type RouterDeps struct {
 	KeyManager   *auth.KeyManager
+	AuthSvc      *auth.Service
 	DashboardSvc *biz.DashboardSvc
+	TemplateSvc  *biz.TemplateSvc
+	MetricsSvc   *biz.MetricsSvc
+	ActivityRepo repo.ActivityRepo
+	InsightRepo  repo.AIInsightRepo
 }
 
 // NewRouter creates and returns a chi router with all API routes configured.
@@ -74,12 +81,17 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 
 	// Public routes
 	r.Get("/api/v1/health", healthHandler)
-	r.Get("/api/v1/dora", doraHandler)
-	r.Get("/api/v1/metrics", metricsHandler)
 	r.Get("/api/v1/role/{role}", roleHandler)
-	r.Get("/api/v1/insights", insightsHandler)
+
+	authHandler := handlers.NewAuthHandler(deps.AuthSvc)
+	r.Post("/api/v1/auth/login", authHandler.Login)
+	r.Post("/api/v1/auth/refresh", authHandler.Refresh)
+	r.Post("/api/v1/auth/logout", authHandler.Logout)
+	r.Get("/api/v1/auth/oidc/login", authHandler.OIDCLogin)
+	r.Get("/api/v1/auth/oidc/callback", authHandler.OIDCCallback)
 
 	dashboardHandler := handlers.NewDashboardHandler(deps.DashboardSvc)
+	previewHandler := handlers.NewPreviewHandler(deps.DashboardSvc, deps.TemplateSvc, deps.MetricsSvc, deps.ActivityRepo, deps.InsightRepo)
 
 	// Protected routes
 	if deps.KeyManager != nil {
@@ -87,12 +99,31 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Use(localMiddleware.RequireAuth(deps.KeyManager))
 			r.Get("/api/v1/dashboards", dashboardHandler.List)
 			r.Post("/api/v1/dashboards", dashboardHandler.Create)
+			r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
+			r.Put("/api/v1/dashboards/{id}", dashboardHandler.Update)
+			r.Post("/api/v1/dashboards/{id}/fork", dashboardHandler.Fork)
+			r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
+			r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
+			r.Get("/api/v1/dashboards/{id}/data", previewHandler.DashboardData)
+			r.Post("/api/v1/widgets/data", previewHandler.WidgetsData)
+			r.Get("/api/v1/templates", previewHandler.Templates)
+			r.Get("/api/v1/dora", previewHandler.DORA)
+			r.Get("/api/v1/metrics", previewHandler.Metric)
+			r.Get("/api/v1/metrics/{metricId}", previewHandler.Metric)
+			r.Get("/api/v1/metrics/{metricId}/breakdown", previewHandler.Breakdown)
+			r.Get("/api/v1/insights", previewHandler.Insights)
+			r.Get("/api/v1/activity", previewHandler.Activity)
 			r.Get("/api/v1/me", meHandler)
-			r.Get("/api/v1/activity", activityHandler)
+			r.With(localMiddleware.RequireRole("admin")).Get("/api/v1/admin/summary", adminSummaryHandler)
 		})
 	} else if deps.DashboardSvc != nil {
 		r.Get("/api/v1/dashboards", dashboardHandler.List)
 		r.Post("/api/v1/dashboards", dashboardHandler.Create)
+		r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
+		r.Put("/api/v1/dashboards/{id}", dashboardHandler.Update)
+		r.Post("/api/v1/dashboards/{id}/fork", dashboardHandler.Fork)
+		r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
+		r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
 		r.Post("/api/v1/dashboards", serviceUnavailableHandler)
@@ -133,6 +164,10 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 	})
 
 	return r
+}
+
+func adminSummaryHandler(w http.ResponseWriter, r *http.Request) {
+	respond.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // @Summary Get DORA metrics
@@ -193,6 +228,7 @@ func main() {
 
 	r := NewRouter(RouterDeps{
 		KeyManager:   deps.keyManager,
+		AuthSvc:      deps.authSvc,
 		DashboardSvc: deps.dashboardSvc,
 	})
 

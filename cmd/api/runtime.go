@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/auth"
@@ -42,6 +43,9 @@ type runtimeDeps struct {
 	dashboardSvc *biz.DashboardSvc
 	metricsSvc   *biz.MetricsSvc
 	templateSvc  *biz.TemplateSvc
+	authSvc      *auth.Service
+	activityRepo  repo.ActivityRepo
+	insightRepo   repo.AIInsightRepo
 	cleanup      func()
 }
 
@@ -73,9 +77,31 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	redisAddr := cfg.RedisHost + ":" + cfg.RedisPort
 	rdb := newRedisClient(redisAddr)
 
+	accessTTL, err := parseTTLSeconds(cfg.AccessTokenTTL, 900)
+	if err != nil {
+		if rdb != nil {
+			_ = rdb.Close()
+		}
+		if pool != nil {
+			pool.Close()
+		}
+		return nil, fmt.Errorf("parse access token ttl: %w", err)
+	}
+	refreshTTL, err := parseTTLSeconds(cfg.RefreshTokenTTL, 604800)
+	if err != nil {
+		if rdb != nil {
+			_ = rdb.Close()
+		}
+		if pool != nil {
+			pool.Close()
+		}
+		return nil, fmt.Errorf("parse refresh token ttl: %w", err)
+	}
+
 	dashboardCache := cache.NewNoopDashboardCache()
 	metricsCache := cache.NewNoopMetricsCache()
 	templateCache := cache.NewNoopTemplateCache()
+	var tokenStore auth.TokenStore
 
 	redisCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	if err := pingRedis(redisCtx, rdb); err != nil {
@@ -88,6 +114,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		dashboardCache = cache.NewDashboardCache(rdb, time.Duration(cfg.DashboardsCacheTTL)*time.Second)
 		metricsCache = cache.NewMetricsCache(rdb, time.Duration(cfg.MetricsCacheTTL)*time.Second)
 		templateCache = cache.NewTemplateCache(rdb, time.Duration(cfg.TemplatesCacheTTL)*time.Second)
+		tokenStore = auth.NewTokenStore(rdb, refreshTTL)
 	}
 	cancel()
 
@@ -99,6 +126,12 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		dashboardSvc: biz.NewDashboardSvc(dashboardRepo, dashboardCache),
 		metricsSvc:   biz.NewMetricsSvc(metricRepo, metricsCache),
 		templateSvc:  biz.NewTemplateSvc(dashboardRepo, templateCache),
+		activityRepo: activityRepo,
+		insightRepo:  insightRepo,
+	}
+
+	if tokenStore != nil {
+		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)
 	}
 
 	deps.cleanup = func() {
@@ -111,7 +144,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	}
 
 	if cfg.SeedOnStart {
-		runner := seed.NewRunner(userRepo, pluginRepo, insightRepo, activityRepo, metricRepo)
+		runner := seed.NewRunner(userRepo, dashboardRepo, pluginRepo, insightRepo, activityRepo, metricRepo)
 		if err := runner.Run(ctx, cfg.SeedAdminEmail, cfg.SeedAdminPassword); err != nil {
 			deps.Close()
 			return nil, fmt.Errorf("seed data: %w", err)
@@ -126,4 +159,15 @@ func (d *runtimeDeps) Close() {
 		return
 	}
 	d.cleanup()
+}
+
+func parseTTLSeconds(raw string, def int) (time.Duration, error) {
+	if raw == "" {
+		return time.Duration(def) * time.Second, nil
+	}
+	secs, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(secs) * time.Second, nil
 }

@@ -1,22 +1,25 @@
-import client, { USE_MOCK } from '../client';
-import { generateDeployFreq, generateLeadTime, generateCFR, generateMTTR } from '../mocks/generators';
-export const fetchDeployFrequency = async (timeRange = '30d', team = 'All teams', repo = 'All repos') => {
-  if (USE_MOCK) return generateDeployFreq(timeRange, team, repo);
-  const res = await client.get('/dora/deploy-frequency', { params: { timeRange, team, repo } });
-  return res.data.values;
-};
-export const fetchLeadTime = async (timeRange) => {
-  if (USE_MOCK) return generateLeadTime(timeRange);
-  const res = await client.get('/dora/lead-time', { params: { timeRange } });
-  return res.data.values;
-};
-export const fetchChangeFailureRate = async (timeRange) => {
-  if (USE_MOCK) return generateCFR(timeRange);
-  const res = await client.get('/dora/cfr', { params: { timeRange } });
-  return res.data.values;
-};
-export const fetchMTTR = async (timeRange) => {
-  if (USE_MOCK) return generateMTTR(timeRange);
-  const res = await client.get('/dora/mttr', { params: { timeRange } });
-  return res.data.values;
-};
+import { getDORA } from '../client';
+
+function valuesFrom(series) {
+  return (series === null || series === void 0 ? void 0 : series.values) ?? [];
+}
+
+export async function fetchDeployFrequency(timeRange = '30d', team = 'All teams', repo = 'All repos') {
+  const res = await getDORA(timeRange, team, repo);
+  return valuesFrom(res.deployFrequency.timeSeries);
+}
+
+export async function fetchLeadTime(timeRange = '30d') {
+  const res = await getDORA(timeRange, 'All teams', 'All repos');
+  return valuesFrom(res.leadTime.timeSeries);
+}
+
+export async function fetchChangeFailureRate(timeRange = '30d') {
+  const res = await getDORA(timeRange, 'All teams', 'All repos');
+  return valuesFrom(res.changeFailureRate.timeSeries);
+}
+
+export async function fetchMTTR(timeRange = '30d') {
+  const res = await getDORA(timeRange, 'All teams', 'All repos');
+  return valuesFrom(res.mttr.timeSeries);
+}

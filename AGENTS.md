@@ -21,6 +21,10 @@ The worktree stays isolated from the main workspace, making it safe to run `make
 - **Database**: PostgreSQL + TimescaleDB
 - **Cache**: Redis
 
+## Phase Planning Rule
+
+Before starting any phase-planning work, read the relevant documentation under `../docs/` first. Treat `../docs/STATUS.md` and the supporting status/product/architecture files there as the source of truth for planning inputs, and only then move into roadmap or plan generation.
+
 ## Issue Tracker
 
 - **Type**: Markdown files in ../docs/
@@ -60,6 +64,36 @@ make docker-test-data   # Insert test data
 
 - Go: idiomatic, interfaces for dependencies, context.Context for all I/O
 - Tests: table-driven where appropriate, clear mock implementations
+
+## UI Design Notes
+
+- For onboarding and first-run choice screens, prefer the `DashboardWizardScreen` selection pattern over native radio controls.
+- Selection rows should be compact card-like items with left icon, center text, and a right-side selected indicator.
+- Keep hover behavior restrained: change border/background only, avoid vertical movement on selectable rows.
+- Put explanatory badges or microcopy inside the selectable row when they describe that specific option.
+- Place primary continuation actions below the option container unless the screen explicitly mirrors an existing wizard footer.
+- Use `WizardScreen`, `DashboardWizardScreen`, `PluginScreen`, and `AIInsightCard` as local style references before introducing new interaction patterns.
+
+## Domain Mapping Rule
+
+- Do not encode metric metadata, units, labels, or similar domain catalog data in large `switch` blocks.
+- Prefer a registry or descriptor table with small resolver helpers, or a strategy object when behavior varies by metric.
+- Keep fallback formatting in a single helper so new metric IDs can be added without editing multiple branches.
+
+## Dispatch Rule
+
+- For large `switch`/`case` blocks that select behavior, handlers, processors, commands, or strategies, prefer a Factory/Registry wrapper over a map.
+- Keep small `switch` statements with up to 5 simple cases when they are clearer than a registry.
+- Do not refactor dispatch mechanically; only replace it when extensibility, testability, or separation of concerns clearly improves.
+- Always handle unsupported keys or types explicitly, with an error or a domain-specific fallback.
+- Keep registry registration centralized, predictable, and testable.
+- In Go, protect runtime registry mutation with `sync.RWMutex` or use immutable startup registration.
+- In TypeScript, prefer immutable startup registration and avoid hidden mutation during request handling.
+
+## Local Auth Rule
+
+- For local compose and preview environments, prefer a seeded admin account plus a real login gate over client-side 401 bypasses.
+- If auth is required for preview data, the fallback should be an explicit sign-in screen or seeded local session, not hidden API mocking.
 
 ## License Requirements
 

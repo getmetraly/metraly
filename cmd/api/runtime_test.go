@@ -95,4 +95,34 @@ func TestNewRuntime_RedisDegraded(t *testing.T) {
 	if deps.dashboardSvc == nil || deps.metricsSvc == nil || deps.templateSvc == nil {
 		t.Fatal("expected services to be constructed with no-op caches")
 	}
+	if deps.authSvc != nil {
+		t.Fatal("expected auth service to be disabled when redis is unavailable")
+	}
+}
+
+func TestNewRuntime_AuthWiredWhenRedisAvailable(t *testing.T) {
+	restoreRuntimeSeams(t)
+
+	newPostgresPool = func(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+		return nil, nil
+	}
+	migratePostgres = func(ctx context.Context, pool *pgxpool.Pool, migrations fs.FS) error {
+		return nil
+	}
+	newRedisClient = func(addr string) *redis.Client {
+		return redis.NewClient(&redis.Options{Addr: addr})
+	}
+	pingRedis = func(ctx context.Context, rdb *redis.Client) error {
+		return nil
+	}
+
+	deps, err := newRuntime(context.Background(), config.Load())
+	if err != nil {
+		t.Fatalf("expected auth wiring startup, got %v", err)
+	}
+	t.Cleanup(deps.Close)
+
+	if deps.authSvc == nil {
+		t.Fatal("expected auth service when redis is available")
+	}
 }

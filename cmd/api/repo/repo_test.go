@@ -28,6 +28,7 @@ func (m *mockUserRepo) FindByOIDCSub(ctx context.Context, sub string) (*domain.U
 	return nil, nil
 }
 func (m *mockUserRepo) Create(ctx context.Context, u *domain.User, hash string) error { return nil }
+func (m *mockUserRepo) Upsert(ctx context.Context, u *domain.User, hash string) error { return nil }
 func (m *mockUserRepo) GetPasswordHash(ctx context.Context, email string) (string, string, error) {
 	return "", "", nil
 }
@@ -46,6 +47,9 @@ func (m *mockDashboardRepo) GetByID(ctx context.Context, id string) (*domain.Das
 	return nil, nil
 }
 func (m *mockDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) error { return nil }
+func (m *mockDashboardRepo) CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error {
+	return nil
+}
 func (m *mockDashboardRepo) UpdateLayout(ctx context.Context, id string, layout []domain.WidgetLayout, version int) (bool, error) {
 	return false, nil
 }

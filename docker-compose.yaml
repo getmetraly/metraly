@@ -43,6 +43,9 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DSN: postgres://metraly:metraly@postgres:5432/metraly?sslmode=disable
+      SEED_ON_START: "true"
+      SEED_ADMIN_EMAIL: admin@metraly.local
+      SEED_ADMIN_PASSWORD: admin123
     depends_on:
       redis:
         condition: service_healthy

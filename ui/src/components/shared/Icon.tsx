@@ -57,6 +57,8 @@ const iconPaths: Record<string, string> = {
   rocket: "M4.5 16.5l5-5 5 5M12 2v8m0 0l-3-3m3 3l3-3",
   alertCircle:
     "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4m0 4h.01",
+  lock:
+    "M6 11V8a6 6 0 0 1 12 0v3 M6 11h12a2 2 0 0 1 2 2v7H4v-7a2 2 0 0 1 2-2z M12 15v2",
   checkCircle: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3",
   timer:
     "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2",
@@ -105,4 +107,3 @@ export const Icon: React.FC<IconProps> = ({
     )}
   </svg>
 );
-

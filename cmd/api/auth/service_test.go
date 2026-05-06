@@ -51,6 +51,11 @@ func (m *mockUserRepo) Create(ctx context.Context, u *domain.User, passwordHash 
 	return args.Error(0)
 }
 
+func (m *mockUserRepo) Upsert(ctx context.Context, u *domain.User, passwordHash string) error {
+	args := m.Called(ctx, u, passwordHash)
+	return args.Error(0)
+}
+
 func (m *mockUserRepo) GetPasswordHash(ctx context.Context, email string) (string, string, error) {
 	args := m.Called(ctx, email)
 	return args.String(0), args.String(1), args.Error(2)

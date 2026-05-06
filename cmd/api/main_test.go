@@ -5,7 +5,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -85,5 +87,53 @@ func TestNewRouter_DashboardServiceUnavailable(t *testing.T) {
 
 	if w.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected 503, got %d", w.Code)
+	}
+}
+
+func TestNewRouter_AuthRoutesRegistered(t *testing.T) {
+	km, _ := auth.NewKeyManager("")
+	r := NewRouter(RouterDeps{KeyManager: km})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewBufferString(`{"email":"test@example.com","password":"secret"}`))
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected auth route to be registered and unavailable, got %d", w.Code)
+	}
+}
+
+func TestNewRouter_AdminRoleGate(t *testing.T) {
+	km, _ := auth.NewKeyManager("")
+	r := NewRouter(RouterDeps{KeyManager: km})
+
+	viewerClaims := auth.Claims{Sub: "user-1", Email: "viewer@example.com", Role: "viewer"}
+	viewerToken, _ := km.Sign(viewerClaims, time.Minute*15)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/admin/summary", nil)
+	req.Header.Set("Authorization", "Bearer "+viewerToken)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected viewer to be forbidden, got %d", w.Code)
+	}
+
+	adminClaims := auth.Claims{Sub: "user-2", Email: "admin@example.com", Role: "admin"}
+	adminToken, _ := km.Sign(adminClaims, time.Minute*15)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/v1/admin/summary", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected admin to pass, got %d", w.Code)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode admin response: %v", err)
+	}
+	if resp["status"] != "ok" {
+		t.Fatalf("expected status ok, got %#v", resp)
 	}
 }

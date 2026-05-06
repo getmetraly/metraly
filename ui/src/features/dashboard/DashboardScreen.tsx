@@ -27,6 +27,8 @@ interface DashboardScreenProps {
   onNewDashboard?: () => void;
   onNavigate?: (navId: string) => void;
   isEditMode?: boolean;
+  demoMode?: boolean;
+  onConfigureSources?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -34,6 +36,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onNewDashboard,
   onNavigate,
   isEditMode: externalEditMode,
+  demoMode = false,
+  onConfigureSources,
 }) => {
   const [dashboardId, setDashboardId] = useState(initialDashboard);
   const [localLayout, setLocalLayout] = useState<RGLLayout[]>([]);
@@ -367,6 +371,70 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
       <TabBar />
+      {demoMode && (
+        <div
+          style={{
+            margin: "16px 24px 0",
+            padding: "12px 14px",
+            borderRadius: 12,
+            border: "1px solid rgba(0,229,255,0.18)",
+            background: "rgba(0,229,255,0.06)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: "rgba(0,229,255,0.15)",
+                border: "1px solid rgba(0,229,255,0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="sparkles" size={13} color="var(--cyan)" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text)" }}>
+                Synthetic Sandbox Inc. demo
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--muted2)" }}>
+                This overview is backed by synthetic data. Use it to explore the
+                preview flow or move to source setup.
+              </div>
+            </div>
+          </div>
+          {onConfigureSources && (
+            <button
+              onClick={onConfigureSources}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 8,
+                cursor: "pointer",
+                background: "rgba(0,229,255,0.1)",
+                border: "1px solid rgba(0,229,255,0.2)",
+                color: "var(--cyan)",
+                fontSize: 12.5,
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <Icon name="settings" size={12} color="currentColor" />
+              Configure sources
+            </button>
+          )}
+        </div>
+      )}
       <div
         style={{
           flex: 1,

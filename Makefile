@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint up down logs ps docker-build docker-up docker-down docker-logs ui-run
+.PHONY: build run stop clean test lint up down dev logs ps docker-build docker-up docker-down docker-logs ui-run
 
 # Defaults
 APP_NAME := metraly
@@ -40,10 +40,15 @@ lint:
 	@which staticcheck > /dev/null && staticcheck ./... || echo "staticcheck not installed"
 
 # Canonical local start command
-up: docker-up
+up:
+	@echo "Building and starting all services..."
+	$(DOCKER_COMPOSE) up -d --build
 
 # Canonical local stop command
 down: docker-down
+
+# Alias for one-shot local startup
+dev: up
 
 # Canonical local logs command
 logs: docker-logs
@@ -121,6 +126,7 @@ help:
 	@echo "  lint               - Run linter"
 	@echo "  docker-up          - Legacy alias for up"
 	@echo "  docker-down        - Legacy alias for down"
+	@echo "  dev                - Alias for up"
 	@echo "  docker-restart     - Restart all Docker services"
 	@echo "  docker-build-api   - Rebuild API only"
 	@echo "  docker-restart-api - Restart API only"

@@ -6,42 +6,66 @@ package seed
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/getmetraly/metraly/cmd/api/repo"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var teams = []string{"Platform", "Frontend", "Backend", "Mobile", "Data"}
+var sandboxTeams = []string{"Atlas", "Beacon", "Comet", "Delta", "Echo"}
+
 var metricIDs = []string{
-	"deploy-freq", "lead-time", "cfr", "mttr",
-	"ci-pass", "ci-duration", "ci-queue",
-	"pr-cycle", "pr-review", "pr-merge",
-	"velocity", "throughput", "health-score", "sprint-burndown",
+	"deploy-freq",
+	"lead-time",
+	"cfr",
+	"mttr",
+	"ci-pass",
+	"pr-cycle",
+	"pr-review",
+	"health-score",
+	"velocity",
+	"throughput",
 }
 
 type Runner struct {
-	users    repo.UserRepo
-	plugins  repo.PluginRepo
-	insights repo.AIInsightRepo
-	activity repo.ActivityRepo
-	metrics  repo.MetricRepo
+	users      repo.UserRepo
+	dashboards repo.DashboardRepo
+	plugins    repo.PluginRepo
+	insights   repo.AIInsightRepo
+	activity   repo.ActivityRepo
+	metrics    repo.MetricRepo
 }
 
 func NewRunner(
 	users repo.UserRepo,
+	dashboards repo.DashboardRepo,
 	plugins repo.PluginRepo,
 	insights repo.AIInsightRepo,
 	activity repo.ActivityRepo,
 	metrics repo.MetricRepo,
 ) *Runner {
-	return &Runner{users, plugins, insights, activity, metrics}
+	return &Runner{
+		users:      users,
+		dashboards: dashboards,
+		plugins:    plugins,
+		insights:   insights,
+		activity:   activity,
+		metrics:    metrics,
+	}
 }
 
 func (r *Runner) Run(ctx context.Context, adminEmail, adminPassword string) error {
 	if err := r.seedAdmin(ctx, adminEmail, adminPassword); err != nil {
 		return fmt.Errorf("seed admin: %w", err)
+	}
+	if err := r.seedDashboards(ctx); err != nil {
+		return fmt.Errorf("seed dashboards: %w", err)
+	}
+	if err := r.seedTemplates(ctx); err != nil {
+		return fmt.Errorf("seed templates: %w", err)
 	}
 	if err := r.plugins.BulkInsert(ctx, seedPlugins); err != nil {
 		return fmt.Errorf("seed plugins: %w", err)
@@ -49,11 +73,19 @@ func (r *Runner) Run(ctx context.Context, adminEmail, adminPassword string) erro
 	if err := r.insights.BulkInsert(ctx, seedInsights); err != nil {
 		return fmt.Errorf("seed insights: %w", err)
 	}
-	// TODO: implement seedMetrics if needed
+	if err := r.seedActivities(ctx); err != nil {
+		return fmt.Errorf("seed activity: %w", err)
+	}
+	if err := r.seedMetrics(ctx); err != nil {
+		return fmt.Errorf("seed metrics: %w", err)
+	}
 	return nil
 }
 
 func (r *Runner) seedAdmin(ctx context.Context, email, password string) error {
+	if email == "" || password == "" {
+		return fmt.Errorf("seed admin email and password are required")
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -65,5 +97,311 @@ func (r *Runner) seedAdmin(ctx context.Context, email, password string) error {
 		Avatar: "",
 		Role:   "admin",
 	}
-	return r.users.Create(ctx, user, string(hash))
+	return r.users.Upsert(ctx, user, string(hash))
+}
+
+func (r *Runner) seedDashboards(ctx context.Context) error {
+	for _, dashboard := range sandboxDashboards {
+		if err := r.dashboards.Create(ctx, dashboard); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Runner) seedTemplates(ctx context.Context) error {
+	for _, template := range seedTemplates {
+		if err := r.dashboards.CreateTemplate(ctx, template); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Runner) seedActivities(ctx context.Context) error {
+	events := []*domain.ActivityEvent{
+		{
+			ID:          "activity-1",
+			Type:        "review",
+			Title:       "Atlas PRs waiting on review",
+			Description: "Three Atlas pull requests have been waiting more than 24 hours for a first review.",
+			Timestamp:   fixedSeedTime(-2 * time.Hour),
+			User:        domain.ActivityUser{Name: "Sandbox Bot", Avatar: ""},
+		},
+		{
+			ID:          "activity-2",
+			Type:        "deploy",
+			Title:       "Beacon deployment trend improved",
+			Description: "Beacon increased deployment frequency while keeping change failure low.",
+			Timestamp:   fixedSeedTime(-6 * time.Hour),
+			User:        domain.ActivityUser{Name: "Beacon CD", Avatar: ""},
+		},
+		{
+			ID:          "activity-3",
+			Type:        "merge",
+			Title:       "Comet flaky tests patched",
+			Description: "A timeout-heavy integration suite was narrowed down to a small set of failing tests.",
+			Timestamp:   fixedSeedTime(-10 * time.Hour),
+			User:        domain.ActivityUser{Name: "Comet CI", Avatar: ""},
+		},
+		{
+			ID:          "activity-4",
+			Type:        "alert",
+			Title:       "Delta rollback completed",
+			Description: "A rolled-back Delta deployment resolved the incident within the expected MTTR window.",
+			Timestamp:   fixedSeedTime(-18 * time.Hour),
+			User:        domain.ActivityUser{Name: "Delta Ops", Avatar: ""},
+		},
+		{
+			ID:          "activity-5",
+			Type:        "review",
+			Title:       "Prompt injection trap ignored",
+			Description: "Demo content contains untrusted text, but only approved metric context should influence the output.",
+			Timestamp:   fixedSeedTime(-26 * time.Hour),
+			User:        domain.ActivityUser{Name: "Security Demo", Avatar: ""},
+		},
+	}
+	return r.activity.BulkInsert(ctx, events)
+}
+
+func (r *Runner) seedMetrics(ctx context.Context) error {
+	for _, team := range sandboxTeams {
+		for _, spec := range metricSeriesSpecs(team) {
+			points := buildSeries(fixedSeedTime(0), spec)
+			if err := r.metrics.BulkInsert(ctx, points, spec.metricID, team); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type metricSeriesSpec struct {
+	metricID string
+	base     float64
+	slope    float64
+	wiggle   float64
+}
+
+func metricSeriesSpecs(team string) []metricSeriesSpec {
+	switch team {
+	case "Atlas":
+		return []metricSeriesSpec{
+			{metricID: "deploy-freq", base: 3.1, slope: 0.01, wiggle: 0.08},
+			{metricID: "lead-time", base: 72, slope: 0.18, wiggle: 0.4},
+			{metricID: "cfr", base: 4.4, slope: 0.02, wiggle: 0.06},
+			{metricID: "mttr", base: 48, slope: -0.1, wiggle: 0.5},
+			{metricID: "ci-pass", base: 92, slope: 0.03, wiggle: 0.2},
+			{metricID: "pr-cycle", base: 4.8, slope: 0.05, wiggle: 0.05},
+			{metricID: "pr-review", base: 2.8, slope: 0.03, wiggle: 0.04},
+			{metricID: "health-score", base: 70, slope: 0.05, wiggle: 0.1},
+			{metricID: "velocity", base: 32, slope: 0.15, wiggle: 0.2},
+			{metricID: "throughput", base: 18, slope: 0.1, wiggle: 0.15},
+		}
+	case "Beacon":
+		return []metricSeriesSpec{
+			{metricID: "deploy-freq", base: 5.8, slope: 0.16, wiggle: 0.08},
+			{metricID: "lead-time", base: 18, slope: -0.12, wiggle: 0.3},
+			{metricID: "cfr", base: 2.3, slope: -0.01, wiggle: 0.03},
+			{metricID: "mttr", base: 22, slope: -0.08, wiggle: 0.3},
+			{metricID: "ci-pass", base: 96, slope: 0.04, wiggle: 0.15},
+			{metricID: "pr-cycle", base: 2.1, slope: -0.04, wiggle: 0.05},
+			{metricID: "pr-review", base: 1.0, slope: -0.01, wiggle: 0.03},
+			{metricID: "health-score", base: 85, slope: 0.04, wiggle: 0.08},
+			{metricID: "velocity", base: 42, slope: 0.12, wiggle: 0.18},
+			{metricID: "throughput", base: 24, slope: 0.08, wiggle: 0.12},
+		}
+	case "Comet":
+		return []metricSeriesSpec{
+			{metricID: "deploy-freq", base: 4.0, slope: -0.02, wiggle: 0.08},
+			{metricID: "lead-time", base: 28, slope: 0.05, wiggle: 0.25},
+			{metricID: "cfr", base: 5.2, slope: 0.06, wiggle: 0.08},
+			{metricID: "mttr", base: 55, slope: 0.2, wiggle: 0.45},
+			{metricID: "ci-pass", base: 83, slope: -0.18, wiggle: 0.22},
+			{metricID: "pr-cycle", base: 3.2, slope: 0.04, wiggle: 0.05},
+			{metricID: "pr-review", base: 1.7, slope: 0.03, wiggle: 0.03},
+			{metricID: "health-score", base: 67, slope: -0.05, wiggle: 0.1},
+			{metricID: "velocity", base: 36, slope: 0.08, wiggle: 0.15},
+			{metricID: "throughput", base: 21, slope: 0.04, wiggle: 0.1},
+		}
+	case "Delta":
+		return []metricSeriesSpec{
+			{metricID: "deploy-freq", base: 4.8, slope: 0.02, wiggle: 0.06},
+			{metricID: "lead-time", base: 24, slope: -0.03, wiggle: 0.2},
+			{metricID: "cfr", base: 3.8, slope: 0.01, wiggle: 0.05},
+			{metricID: "mttr", base: 82, slope: 0.15, wiggle: 0.6},
+			{metricID: "ci-pass", base: 95, slope: 0.02, wiggle: 0.1},
+			{metricID: "pr-cycle", base: 2.4, slope: 0.03, wiggle: 0.04},
+			{metricID: "pr-review", base: 1.1, slope: 0.01, wiggle: 0.02},
+			{metricID: "health-score", base: 74, slope: 0.02, wiggle: 0.08},
+			{metricID: "velocity", base: 28, slope: -0.03, wiggle: 0.1},
+			{metricID: "throughput", base: 15, slope: -0.02, wiggle: 0.08},
+		}
+	case "Echo":
+		return []metricSeriesSpec{
+			{metricID: "deploy-freq", base: 2.2, slope: 0.04, wiggle: 0.05},
+			{metricID: "lead-time", base: 40, slope: 0.06, wiggle: 0.35},
+			{metricID: "cfr", base: 3.1, slope: 0.00, wiggle: 0.05},
+			{metricID: "mttr", base: 28, slope: 0.02, wiggle: 0.25},
+			{metricID: "ci-pass", base: 90, slope: 0.03, wiggle: 0.12},
+			{metricID: "pr-cycle", base: 3.8, slope: 0.02, wiggle: 0.04},
+			{metricID: "pr-review", base: 2.0, slope: 0.01, wiggle: 0.03},
+			{metricID: "health-score", base: 68, slope: 0.03, wiggle: 0.08},
+			{metricID: "velocity", base: 20, slope: 0.02, wiggle: 0.08},
+			{metricID: "throughput", base: 10, slope: 0.01, wiggle: 0.05},
+		}
+	default:
+		return nil
+	}
+}
+
+func buildSeries(anchor time.Time, spec metricSeriesSpec) []domain.MetricDataPoint {
+	const points = 14
+	start := anchor.AddDate(0, 0, -points+1)
+	series := make([]domain.MetricDataPoint, 0, points)
+	for i := 0; i < points; i++ {
+		value := spec.base + spec.slope*float64(i)
+		if i%2 == 0 {
+			value += spec.wiggle
+		} else {
+			value -= spec.wiggle / 2
+		}
+		series = append(series, domain.MetricDataPoint{
+			Time:  start.AddDate(0, 0, i),
+			Value: value,
+		})
+	}
+	return series
+}
+
+func fixedSeedTime(offset time.Duration) time.Time {
+	base := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
+	return base.Add(offset)
+}
+
+func mustJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+var sandboxDashboards = []*domain.Dashboard{
+	{
+		ID:          "sandbox-overview",
+		Name:        "Overview",
+		Description: "Sandbox Inc. first-run overview",
+		Icon:        "home",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "overview-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
+			{InstanceID: "overview-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
+			{InstanceID: "overview-stat-lead", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "lead-time", "showSparkline": true, "colorKey": "purple"})},
+			{InstanceID: "overview-ai-1", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "deployment frequency"})},
+			{InstanceID: "overview-ai-2", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "PR review time"})},
+			{InstanceID: "overview-activity", WidgetType: "recent-activity", Config: mustJSON(map[string]any{"type": "recent-activity", "maxItems": 10})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "overview-stat-health", X: 0, Y: 0, W: 3, H: 2},
+			{InstanceID: "overview-stat-deploy", X: 3, Y: 0, W: 3, H: 2},
+			{InstanceID: "overview-stat-lead", X: 6, Y: 0, W: 3, H: 2},
+			{InstanceID: "overview-ai-1", X: 0, Y: 2, W: 6, H: 3},
+			{InstanceID: "overview-ai-2", X: 6, Y: 2, W: 6, H: 3},
+			{InstanceID: "overview-activity", X: 0, Y: 5, W: 12, H: 3},
+		},
+	},
+	{
+		ID:          "sandbox-cto",
+		Name:        "CTO Dashboard",
+		Description: "Sandbox Inc. strategic overview",
+		Icon:        "trendingUp",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "cto-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
+			{InstanceID: "cto-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
+			{InstanceID: "cto-dora", WidgetType: "dora-overview", Config: mustJSON(map[string]any{"type": "dora-overview"})},
+			{InstanceID: "cto-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "inline", "topicHint": "security"})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "cto-stat-health", X: 0, Y: 0, W: 3, H: 2},
+			{InstanceID: "cto-stat-deploy", X: 3, Y: 0, W: 3, H: 2},
+			{InstanceID: "cto-dora", X: 0, Y: 2, W: 8, H: 3},
+			{InstanceID: "cto-ai", X: 8, Y: 2, W: 4, H: 3},
+		},
+	},
+	{
+		ID:          "sandbox-vp",
+		Name:        "VP Engineering Dashboard",
+		Description: "Delivery health and team performance",
+		Icon:        "users",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "vp-pr-cycle", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "pr-cycle", "chartVariant": "bar-horizontal", "showCompare": false})},
+			{InstanceID: "vp-heatmap", WidgetType: "heatmap", Config: mustJSON(map[string]any{"type": "heatmap", "rowGroupBy": "team", "columns": 14})},
+			{InstanceID: "vp-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "inline", "topicHint": "pr cycle time"})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "vp-pr-cycle", X: 0, Y: 0, W: 6, H: 3},
+			{InstanceID: "vp-heatmap", X: 6, Y: 0, W: 6, H: 3},
+			{InstanceID: "vp-ai", X: 0, Y: 3, W: 12, H: 2},
+		},
+	},
+	{
+		ID:          "sandbox-tl",
+		Name:        "Tech Lead Dashboard",
+		Description: "CI health and PR queue",
+		Icon:        "gitPR",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "tl-ci-pass", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "ci-pass", "chartVariant": "area", "showCompare": false})},
+			{InstanceID: "tl-pr-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "pr-queue", "maxRows": 5})},
+			{InstanceID: "tl-ci-failures", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "ci-failures", "maxRows": 5})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "tl-ci-pass", X: 0, Y: 0, W: 6, H: 3},
+			{InstanceID: "tl-pr-queue", X: 6, Y: 0, W: 6, H: 3},
+			{InstanceID: "tl-ci-failures", X: 0, Y: 3, W: 12, H: 3},
+		},
+	},
+	{
+		ID:          "sandbox-devops",
+		Name:        "DevOps Dashboard",
+		Description: "Deploy frequency, MTTR, and incidents",
+		Icon:        "cpu",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "devops-deploy", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "deploy-freq", "chartVariant": "area", "showCompare": false})},
+			{InstanceID: "devops-mttr", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "mttr", "chartVariant": "area", "showCompare": false})},
+			{InstanceID: "devops-incidents", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "incidents", "maxRows": 5})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "devops-deploy", X: 0, Y: 0, W: 6, H: 3},
+			{InstanceID: "devops-mttr", X: 6, Y: 0, W: 6, H: 3},
+			{InstanceID: "devops-incidents", X: 0, Y: 3, W: 12, H: 3},
+		},
+	},
+	{
+		ID:          "sandbox-ic",
+		Name:        "My Dashboard",
+		Description: "Personal sandbox view",
+		Icon:        "activity",
+		OwnerID:     "admin-seed",
+		IsPublic:    true,
+		Widgets: []domain.WidgetInstance{
+			{InstanceID: "ic-my-prs", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "my-prs", "maxRows": 5})},
+			{InstanceID: "ic-review-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "review-queue", "maxRows": 5})},
+			{InstanceID: "ic-burndown", WidgetType: "sprint-burndown", Config: mustJSON(map[string]any{"type": "sprint-burndown", "showTaskList": true})},
+		},
+		Layout: []domain.WidgetLayout{
+			{InstanceID: "ic-my-prs", X: 0, Y: 0, W: 6, H: 3},
+			{InstanceID: "ic-review-queue", X: 6, Y: 0, W: 6, H: 3},
+			{InstanceID: "ic-burndown", X: 0, Y: 3, W: 12, H: 3},
+		},
+	},
 }

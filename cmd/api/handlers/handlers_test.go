@@ -63,6 +63,10 @@ func (f *fakeDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) err
 	return nil
 }
 
+func (f *fakeDashboardRepo) CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error {
+	return nil
+}
+
 func (f *fakeDashboardRepo) Update(ctx context.Context, d *domain.Dashboard) (bool, error) {
 	return false, nil
 }

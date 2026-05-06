@@ -17,6 +17,7 @@ type DashboardRepo interface {
 	List(ctx context.Context, userID string) ([]*domain.Dashboard, error)
 	GetByID(ctx context.Context, id string) (*domain.Dashboard, error)
 	Create(ctx context.Context, d *domain.Dashboard) error
+	CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error
 	Update(ctx context.Context, d *domain.Dashboard) (bool, error)
 	UpdateLayout(ctx context.Context, id string, layout []domain.WidgetLayout, version int) (bool, error)
 	UpdateShare(ctx context.Context, id string, isPublic bool, shareToken *string) error
@@ -89,9 +90,29 @@ func (r *pgDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) error
 	}
 	_, err = r.pool.Exec(ctx,
 		`INSERT INTO dashboards(id, name, description, icon, owner_id, is_public, widgets, layout, forked_from_id)
-		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		 ON CONFLICT (id) DO NOTHING`,
 		d.ID, d.Name, d.Description, d.Icon, d.OwnerID, d.IsPublic,
 		widgetsJSON, layoutJSON, d.ForkedFromID,
+	)
+	return err
+}
+
+func (r *pgDashboardRepo) CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error {
+	widgetsJSON, err := json.Marshal(t.Widgets)
+	if err != nil {
+		return fmt.Errorf("encode dashboard template widgets: %w", err)
+	}
+	layoutJSON, err := json.Marshal(t.Layout)
+	if err != nil {
+		return fmt.Errorf("encode dashboard template layout: %w", err)
+	}
+	_, err = r.pool.Exec(ctx,
+		`INSERT INTO dashboard_templates(id, name, description, icon, category, widgets, layout)
+		 VALUES($1,$2,$3,$4,$5,$6,$7)
+		 ON CONFLICT (id) DO NOTHING`,
+		t.ID, t.Name, t.Description, t.Icon, t.Category,
+		widgetsJSON, layoutJSON,
 	)
 	return err
 }

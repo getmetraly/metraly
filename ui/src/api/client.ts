@@ -1,0 +1,424 @@
+import axios from 'axios';
+import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, SystemTemplate, WidgetLayout } from '../types/dashboard';
+import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricBreakdownItem as UiMetricBreakdownItem, MetricTimeSeries } from '../types/metrics';
+import type { ActivityEvent, MeResponse } from '../types/user';
+
+export const USE_MOCK = false;
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '');
+const SESSION_KEY = 'metraly.auth-session';
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+type LoginResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  user?: { id: string; email: string; role: string };
+};
+
+type RefreshResponse = {
+  access_token: string;
+  expires_in: number;
+};
+
+type ApiDashboard = {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  ownerId: string;
+  isPublic: boolean;
+  shareToken?: string | null;
+  widgets: DashboardWidgetInstance[];
+  layout: WidgetLayout[];
+  version: number;
+  forkedFromId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ApiTemplate = {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  widgets: DashboardWidgetInstance[];
+  layout: WidgetLayout[];
+};
+
+const rawClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: false,
+});
+
+const client = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: false,
+});
+
+let sessionCache: AuthSession | null = null;
+let refreshPromise: Promise<AuthSession | null> | null = null;
+
+function notifySessionChanged() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.dispatchEvent(new Event('metraly-auth-changed'));
+}
+
+function readSession(): AuthSession | null {
+  if (sessionCache) {
+    return sessionCache;
+  }
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthSession;
+    sessionCache = parsed;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistSession(session: AuthSession | null) {
+  sessionCache = session;
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (!session) {
+    window.localStorage.removeItem(SESSION_KEY);
+    notifySessionChanged();
+    return;
+  }
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  notifySessionChanged();
+}
+
+export function loadSession(): AuthSession | null {
+  return readSession();
+}
+
+export function saveSession(session: AuthSession) {
+  persistSession(session);
+}
+
+export function clearSession() {
+  persistSession(null);
+}
+
+async function refreshAccessToken(): Promise<AuthSession | null> {
+  const current = readSession();
+  if (!current?.refreshToken) {
+    return null;
+  }
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+  refreshPromise = rawClient
+    .post<RefreshResponse>('/auth/refresh', { refresh_token: current.refreshToken })
+    .then((res) => {
+      const updated: AuthSession = {
+        ...current,
+        accessToken: res.data.access_token,
+        expiresIn: res.data.expires_in,
+      };
+      persistSession(updated);
+      return updated;
+    })
+    .catch(() => {
+      clearSession();
+      return null;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
+
+client.interceptors.request.use((config) => {
+  const session = readSession();
+  if (session?.accessToken) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+  return config;
+});
+
+client.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && original && !original._retry) {
+      original._retry = true;
+      const refreshed = await refreshAccessToken();
+      if (refreshed?.accessToken) {
+        original.headers = original.headers ?? {};
+        original.headers.Authorization = `Bearer ${refreshed.accessToken}`;
+        return client(original);
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+export async function login(email: string, password: string): Promise<AuthSession> {
+  const res = await rawClient.post<LoginResponse>('/auth/login', { email, password });
+  const session: AuthSession = {
+    accessToken: res.data.access_token,
+    refreshToken: res.data.refresh_token,
+    expiresIn: res.data.expires_in,
+    user: res.data.user,
+  };
+  persistSession(session);
+  return session;
+}
+
+export async function logout() {
+  const current = readSession();
+  if (current?.refreshToken) {
+    try {
+      await rawClient.post('/auth/logout', { refresh_token: current.refreshToken });
+    } catch {
+      // Ignore logout errors during cleanup.
+    }
+  }
+  clearSession();
+}
+
+export async function getMe(): Promise<MeResponse> {
+  const res = await client.get<MeResponse>('/me');
+  return res.data;
+}
+
+function defaultFilters(): DashboardFilters {
+  return {
+    timeRange: '30d',
+    team: 'All teams',
+    repo: 'All repos',
+  };
+}
+
+function isSystemTemplateId(id: string): boolean {
+  return ['overview', 'cto', 'vp', 'tl', 'devops', 'ic'].includes(id);
+}
+
+function mapDashboard(dashboard: ApiDashboard): Dashboard {
+  return {
+    id: dashboard.id,
+    name: dashboard.name,
+    description: dashboard.description || '',
+    sourceType: dashboard.forkedFromId
+      ? 'forked'
+      : isSystemTemplateId(dashboard.id)
+        ? 'system-template'
+        : 'user-created',
+    sourceTemplateId: isSystemTemplateId(dashboard.id)
+      ? (dashboard.id as Dashboard['sourceTemplateId'])
+      : undefined,
+    forkedFromId: dashboard.forkedFromId || undefined,
+    visibility: dashboard.isPublic ? 'org' : 'private',
+    defaultFilters: defaultFilters(),
+    widgets: dashboard.widgets,
+    layout: dashboard.layout,
+    createdBy: dashboard.ownerId,
+    createdAt: dashboard.createdAt,
+    updatedAt: dashboard.updatedAt,
+    version: dashboard.version,
+    shareToken: dashboard.shareToken || undefined,
+  };
+}
+
+function mapDashboardIndex(dashboard: ApiDashboard): DashboardIndexEntry {
+  return {
+    id: dashboard.id,
+    name: dashboard.name,
+    sourceType: dashboard.forkedFromId
+      ? 'forked'
+      : isSystemTemplateId(dashboard.id)
+        ? 'system-template'
+        : 'user-created',
+    sourceTemplateId: isSystemTemplateId(dashboard.id)
+      ? (dashboard.id as DashboardIndexEntry['sourceTemplateId'])
+      : undefined,
+    visibility: dashboard.isPublic ? 'org' : 'private',
+    updatedAt: dashboard.updatedAt,
+    hasDraft: false,
+  };
+}
+
+function mapTemplate(template: ApiTemplate): SystemTemplate {
+  return {
+    templateId: template.id as SystemTemplate['templateId'],
+    label: template.name,
+    description: template.description || '',
+    dashboard: {
+      name: template.name,
+      description: template.description || '',
+      sourceType: 'system-template',
+      sourceTemplateId: template.id as SystemTemplate['templateId'],
+      visibility: 'org',
+      defaultFilters: defaultFilters(),
+      widgets: template.widgets,
+      layout: template.layout,
+    },
+  };
+}
+
+type MetricDescriptor = {
+  label: string;
+  unit: string;
+};
+
+const METRIC_CATALOG: Record<string, MetricDescriptor> = {
+  'deploy-freq': { label: 'Deploy Frequency', unit: '/week' },
+  'lead-time': { label: 'Lead Time', unit: 'h' },
+  cfr: { label: 'Change Failure Rate', unit: '%' },
+  mttr: { label: 'MTTR', unit: 'min' },
+  'ci-pass': { label: 'CI Pass Rate', unit: '%' },
+  'ci-duration': { label: 'CI Duration', unit: 'min' },
+  'ci-queue': { label: 'CI Queue Time', unit: 'min' },
+  'pr-cycle': { label: 'PR Cycle Time', unit: 'h' },
+  'pr-review': { label: 'PR Review Time', unit: 'h' },
+  'pr-merge': { label: 'PR Merge Time', unit: 'min' },
+  velocity: { label: 'Velocity', unit: 'pts' },
+  throughput: { label: 'Throughput', unit: 'items' },
+  'health-score': { label: 'Health Score', unit: '%' },
+};
+
+function resolveMetricDescriptor(metricId: string): MetricDescriptor {
+  return METRIC_CATALOG[metricId] || {
+    label: metricId
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' '),
+    unit: '',
+  };
+}
+
+function metricLevel(value: number): DORAMetricDetail['level'] {
+  if (value >= 80) return 'Elite';
+  if (value >= 50) return 'High';
+  if (value >= 25) return 'Med';
+  return 'Low';
+}
+
+function mapMetricSeries(points: { time: string; value: number }[], unit: string): MetricTimeSeries {
+  return {
+    values: points.map((p) => p.value),
+    labels: points.map((p) => new Date(p.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+    unit,
+  };
+}
+
+export async function getDashboardList(): Promise<DashboardIndexEntry[]> {
+  const res = await client.get<ApiDashboard[]>('/dashboards');
+  return res.data.map(mapDashboardIndex);
+}
+
+export async function getDashboard(id: string): Promise<Dashboard> {
+  const res = await client.get<ApiDashboard>(`/dashboards/${id}`);
+  return mapDashboard(res.data);
+}
+
+export async function getDashboardData(dashboardId: string): Promise<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }> {
+  const res = await client.get<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }>(`/dashboards/${dashboardId}/data`);
+  return res.data;
+}
+
+export async function getTemplates(): Promise<SystemTemplate[]> {
+  const res = await client.get<ApiTemplate[]>('/templates');
+  return res.data.map(mapTemplate);
+}
+
+export async function getInsights(): Promise<{ title: string; body: string; action?: string }[]> {
+  const res = await client.get<{ title: string; body: string; action?: string }[]>('/insights');
+  return res.data;
+}
+
+export async function getActivity(): Promise<ActivityEvent[]> {
+  const res = await client.get<{ id: string; type: string; title: string; description: string; timestamp: string; user: { name: string; avatar: string } }[]>('/activity');
+  return res.data.map((item, index) => ({
+    id: item.id || `activity-${index}`,
+    actor: item.user?.name || 'Metraly',
+    description: item.description || item.title,
+    relativeTime: 'just now',
+    color: 'var(--cyan)',
+  }));
+}
+
+export async function getMetricData(metricId: string, timeRange = '30d', team = 'All teams', repo = 'All repos'): Promise<MetricDataResponse> {
+  const res = await client.get<{ metricId: string; timeRange: string; team: string; data: { time: string; value: number }[] }>(`/metrics/${metricId}`, {
+    params: { timeRange, team, repo },
+  });
+  const descriptor = resolveMetricDescriptor(metricId);
+  const current = mapMetricSeries(res.data.data, descriptor.unit);
+  const previous = {
+    ...current,
+    values: current.values.map((v) => v * 0.92),
+  };
+  return {
+    metricId: res.data.metricId as MetricDataResponse['metricId'],
+    label: descriptor.label,
+    unit: descriptor.unit,
+    current,
+    previous,
+    labels: current.labels,
+  };
+}
+
+export async function getMetricBreakdown(metricId: string, timeRange = '30d'): Promise<UiMetricBreakdownItem[]> {
+  const res = await client.get<{ team: string; value: number }[]>(`/metrics/${metricId}/breakdown`, {
+    params: { timeRange },
+  });
+  return res.data.map((item) => ({
+    name: metricId,
+    team: item.team,
+    value: `${item.value.toFixed(1)}`,
+    valueRaw: item.value,
+    doraLevel: metricLevel(item.value),
+    delta: '',
+  }));
+}
+
+export async function getDORA(timeRange = '30d', team = 'All teams', repo = 'All repos'): Promise<UiDORAResponse> {
+  const [deployFrequency, leadTime, changeFailureRate, mttr] = await Promise.all([
+    getDORADetail('deploy-freq', timeRange, team, repo),
+    getDORADetail('lead-time', timeRange, team, repo),
+    getDORADetail('cfr', timeRange, team, repo),
+    getDORADetail('mttr', timeRange, team, repo),
+  ]);
+  return { deployFrequency, leadTime, changeFailureRate, mttr };
+}
+
+async function getDORADetail(metricId: string, timeRange: string, team: string, repo: string): Promise<DORAMetricDetail> {
+  const metric = await getMetricData(metricId as any, timeRange, team, repo);
+  const last = metric.current.values[metric.current.values.length - 1] ?? 0;
+  const prev = metric.current.values[metric.current.values.length - 2] ?? last;
+  return {
+    id: metricId as DORAMetricDetail['id'],
+    label: metric.label,
+    currentValue: `${last.toFixed(1)}${metric.unit}`,
+    currentValueRaw: last,
+    delta: `${(last - prev) >= 0 ? '+' : ''}${(last - prev).toFixed(1)}`,
+    level: metricLevel(last),
+    benchmarkNote: 'Backend-backed preview data',
+    timeSeries: metric.current,
+  };
+}
+
+export { client };

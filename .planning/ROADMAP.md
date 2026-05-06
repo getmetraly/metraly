@@ -56,6 +56,8 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 
 **Goal:** Expose a usable auth/access surface for preview users.
 
+**Status:** Complete (2026-05-06)
+
 **Requirements:** AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05
 
 **Success criteria:**
@@ -66,6 +68,8 @@ Metraly should be built in a foundation-first sequence. The first five phases pr
 5. OIDC remains optional and disabled safely by default.
 
 ## Phase 3: Sandbox Onboarding
+
+**Status:** Complete (2026-05-06)
 
 **Goal:** Deliver a first-run demo path that proves the product value quickly.
 

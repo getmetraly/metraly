@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
-import { mockApi } from "../api/mockApi";
+import { getDashboard as fetchDashboard, getDashboardData as fetchDashboardData } from "../api/client";
 import type { Dashboard } from "../types/dashboard";
-import type { WidgetDataItem } from "../types/api";
 
 interface UseDashboardResult {
   dashboard: Dashboard | null;
@@ -11,15 +10,6 @@ interface UseDashboardResult {
   error: string | null;
   refresh: () => void;
 }
-
-const DASHBOARD_IDS: Record<string, string> = {
-  cto: "dash-cto",
-  vp: "dash-vp",
-  tl: "dash-tl",
-  devops: "dash-devops",
-  ic: "dash-ic",
-  overview: "dash-overview",
-};
 
 export function useDashboard(dashboardId: string): UseDashboardResult {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -41,39 +31,20 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setIsLoading(true);
     setError(null);
 
-    const dashboardIdMapped = DASHBOARD_IDS[requestId];
-    if (!dashboardIdMapped) {
-      setError(`Unknown dashboard: ${requestId}`);
-      setIsLoading(false);
-      return;
-    }
-
     async function fetchData() {
       try {
-        const dash = await mockApi.getDashboard(dashboardIdMapped);
+        const dash = await fetchDashboard(requestId);
         if (dashboardIdRef.current !== requestId) return;
         setDashboard(dash);
 
-        if (dash.widgets.length > 0) {
-          const widgetRequests = dash.widgets.map((w) => ({
-            instanceId: `${dashboardIdMapped}-${w.instanceId}`,
-            widgetType: w.widgetType,
-            config: w.config,
-          }));
+        const dataResponse = await fetchDashboardData(requestId);
+        if (dashboardIdRef.current !== requestId) return;
 
-          const dataResponse = await mockApi.getDashboardData(
-            dashboardIdMapped,
-            widgetRequests,
-          );
-
-          if (dashboardIdRef.current !== requestId) return;
-
-          const dataMap: Record<string, any> = {};
-          dataResponse.widgets.forEach((item: WidgetDataItem) => {
-            dataMap[item.instanceId] = item.data;
-          });
-          setWidgetData(dataMap);
-        }
+        const dataMap: Record<string, any> = {};
+        dataResponse.widgets.forEach((item) => {
+          dataMap[item.instanceId] = item.data;
+        });
+        setWidgetData(dataMap);
       } catch (err) {
         if (dashboardIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Failed to load dashboard");
@@ -95,39 +66,20 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setError(null);
 
     const requestId = dashboardId;
-    const dashboardIdMapped = DASHBOARD_IDS[dashboardId];
-    if (!dashboardIdMapped) {
-      setError(`Unknown dashboard: ${dashboardId}`);
-      setIsLoading(false);
-      return;
-    }
-
     async function fetchRefresh() {
       try {
-        const dash = await mockApi.getDashboard(dashboardIdMapped);
+        const dash = await fetchDashboard(requestId);
         if (dashboardIdRef.current !== requestId) return;
         setDashboard(dash);
 
-        if (dash.widgets.length > 0) {
-          const widgetRequests = dash.widgets.map((w) => ({
-            instanceId: `${dashboardIdMapped}-${w.instanceId}`,
-            widgetType: w.widgetType,
-            config: w.config,
-          }));
+        const dataResponse = await fetchDashboardData(requestId);
+        if (dashboardIdRef.current !== requestId) return;
 
-          const dataResponse = await mockApi.getDashboardData(
-            dashboardIdMapped,
-            widgetRequests,
-          );
-
-          if (dashboardIdRef.current !== requestId) return;
-
-          const dataMap: Record<string, any> = {};
-          dataResponse.widgets.forEach((item: WidgetDataItem) => {
-            dataMap[item.instanceId] = item.data;
-          });
-          setWidgetData(dataMap);
-        }
+        const dataMap: Record<string, any> = {};
+        dataResponse.widgets.forEach((item) => {
+          dataMap[item.instanceId] = item.data;
+        });
+        setWidgetData(dataMap);
       } catch (err) {
         if (dashboardIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Failed to load dashboard");
@@ -150,4 +102,3 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     refresh,
   };
 }
-

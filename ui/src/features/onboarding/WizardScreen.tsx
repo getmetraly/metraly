@@ -263,7 +263,15 @@ const ReviewStep: React.FC<{ selected: string[] }> = ({ selected }) => {
 };
 
 // ---------- Main Wizard Screen ----------
-export const WizardScreen: React.FC = () => {
+interface WizardScreenProps {
+  onUseDemo?: () => void;
+  onFinish?: () => void;
+}
+
+export const WizardScreen: React.FC<WizardScreenProps> = ({
+  onUseDemo,
+  onFinish,
+}) => {
   const [step, setStep] = useState<number>(0);
   const [selected, setSelected] = useState<string[]>(['github']);
   const [connected, setConnected] = useState<Record<string, boolean>>({});
@@ -290,8 +298,8 @@ export const WizardScreen: React.FC = () => {
   const handleNext = () => {
     if (step < steps.length - 1 && canGoNext()) setStep(s => s + 1);
     else if (step === steps.length - 1) {
-      // Final action
-      window.location.href = '/';
+      if (onFinish) onFinish();
+      else window.location.href = '/';
     }
   };
 
@@ -301,6 +309,55 @@ export const WizardScreen: React.FC = () => {
 
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '32px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {onUseDemo && (
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 680,
+            marginBottom: 16,
+            padding: '10px 14px',
+            borderRadius: 12,
+            border: '1px solid rgba(180,76,255,0.18)',
+            background: 'rgba(180,76,255,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Icon name="sparkles" size={13} color="var(--purple)" />
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>
+                Demo mode is available
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--muted2)' }}>
+                Switch back to Sandbox Inc. demo data at any point.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onUseDemo}
+            style={{
+              padding: '7px 12px',
+              borderRadius: 8,
+              cursor: 'pointer',
+              background: 'rgba(180,76,255,0.1)',
+              border: '1px solid rgba(180,76,255,0.22)',
+              color: 'var(--purple)',
+              fontSize: 12.5,
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Icon name="sparkles" size={12} color="currentColor" />
+            Show demo instead
+          </button>
+        </div>
+      )}
       <StepIndicator step={step} />
       <div className="wizard-step" key={step} style={{ width: '100%', maxWidth: 680 }}>
         {renderStepContent()}

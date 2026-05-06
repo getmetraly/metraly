@@ -39,6 +39,11 @@ func (m *mockDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) err
 	return args.Error(0)
 }
 
+func (m *mockDashboardRepo) CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error {
+	args := m.Called(ctx, t)
+	return args.Error(0)
+}
+
 func (m *mockDashboardRepo) Update(ctx context.Context, d *domain.Dashboard) (bool, error) {
 	args := m.Called(ctx, d)
 	return args.Bool(0), args.Error(1)

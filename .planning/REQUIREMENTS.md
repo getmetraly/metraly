@@ -17,19 +17,19 @@ v1 here means the full planned product roadmap baseline, with Community Preview 
 
 ### Authentication And Access
 
-- [ ] **AUTH-01**: User can authenticate with local email/password credentials.
-- [ ] **AUTH-02**: User receives RS256 access tokens and single-use refresh tokens.
-- [ ] **AUTH-03**: Protected API routes reject missing or invalid credentials.
-- [ ] **AUTH-04**: Role middleware enforces admin, editor, viewer, and team-lead access where required.
-- [ ] **AUTH-05**: OIDC can be configured without affecting local auth when disabled.
+- [x] **AUTH-01**: User can authenticate with local email/password credentials.
+- [x] **AUTH-02**: User receives RS256 access tokens and single-use refresh tokens.
+- [x] **AUTH-03**: Protected API routes reject missing or invalid credentials.
+- [x] **AUTH-04**: Role middleware enforces admin, editor, viewer, and team-lead access where required.
+- [x] **AUTH-05**: OIDC can be configured without affecting local auth when disabled.
 
 ### Demo And Onboarding
 
-- [ ] **ONBD-01**: First-run demo mode loads believable Sandbox Inc. data into Postgres/TimescaleDB.
-- [ ] **ONBD-02**: User lands on an Overview dashboard with meaningful demo metrics immediately after startup/login.
-- [ ] **ONBD-03**: Demo mode clearly labels synthetic data and offers a path to connect real sources.
-- [ ] **ONBD-04**: Setup wizard lets user select and configure initial sources for the preview flow.
-- [ ] **ONBD-05**: Time-to-first-insight target is measurable and documented.
+- [x] **ONBD-01**: First-run demo mode loads believable Sandbox Inc. data into Postgres/TimescaleDB.
+- [x] **ONBD-02**: User lands on an Overview dashboard with meaningful demo metrics immediately after startup/login.
+- [x] **ONBD-03**: Demo mode clearly labels synthetic data and offers a path to connect real sources.
+- [x] **ONBD-04**: Setup wizard lets user select and configure initial sources for the preview flow.
+- [x] **ONBD-05**: Time-to-first-insight target is measurable and documented.
 
 ### Metrics And Dashboards
 
@@ -131,11 +131,11 @@ Deferred beyond the first full roadmap baseline.
 | AUTH-03 | Phase 2 | Pending |
 | AUTH-04 | Phase 2 | Pending |
 | AUTH-05 | Phase 2 | Pending |
-| ONBD-01 | Phase 3 | Pending |
-| ONBD-02 | Phase 3 | Pending |
-| ONBD-03 | Phase 3 | Pending |
-| ONBD-04 | Phase 3 | Pending |
-| ONBD-05 | Phase 3 | Pending |
+| ONBD-01 | Phase 3 | Complete |
+| ONBD-02 | Phase 3 | Complete |
+| ONBD-03 | Phase 3 | Complete |
+| ONBD-04 | Phase 3 | Complete |
+| ONBD-05 | Phase 3 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |
 | DASH-03 | Phase 4 | Pending |

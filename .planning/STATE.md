@@ -1,7 +1,7 @@
 # GSD State: Metraly
 
 **Initialized:** 2026-05-05
-**Current focus:** Phase 1 - Runtime Foundation
+**Current focus:** Phase 4 - Dashboard Data Path
 
 ## Project Reference
 
@@ -29,8 +29,8 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 | Phase | Status | Goal |
 |-------|--------|------|
 | 1 | Complete | Runtime Foundation |
-| 2 | Pending | Auth And Access |
-| 3 | Pending | Sandbox Onboarding |
+| 2 | Complete | Auth And Access |
+| 3 | Complete | Sandbox Onboarding |
 | 4 | Pending | Dashboard Data Path |
 | 5 | Pending | Preview Ingestion |
 | 6 | Pending | Community GA Polish |
@@ -49,10 +49,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-05)
 
 ## Next Action
 
-Phase 1 complete. Verify Phase 1 or begin Phase 2 planning:
+Phase 4 planning is complete. Begin Phase 4 execution:
 
 ```text
-$gsd-verify-work 1
+$gsd-execute-phase 4
 ```
 
 ## Accumulated Context
@@ -62,8 +62,13 @@ $gsd-verify-work 1
 - 2026-05-05: Phase 1 discussion captured in `.planning/phases/01-runtime-foundation/01-CONTEXT.md`.
 - 2026-05-05: Phase 1 research and execution plans created in `.planning/phases/01-runtime-foundation/`.
 - 2026-05-05: Phase 1 execution completed; runtime wiring, service-backed dashboard route path, AGPL headers, and runtime docs cleanup implemented.
+- 2026-05-06: Phase 2 discussion, research, and planning artifacts created in `.planning/phases/02-auth-and-access/`.
+- 2026-05-06: Phase 2 execution completed; auth routes, role gate, auth wiring, and verification tests were implemented.
+- 2026-05-06: Phase 3 discuss-phase context captured in `.planning/phases/03-sandbox-onboarding/03-CONTEXT.md`.
+- 2026-05-06: Phase 3 research and plan artifacts created in `.planning/phases/03-sandbox-onboarding/`.
+- 2026-05-06: Phase 3 execution completed; Sandbox Inc. seed data, first-run choice flow, demo banner, setup wizard exit, and verification artifacts were implemented.
 
 ### Resume Points
 
-- Stopped at: Phase 1 executed
-- Resume with: `$gsd-verify-work 1`
+- Stopped at: Phase 3 complete
+- Resume with: `$gsd-execute-phase 4`

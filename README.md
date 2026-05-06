@@ -1,6 +1,6 @@
 # 🚀 Metraly — Open-Core Engineering Metrics Platform
 
-**⚠️ Current Status: Early Prototype. Some features are under active development and may not yet be fully functional.**
+**⚠️ Current Status: Local preview is wired end-to-end for seeded auth and backend-backed dashboards. Some product surfaces are still under active development.**
 
 > **Your data, your AI, your servers — by design, not as an afterthought.**
 
@@ -60,7 +60,7 @@ Metraly treats AI not as a black-box magic wand, but as a transparent, self-host
 
 For organizations rolling Metraly out to hundreds of teams, the “Enterprise” feature set provides everything needed for compliant, production-grade operations.
 
-- **Authentication & authorization**: Single Sign-On via OIDC (Okta, Azure AD, Keycloak), full RBAC (Admin, Editor, Viewer) with team-level scoping.
+- **Authentication & authorization**: Local seeded admin login is wired for compose-based preview; Single Sign-On via OIDC (Okta, Azure AD, Keycloak) and full RBAC (Admin, Editor, Viewer) with team-level scoping remain part of the enterprise path.
 - **Audit & compliance**: Immutable activity log for every user action, exportable to external SIEMs. Configurable data retention policies.
 - **White-labeling**: Replace logos, colours, and domain names. Create private dashboard templates for consistent reporting across the company.
 - **High availability**: Designed around TimescaleDB for time-series data and Kubernetes-native deployment with Helm. ClickHouse is deferred as a future raw-event ingestion option.
@@ -81,13 +81,14 @@ The fastest way to get a local Metraly instance up and running.
 ```bash
 git clone https://github.com/getmetraly/metraly.git
 cd metraly
-make docker-up
+make up
 ```
 
-This will build and start the API, React UI, Postgres/TimescaleDB, and Redis.
+This builds and starts the API, React UI, Postgres/TimescaleDB, and Redis in one command.
 
 - **UI**: [http://localhost:3000](http://localhost:3000)
 - **API Health**: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
+- **Local login**: `admin@metraly.local` / `admin123`
 
 ## 🛠️ Development
 
@@ -105,7 +106,8 @@ make build       # Build the API binary
 make test        # Run tests (19 tests currently)
 make lint        # Run linter
 make run         # Build and run API locally (without Docker)
-make docker-up   # Start all services in Docker
+make up          # Build and start the full Docker stack
+make docker-up   # Legacy alias for starting all services in Docker
 make docker-down # Stop and remove Docker services
 make docker-logs # Watch logs from all services in real time
 ```
@@ -120,7 +122,7 @@ make docker-logs # Watch logs from all services in real time
 - **Infrastructure**: Docker, Docker‑Compose, Helm (future), Kubernetes‑ready
 
 **Backend‑to‑Frontend flow**
-> The Go API stores dashboard definitions (widgets and layout) as JSONB in PostgreSQL. The UI fetches a dashboard via `GET /api/v1/dashboards/{id}`, deserialises it into the TypeScript `Dashboard` model, and renders each widget according to the `layout` grid. Widget‑specific data is requested in parallel with `POST /api/v1/widgets/data`, which the `biz/dashboard_svc` executes using an `errgroup` for concurrency.
+> The Go API stores dashboard definitions (widgets and layout) as JSONB in PostgreSQL. The UI uses the seeded local admin session, fetches dashboards via `GET /api/v1/dashboards/{id}`, deserialises them into the TypeScript `Dashboard` model, and renders each widget according to the `layout` grid. Widget-specific data is served by the backend preview surface, which dispatches widget processors through a registry and fans out data fetches in parallel.
 
 **License header note**
 > Every Go source file must begin with the SPDX‑AGPL‑3.0‑or‑later header (`// SPDX‑License-Identifier: AGPL‑3.0‑or‑later`). See `AGENTS.md` for the exact header text.
