@@ -79,6 +79,11 @@ export interface DashboardIndexEntry {
   hasDraft: boolean;
 }
 
+export interface EmptyWidget {
+  type: 'empty';
+  instanceId: string;
+}
+
 export interface SystemTemplate {
   templateId: SystemTemplateId;
   label: string;

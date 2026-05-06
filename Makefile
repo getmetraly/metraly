@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint docker-build docker-up docker-down docker-logs
+.PHONY: build run stop clean test lint docker-build docker-up docker-down docker-logs ui-run
 
 # Defaults
 APP_NAME := metraly
@@ -22,6 +22,11 @@ build:
 run: build
 	@echo "Starting API on port $(API_PORT)..."
 	POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379 ./bin/api
+
+# Run UI locally
+ui-run:
+	@echo "Starting UI on port $(UI_PORT)..."
+	cd ui && npm run dev
 
 # Run tests
 test:
@@ -93,6 +98,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build              - Build Go API"
 	@echo "  run                - Run API locally"
+	@echo "  ui-run             - Run UI locally"
 	@echo "  test               - Run tests"
 	@echo "  lint               - Run linter"
 	@echo "  docker-up          - Start all Docker services"

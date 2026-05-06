@@ -92,7 +92,7 @@ const App = () => {
     <TweaksProvider>
       <div style={{ display: 'flex', height: '100%', width: '100%', overflow: 'hidden' }}>
         <Sidebar active={active} onNav={setActive} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar title={title} subtitle={subtitle} />
           {renderScreen()}
         </div>
