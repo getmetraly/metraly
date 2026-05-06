@@ -44,8 +44,8 @@ describe('DashboardWizardScreen', () => {
     fireEvent.click(screen.getByText('CTO'));
     fireEvent.click(screen.getByText('Continue'));
     const widgetText = 'DORA Overview';
-    fireEvent.click(screen.getByText(widgetText));
-    expect(screen.getByText((content) => content.includes('Selected:'))).toHaveTextContent('Selected: 5');
+    fireEvent.click(screen.getAllByText(widgetText)[0]);
+    expect(screen.getByText((content) => content.includes('Selected:'))).toHaveTextContent('Selected: 3');
   });
 
   it('moves to step 2 and shows widget layout management', () => {

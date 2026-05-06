@@ -24,7 +24,7 @@ export const WidgetPalette: React.FC = () => {
       {/* Category filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {CATS.map(c => (
-          <button key={c} onClick={() => setWidgetCat(c)} style={{
+          <button key={c} type="button" aria-pressed={widgetCat === c} onClick={() => setWidgetCat(c)} style={{
             padding: '4px 11px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
             border: widgetCat === c ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
             background: widgetCat === c ? 'rgba(0,229,255,0.1)' : 'transparent',
@@ -39,8 +39,10 @@ export const WidgetPalette: React.FC = () => {
           const c = catColors[w.cat] || '#00E5FF';
           const sel = widgets.some(widget => widget.id === w.id);
           return (
-            <div
+            <button
               key={w.id}
+              type="button"
+              aria-pressed={sel}
               draggable
               onDragStart={(e) => handleDragStart(e, w.id)}
               onClick={() => {
@@ -57,6 +59,9 @@ export const WidgetPalette: React.FC = () => {
                 cursor: 'pointer', border: sel ? `1px solid ${c}40` : '1px solid var(--border)',
                 background: sel ? `${c}0a` : 'transparent',
                 transition: 'background 0.15s',
+                color: 'var(--text)',
+                textAlign: 'left',
+                width: '100%',
               }}
               onMouseEnter={e => { if (!sel) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
               onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}
@@ -70,7 +75,7 @@ export const WidgetPalette: React.FC = () => {
               </div>
               {sel && <Icon name="check" size={16} color={c} />}
               <Icon name="grip-vertical" size={12} color="var(--muted)" />
-            </div>
+            </button>
           );
         })}
       </div>

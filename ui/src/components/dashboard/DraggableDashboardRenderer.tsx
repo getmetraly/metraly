@@ -8,7 +8,6 @@ import { WidthProvider } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import type { Dashboard } from "../../types/dashboard";
 import { widgetRegistry } from "./widgetRegistry";
-import type { WidgetConfig } from "../../types/widgets";
 import type { MetricTimeSeries } from "../../types/metrics";
 import { Icon } from "../shared/Icon";
 
@@ -61,9 +60,6 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
       {dashboard.widgets.map((widget) => {
         const scopedInstanceId = `${dashboard.id}-${widget.instanceId}`;
         const WidgetComponent = widgetRegistry[widget.widgetType];
-        const layoutItem = dashboard.layout.find((l) => l.i === widget.instanceId);
-        const w = layoutItem?.w || 6;
-        const h = Math.max(layoutItem?.h || 2, 2);
         const isFull = widgetSizes[widget.instanceId] === 'full';
 
         if (!WidgetComponent) {
@@ -77,7 +73,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
         const isEmpty = widget.widgetType === 'empty';
         return (
           <div
-            key={scopedInstanceId}
+            key={widget.instanceId}
             style={{
               position: "relative",
               width: "100%",
@@ -90,6 +86,8 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
             {isEditable && (
               <div style={{ position: "absolute", top: 8, right: 8, zIndex: 100, display: "flex", gap: 4, alignItems: "center" }}>
                 <button
+                  type="button"
+                  aria-label={isFull ? "Make widget flexible width" : "Make widget full width"}
                   onClick={() => onToggleSize?.(widget.instanceId)}
                   style={{
                     padding: "3px 8px",
@@ -104,6 +102,8 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
                   {isFull ? "Full" : "Flex"}
                 </button>
                 <button
+                  type="button"
+                  aria-label="Remove widget"
                   onClick={() => onRemoveWidget?.(widget.instanceId)}
                   style={{
                     background: "none",

@@ -131,6 +131,10 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
   const widgetConfig = WIDGET_CONFIG_MAP[widget.id] || {};
   const mockData = createMockData(widget.id);
   const WidgetComponent = widgetType ? widgetRegistry[widgetType as keyof typeof widgetRegistry] : null;
+  const widgetSizes = useWizardStore((s) => s.widgetSizes);
+  const toggleWidgetSize = useWizardStore((s) => s.toggleWidgetSize);
+  const removeWidget = useWizardStore((s) => s.removeWidget);
+  const isFull = widgetSizes[widget.instanceId] === "full";
 
   return (
     <div
@@ -192,6 +196,43 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
         >
           {widget.label}
         </span>
+        <button
+          type="button"
+          aria-label={isFull ? "Make widget flexible width" : "Make widget full width"}
+          title={isFull ? "Make flexible" : "Make full width"}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleWidgetSize(widget.instanceId);
+          }}
+          style={{
+            background: "transparent",
+            border: "1px solid var(--border)",
+            color: isFull ? "var(--cyan)" : "var(--muted)",
+            borderRadius: 6,
+            padding: "4px 8px",
+            fontSize: 11,
+            cursor: "pointer",
+          }}
+        >
+          {isFull ? "Full" : "Flex"}
+        </button>
+        <button
+          type="button"
+          aria-label="Remove widget"
+          onClick={(event) => {
+            event.stopPropagation();
+            removeWidget(widget.instanceId);
+          }}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--muted)",
+            cursor: "pointer",
+            padding: 4,
+          }}
+        >
+          <Icon name="x" size={13} />
+        </button>
       </div>
       <div style={{ flex: 1, overflow: "hidden" }}>
         {WidgetComponent ? (

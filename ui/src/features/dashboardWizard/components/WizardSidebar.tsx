@@ -19,6 +19,8 @@ interface WizardSidebarProps {
   onToggleWidget: (instanceId: string) => void;
   onToggleSize: (instanceId: string) => void;
   onMoveWidget: (fromIndex: number, toIndex: number) => void;
+  showDefaultFilters?: boolean;
+  showDelete?: boolean;
   name: string;
   desc: string;
   timeRange: string;
@@ -40,6 +42,8 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
   onToggleWidget,
   onToggleSize,
   onMoveWidget,
+  showDefaultFilters = true,
+  showDelete = false,
   name,
   desc,
   timeRange,
@@ -170,6 +174,8 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
             onTimeRangeChange={onTimeRangeChange}
             onTeamChange={onTeamChange}
             onDelete={onDelete}
+            showDefaultFilters={showDefaultFilters}
+            showDelete={showDelete}
             selectedWidgets={selectedWidgets}
             widgetSizes={widgetSizes}
             onToggleWidget={onToggleWidget}

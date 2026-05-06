@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, SystemTemplate, WidgetLayout } from '../types/dashboard';
+import type { CreateDashboardRequest, ForkDashboardRequest, ShareDashboardRequest, ShareDashboardResponse, UpdateDashboardRequest, UpdateLayoutRequest } from '../types/api';
 import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricBreakdownItem as UiMetricBreakdownItem, MetricTimeSeries } from '../types/metrics';
 import type { ActivityEvent, MeResponse } from '../types/user';
 
@@ -40,7 +41,7 @@ type ApiDashboard = {
   isPublic: boolean;
   shareToken?: string | null;
   widgets: DashboardWidgetInstance[];
-  layout: WidgetLayout[];
+  layout: ApiWidgetLayout[];
   version: number;
   forkedFromId?: string | null;
   createdAt: string;
@@ -54,7 +55,19 @@ type ApiTemplate = {
   icon?: string;
   category?: string;
   widgets: DashboardWidgetInstance[];
-  layout: WidgetLayout[];
+  layout: ApiWidgetLayout[];
+};
+
+type ApiWidgetLayout = Omit<WidgetLayout, 'i'> & {
+  instanceId?: string;
+  i?: string;
+};
+
+type DashboardWriteResponse = ApiDashboard;
+type ShareDashboardApiResponse = {
+  isPublic: boolean;
+  shareToken?: string | null;
+  dashboardId: string;
 };
 
 const rawClient = axios.create({
@@ -217,11 +230,32 @@ function isSystemTemplateId(id: string): boolean {
   return ['overview', 'cto', 'vp', 'tl', 'devops', 'ic'].includes(id);
 }
 
+function mapLayoutFromApi(layout: ApiWidgetLayout[]): WidgetLayout[] {
+  return layout.map((item) => ({
+    i: item.i || item.instanceId || '',
+    x: item.x,
+    y: item.y,
+    w: item.w,
+    h: item.h,
+    minW: item.minW,
+    minH: item.minH,
+    static: item.static,
+  }));
+}
+
+function mapLayoutToApi(layout: WidgetLayout[]): ApiWidgetLayout[] {
+  return layout.map(({ i, ...item }) => ({
+    ...item,
+    instanceId: i,
+  }));
+}
+
 function mapDashboard(dashboard: ApiDashboard): Dashboard {
   return {
     id: dashboard.id,
     name: dashboard.name,
     description: dashboard.description || '',
+    icon: dashboard.icon || '',
     sourceType: dashboard.forkedFromId
       ? 'forked'
       : isSystemTemplateId(dashboard.id)
@@ -234,7 +268,7 @@ function mapDashboard(dashboard: ApiDashboard): Dashboard {
     visibility: dashboard.isPublic ? 'org' : 'private',
     defaultFilters: defaultFilters(),
     widgets: dashboard.widgets,
-    layout: dashboard.layout,
+    layout: mapLayoutFromApi(dashboard.layout),
     createdBy: dashboard.ownerId,
     createdAt: dashboard.createdAt,
     updatedAt: dashboard.updatedAt,
@@ -274,9 +308,51 @@ function mapTemplate(template: ApiTemplate): SystemTemplate {
       visibility: 'org',
       defaultFilters: defaultFilters(),
       widgets: template.widgets,
-      layout: template.layout,
+      layout: mapLayoutFromApi(template.layout),
     },
   };
+}
+
+function toApiDashboardResponse(dashboard: DashboardWriteResponse): Dashboard {
+  return mapDashboard(dashboard);
+}
+
+function createDashboardPayload(input: CreateDashboardRequest): {
+  name: string;
+  description?: string;
+  icon: string;
+  widgets: DashboardWidgetInstance[];
+  layout: ApiWidgetLayout[];
+} {
+  return {
+    name: input.name,
+    description: input.description,
+    icon: input.icon ?? '',
+    widgets: input.widgets,
+    layout: mapLayoutToApi(input.layout),
+  };
+}
+
+function updateDashboardPayload(input: UpdateDashboardRequest): {
+  name: string;
+  description?: string;
+  icon: string;
+  widgets?: DashboardWidgetInstance[];
+  layout?: ApiWidgetLayout[];
+  version: number;
+} {
+  return {
+    name: input.name ?? '',
+    description: input.description,
+    icon: input.icon ?? '',
+    widgets: input.widgets,
+    layout: input.layout ? mapLayoutToApi(input.layout) : undefined,
+    version: input.version,
+  };
+}
+
+function visibilityToIsPublic(visibility: ShareDashboardRequest['visibility']): boolean {
+  return visibility !== 'private';
 }
 
 type MetricDescriptor = {
@@ -333,6 +409,43 @@ export async function getDashboardList(): Promise<DashboardIndexEntry[]> {
 export async function getDashboard(id: string): Promise<Dashboard> {
   const res = await client.get<ApiDashboard>(`/dashboards/${id}`);
   return mapDashboard(res.data);
+}
+
+export async function createDashboard(input: CreateDashboardRequest): Promise<Dashboard> {
+  const res = await client.post<DashboardWriteResponse>('/dashboards', createDashboardPayload(input));
+  return toApiDashboardResponse(res.data);
+}
+
+export async function updateDashboard(id: string, input: UpdateDashboardRequest): Promise<Dashboard> {
+  const res = await client.put<DashboardWriteResponse>(`/dashboards/${id}`, updateDashboardPayload(input));
+  return toApiDashboardResponse(res.data);
+}
+
+export async function updateLayout(id: string, input: UpdateLayoutRequest): Promise<Dashboard> {
+  const res = await client.put<DashboardWriteResponse>(`/dashboards/${id}/layout`, {
+    ...input,
+    layout: mapLayoutToApi(input.layout),
+  });
+  return toApiDashboardResponse(res.data);
+}
+
+export async function forkDashboard(id: string, input: ForkDashboardRequest): Promise<Dashboard> {
+  const res = await client.post<DashboardWriteResponse>(`/dashboards/${id}/fork`, input);
+  return toApiDashboardResponse(res.data);
+}
+
+export async function shareDashboard(id: string, input: ShareDashboardRequest): Promise<ShareDashboardResponse> {
+  const res = await client.put<ShareDashboardApiResponse>(`/dashboards/${id}/share`, {
+    isPublic: visibilityToIsPublic(input.visibility),
+  });
+  const shareToken = res.data.shareToken || undefined;
+  return {
+    visibility: input.visibility,
+    shareToken,
+    shareUrl: shareToken && typeof window !== 'undefined'
+      ? `${window.location.origin}/shared/${shareToken}`
+      : undefined,
+  };
 }
 
 export async function getDashboardData(dashboardId: string): Promise<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }> {

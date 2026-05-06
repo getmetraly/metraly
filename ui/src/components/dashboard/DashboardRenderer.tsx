@@ -1,7 +1,6 @@
 import React from 'react';
 import type { Dashboard } from '../../types/dashboard';
 import { widgetRegistry } from './widgetRegistry';
-import type { WidgetConfig } from '../../types/widgets';
 import type { MetricTimeSeries } from '../../types/metrics';
 
 interface DashboardRendererProps {

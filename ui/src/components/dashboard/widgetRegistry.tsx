@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { WidgetType, WidgetConfig } from '../../types/widgets';
 import React from 'react';
 import { Icon } from '../shared/Icon';
@@ -418,7 +417,7 @@ const AIInsightWidget = ({ config, data }: { config: WidgetConfig; data?: any })
           </div>
           <p style={{ fontSize: 13, color: 'var(--muted2)', lineHeight: 1.55, margin: 0 }}>{data.body || data.text || 'No insight available'}</p>
           {cfg.variant !== 'inline' && data.action && (
-            <button style={{ marginTop: 12, padding: '6px 14px', borderRadius: 8, background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--cyan)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button type="button" style={{ marginTop: 12, padding: '6px 14px', borderRadius: 8, background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--cyan)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {data.action} <Icon name="arrowRight" size={12} color="var(--cyan)"/>
             </button>
           )}
@@ -478,7 +477,7 @@ const RecentActivityWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
     <div style={{ width: '100%', height: '100%', boxSizing: 'border-box', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px', overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13.5, color: 'var(--text)' }}>Recent Activity</span>
-        <button style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer' }}>View all →</button>
+        <button type="button" style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer' }}>View all →</button>
       </div>
       {activities.map((ev: any, i: number) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>

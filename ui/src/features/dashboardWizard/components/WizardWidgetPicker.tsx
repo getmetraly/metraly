@@ -21,9 +21,6 @@ const getCatColor = (cat: string): string => {
 export const WizardWidgetPicker: React.FC<WizardWidgetPickerProps> = ({
   selectedWidgets,
   onToggleWidget,
-  onToggleSize,
-  onMoveWidget,
-  widgetSizes,
 }) => {
   const [widgetCat, setWidgetCat] = React.useState<string>('All');
 
@@ -38,7 +35,7 @@ export const WizardWidgetPicker: React.FC<WizardWidgetPickerProps> = ({
       
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {CATS.map(c => (
-          <button key={c} onClick={() => setWidgetCat(c)} style={{
+          <button key={c} type="button" aria-pressed={widgetCat === c} onClick={() => setWidgetCat(c)} style={{
             padding: '4px 11px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
             border: widgetCat === c ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
             background: widgetCat === c ? 'rgba(0,229,255,0.1)' : 'transparent',
@@ -52,10 +49,13 @@ export const WizardWidgetPicker: React.FC<WizardWidgetPickerProps> = ({
           const sel = selectedWidgets.some(x => x.id === w.id);
           const c = getCatColor(w.cat);
           return (
-            <div key={w.id} onClick={() => onToggleWidget(w.id)} style={{
+            <button key={w.id} type="button" aria-pressed={sel} onClick={() => onToggleWidget(w.id)} style={{
+              width: '100%',
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 9,
               cursor: 'pointer', border: sel ? `1px solid ${c}40` : '1px solid var(--border)',
               background: sel ? `${c}0a` : 'transparent',
+              color: 'var(--text)',
+              textAlign: 'left',
             }}>
               <div style={{ width: 28, height: 28, borderRadius: 7, background: `${c}18`, border: `1px solid ${c}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name={w.icon} size={13} color={c} />
@@ -72,7 +72,7 @@ export const WizardWidgetPicker: React.FC<WizardWidgetPickerProps> = ({
               }}>
                 {sel && <Icon name="check" size={10} color="#0B0F19" />}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -43,7 +43,7 @@ describe('WidgetPreviewCard', () => {
     const addedWidget = useWizardStore.getState().widgets[0];
     const testWidget = { ...mockWidget, instanceId: addedWidget.instanceId };
     render(<WidgetPreviewCard widget={testWidget} />);
-     const removeBtn = screen.getByRole('button', { name: '' });
+    const removeBtn = screen.getByLabelText('Remove widget');
     fireEvent.click(removeBtn);
     expect(useWizardStore.getState().widgets).toHaveLength(0);
   });

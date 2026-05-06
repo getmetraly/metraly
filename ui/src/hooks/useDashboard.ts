@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { getDashboard as fetchDashboard, getDashboardData as fetchDashboardData } from "../api/client";
 import type { Dashboard } from "../types/dashboard";
@@ -42,7 +41,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const dataMap: Record<string, any> = {};
         dataResponse.widgets.forEach((item) => {
-          dataMap[item.instanceId] = item.data;
+          dataMap[`${requestId}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
       } catch (err) {
@@ -77,7 +76,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const dataMap: Record<string, any> = {};
         dataResponse.widgets.forEach((item) => {
-          dataMap[item.instanceId] = item.data;
+          dataMap[`${requestId}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
       } catch (err) {

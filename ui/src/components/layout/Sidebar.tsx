@@ -32,8 +32,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = '', onNav }) => {
       return ['dash-cto', 'dash-devops'];
     }
   });
-  const [hoveredPin, setHoveredPin] = useState(null);
-
   useEffect(() => {
     localStorage.setItem('metraly-pinned', JSON.stringify(pinned));
   }, [pinned]);

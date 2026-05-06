@@ -15,6 +15,7 @@ export type DashboardResponse = Dashboard;
 export interface CreateDashboardRequest {
   name: string;
   description?: string;
+  icon?: string;
   sourceType: 'user-created' | 'forked';
   sourceTemplateId?: SystemTemplateId;
   forkedFromId?: string;
@@ -32,6 +33,7 @@ export interface CreateDashboardResponse {
 export interface UpdateDashboardRequest {
   name?: string;
   description?: string;
+  icon?: string;
   visibility?: DashboardVisibility;
   teamId?: string;
   defaultFilters?: DashboardFilters;

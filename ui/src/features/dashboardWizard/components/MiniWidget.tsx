@@ -21,7 +21,7 @@ export const MiniWidget: React.FC<MiniWidgetProps> = ({ widget, onRemove }) => {
         <Icon name={widget.icon} size={13} color={widget.color} />
       </div>
       <div style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{widget.label}</div>
-      <button onClick={(e) => { e.stopPropagation(); onRemove(widget.instanceId); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}>
+      <button type="button" aria-label={`Remove ${widget.label}`} onClick={(e) => { e.stopPropagation(); onRemove(widget.instanceId); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}>
         <Icon name="x" size={13} />
       </button>
     </div>

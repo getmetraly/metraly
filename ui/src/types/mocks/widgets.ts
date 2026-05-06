@@ -1,4 +1,4 @@
-import type { WidgetConfig, WidgetType } from '../widgets';
+import type { WidgetConfig } from '../widgets';
 import type { DashboardWidgetInstance } from '../dashboard';
 
 const widgetColorMap: Record<string, string> = {

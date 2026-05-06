@@ -1,6 +1,8 @@
 // src/features/dashboardWizard/DashboardWizardScreen.tsx
 import React from "react";
 import { Icon } from "../../components/shared/Icon";
+import { createDashboard } from "../../api/client";
+import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
 import { WizardPreviewGrid } from "./components/WizardPreviewGrid";
 
@@ -96,8 +98,11 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
   const toggleWidgetSize = useWizardStore((s) => s.toggleWidgetSize);
   const moveWidget = useWizardStore((s) => s.moveWidget);
   const widgetSizes = useWizardStore((s) => s.widgetSizes);
+  const reset = useWizardStore((s) => s.reset);
 
   const [widgetCat, setWidgetCat] = React.useState<string>("All");
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [saveError, setSaveError] = React.useState("");
 
   const steps = ["Template", "Widgets", "Settings"];
 
@@ -133,8 +138,23 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
     return colors[cat] || "#00E5FF";
   };
 
-  // Get layout once to avoid calling hook inside map
-  const layout = useWizardStore((s) => s.layout);
+  const handleSave = async () => {
+    if (isSaving) {
+      return;
+    }
+    setSaveError("");
+    setIsSaving(true);
+    try {
+      const saved = await createDashboard(buildCreateDashboardRequest(useWizardStore.getState()));
+      reset();
+      onSave?.(saved);
+    } catch (error) {
+      console.error("Failed to save dashboard:", error);
+      setSaveError(error instanceof Error ? error.message : "Failed to save dashboard");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div
@@ -210,6 +230,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   return (
                     <button
                       key={tmpl.id}
+                      type="button"
                       onClick={() => setTemplate(tmpl.id)}
                       style={{
                         display: "flex",
@@ -319,6 +340,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 {CATS.map((c) => (
                   <button
                     key={c}
+                    type="button"
+                    aria-pressed={widgetCat === c}
                     onClick={() => setWidgetCat(c)}
                     style={{
                       padding: "4px 11px",
@@ -343,10 +366,13 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   const sel = widgets.some((x) => x.id === w.id);
                   const c = getCatColor(w.cat);
                   return (
-                    <div
+                    <button
                       key={w.id}
+                      type="button"
+                      aria-pressed={sel}
                       onClick={() => toggleWidget(w.id)}
                       style={{
+                        width: "100%",
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
@@ -357,6 +383,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                           ? `1px solid ${c}40`
                           : "1px solid var(--border)",
                         background: sel ? `${c}0a` : "transparent",
+                        color: "var(--text)",
+                        textAlign: "left",
                       }}
                     >
                       <div
@@ -395,7 +423,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                       >
                         {sel && <Icon name="check" size={10} color="#0B0F19" />}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -425,6 +453,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label
+                  htmlFor="dashboard-wizard-name"
                   style={{
                     fontSize: 12,
                     color: "var(--muted)",
@@ -435,8 +464,11 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   Dashboard name *
                 </label>
                 <input
+                  id="dashboard-wizard-name"
+                  name="dashboard-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  autoComplete="off"
                   placeholder="e.g. Backend Team Overview"
                   style={{
                     width: "100%",
@@ -446,12 +478,12 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                     padding: "9px 12px",
                     color: "var(--text)",
                     fontSize: 13.5,
-                    outline: "none",
                   }}
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label
+                  htmlFor="dashboard-wizard-description"
                   style={{
                     fontSize: 12,
                     color: "var(--muted)",
@@ -462,9 +494,12 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   Description
                 </label>
                 <input
+                  id="dashboard-wizard-description"
+                  name="dashboard-description"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  placeholder="Optional — visible to teammates"
+                  autoComplete="off"
+                  placeholder="Optional - visible to teammates"
                   style={{
                     width: "100%",
                     background: "var(--glass)",
@@ -473,12 +508,11 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                     padding: "9px 12px",
                     color: "var(--text)",
                     fontSize: 13.5,
-                    outline: "none",
                   }}
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label
+                <div
                   style={{
                     fontSize: 12,
                     color: "var(--muted)",
@@ -487,11 +521,13 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   }}
                 >
                   Default time range
-                </label>
-                <div style={{ display: "flex", gap: 6 }}>
+                </div>
+                <div style={{ display: "flex", gap: 6 }} role="group" aria-label="Default time range">
                   {["7d", "14d", "30d", "90d"].map((t) => (
                     <button
                       key={t}
+                      type="button"
+                      aria-pressed={timeRange === t}
                       onClick={() => setTimeRange(t)}
                       style={{
                         padding: "6px 14px",
@@ -517,6 +553,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label
+                  htmlFor="dashboard-wizard-team"
                   style={{
                     fontSize: 12,
                     color: "var(--muted)",
@@ -527,6 +564,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   Team scope
                 </label>
                 <select
+                  id="dashboard-wizard-team"
+                  name="dashboard-team"
                   value={team}
                   onChange={(e) => setTeam(e.target.value)}
                   style={{
@@ -578,7 +617,6 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                     style={{ display: "flex", flexDirection: "column", gap: 6 }}
                   >
                     {widgets.map((w, idx) => {
-                      const c = getCatColor(w.cat);
                       const isLg = widgetSizes[w.instanceId] === "full";
                       return (
                         <div
@@ -601,6 +639,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                             }}
                           >
                             <button
+                              type="button"
+                              aria-label={`Move ${w.label} up`}
                               onClick={() => moveWidget(idx, idx - 1)}
                               disabled={idx === 0}
                               style={{
@@ -616,6 +656,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                               ▲
                             </button>
                             <button
+                              type="button"
+                              aria-label={`Move ${w.label} down`}
                               onClick={() => moveWidget(idx, idx + 1)}
                               disabled={idx === widgets.length - 1}
                               style={{
@@ -656,6 +698,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                             {w.label}
                           </div>
                           <button
+                            type="button"
+                            aria-label={isLg ? `Make ${w.label} flexible width` : `Make ${w.label} full width`}
                             onClick={() => toggleWidgetSize(w.instanceId)}
                             style={{
                               padding: "3px 8px",
@@ -672,6 +716,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                             {isLg ? "Full" : "Flex"}
                           </button>
                           <button
+                            type="button"
+                            aria-label={`Remove ${w.label}`}
                             onClick={() => removeWidget(w.instanceId)}
                             style={{
                               background: "none",
@@ -698,10 +744,12 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             borderTop: "1px solid var(--border)",
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "center",
             flexShrink: 0,
           }}
         >
           <button
+            type="button"
             onClick={() => (step === 0 ? onCancel?.() : setStep(step - 1))}
             style={{
               padding: "8px 18px",
@@ -715,33 +763,41 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
           >
             {step === 0 ? "Cancel" : "Back"}
           </button>
-          <button
-            onClick={() =>
-              step === steps.length - 1
-                ? onSave?.({
-                    name,
-                    widgets,
-                    timeRange,
-                    team,
-                    description: desc,
-                  })
-                : setStep(step + 1)
-            }
-            disabled={!canContinue}
-            style={{
-              padding: "8px 22px",
-              borderRadius: 9,
-              cursor: canContinue ? "pointer" : "not-allowed",
-              background: step === steps.length - 1 ? "#00C853" : "var(--grad)",
-              border: "none",
-              color: "#fff",
-              fontSize: 13.5,
-              fontWeight: 600,
-              opacity: canContinue ? 1 : 0.4,
-            }}
-          >
-            {step === steps.length - 1 ? "Save Dashboard" : "Continue"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {saveError && (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{ color: "#FF8A8A", fontSize: 12.5, maxWidth: 280 }}
+              >
+                {saveError}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (step === steps.length - 1) {
+                  void handleSave();
+                  return;
+                }
+                setStep(step + 1);
+              }}
+              disabled={!canContinue || isSaving}
+              style={{
+                padding: "8px 22px",
+                borderRadius: 9,
+                cursor: canContinue && !isSaving ? "pointer" : "not-allowed",
+                background: step === steps.length - 1 ? "#00C853" : "var(--grad)",
+                border: "none",
+                color: "#fff",
+                fontSize: 13.5,
+                fontWeight: 600,
+                opacity: canContinue && !isSaving ? 1 : 0.4,
+              }}
+            >
+              {step === steps.length - 1 ? (isSaving ? "Saving…" : "Save Dashboard") : "Continue"}
+            </button>
+          </div>
         </div>
       </div>
 

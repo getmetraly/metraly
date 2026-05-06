@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Metraly - Team Engineering Metrics API
 // Copyright (C) 2026 Metraly Contributors
-import React, { useState, useEffect, useCallback } from "react";
-import { Layout as RGLLayout } from "react-grid-layout";
+
+import React, { useEffect, useState } from "react";
 import { Icon } from "../../components/shared/Icon";
 import { DashboardRenderer } from "../../components/dashboard/DashboardRenderer";
 import { DraggableDashboardRenderer } from "../../components/dashboard/DraggableDashboardRenderer";
 import { useDashboard } from "../../hooks/useDashboard";
-import { mockApi } from "../../api/mockApi";
-import type { WidgetLayout } from "../../types/dashboard";
+import { updateDashboard } from "../../api/client";
+import type { Dashboard } from "../../types/dashboard";
 import { WizardSidebar } from "../dashboardWizard/components/WizardSidebar";
-import { WIDGET_LIBRARY } from "../dashboardWizard/store/wizardStore";
-import type { WizardWidget } from "../dashboardWizard/store/wizardStore";
+import {
+  createEditorStateFromDashboard,
+  toDashboardWidgetInstances,
+} from "../dashboardEditor/model";
+import { buildUpdateDashboardRequest } from "../dashboardEditor/payload";
+import { useWizardStore } from "../dashboardWizard/store/wizardStore";
 
 const DASHBOARDS = [
   { id: "overview", label: "Overview", icon: "home", navId: "dashboard" },
@@ -31,6 +35,25 @@ interface DashboardScreenProps {
   onConfigureSources?: () => void;
 }
 
+function makeDraftDashboard(
+  dashboard: Dashboard,
+  editor: ReturnType<typeof useWizardStore.getState>,
+): Dashboard {
+  return {
+    ...dashboard,
+    name: editor.name,
+    description: editor.desc,
+    icon: editor.icon || dashboard.icon || "",
+    defaultFilters: {
+      ...dashboard.defaultFilters,
+      timeRange: editor.timeRange as Dashboard["defaultFilters"]["timeRange"],
+      team: editor.team as Dashboard["defaultFilters"]["team"],
+    },
+    widgets: toDashboardWidgetInstances(editor.widgets),
+    layout: editor.layout,
+  };
+}
+
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   initialDashboard = "overview",
   onNewDashboard,
@@ -40,71 +63,72 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onConfigureSources,
 }) => {
   const [dashboardId, setDashboardId] = useState(initialDashboard);
-  const [localLayout, setLocalLayout] = useState<RGLLayout[]>([]);
-  const [widgetSizes, setWidgetSizes] = useState<Record<string, string>>({});
-  const [localWidgetMap, setLocalWidgetMap] = useState<Record<string, string>>({});
   const [internalEditMode, setInternalEditMode] = useState(false);
   const [isWizardSidebarOpen, setWizardSidebarOpen] = useState(false);
   const [isSidebarPinned, setSidebarPinned] = useState(false);
-  const [localName, setLocalName] = useState('');
-  const [localDesc, setLocalDesc] = useState('');
-  const [localTimeRange, setLocalTimeRange] = useState('7d');
-  const [localTeam, setLocalTeam] = useState('All teams');
-  const { dashboard, widgetData, isLoading } = useDashboard(dashboardId);
+  const [saveError, setSaveError] = useState("");
+
+  const {
+    dashboard,
+    widgetData,
+    isLoading,
+    refresh,
+  } = useDashboard(dashboardId);
 
   const isEditMode = externalEditMode ?? internalEditMode;
 
-    const getWizardWidgets = useCallback((): WizardWidget[] => {
-      const widgets: WizardWidget[] = [];
-      for (const [instanceId, widgetType] of Object.entries(localWidgetMap)) {
-        const libraryItem = WIDGET_LIBRARY.find(l => l.id === widgetType);
-        widgets.push({
-          id: widgetType,
-          instanceId,
-          type: widgetType,
-          label: libraryItem?.label || widgetType,
-          icon: libraryItem?.icon || 'box',
-          color: libraryItem ? ({ DORA: '#00E5FF', 'CI/CD': '#00C853', PR: '#B44CFF', Sprint: '#FF9100', Team: '#00EFFF', AI: '#B44CFF' }[libraryItem.cat] || '#00EFFF') : '#00EFFF',
-          cat: libraryItem?.cat || 'Team',
-        });
-      }
-      return widgets;
-    }, [localWidgetMap]);
+  const widgets = useWizardStore((s) => s.widgets);
+  const widgetSizes = useWizardStore((s) => s.widgetSizes);
+  const name = useWizardStore((s) => s.name);
+  const desc = useWizardStore((s) => s.desc);
+  const timeRange = useWizardStore((s) => s.timeRange);
+  const team = useWizardStore((s) => s.team);
+  const addWidget = useWizardStore((s) => s.addWidget);
+  const removeWidget = useWizardStore((s) => s.removeWidget);
+  const toggleWidgetSize = useWizardStore((s) => s.toggleWidgetSize);
+  const moveWidget = useWizardStore((s) => s.moveWidget);
+  const updateLayout = useWizardStore((s) => s.updateLayout);
+  const setName = useWizardStore((s) => s.setName);
+  const setDesc = useWizardStore((s) => s.setDesc);
+  const setTimeRange = useWizardStore((s) => s.setTimeRange);
+  const setTeam = useWizardStore((s) => s.setTeam);
+  const resetEditor = useWizardStore((s) => s.reset);
 
   useEffect(() => {
     setDashboardId(initialDashboard);
   }, [initialDashboard]);
 
   useEffect(() => {
-    if (dashboard?.layout) {
-      setLocalLayout(dashboard.layout as RGLLayout[]);
+    if (!dashboard || !isEditMode) {
+      return;
     }
-  }, [dashboard?.layout, dashboardId]);
+    useWizardStore.setState((current) => ({
+      ...current,
+      step: 0,
+      ...createEditorStateFromDashboard(dashboard),
+    }));
+    setWizardSidebarOpen(true);
+  }, [dashboard, isEditMode]);
 
   useEffect(() => {
-    if (dashboard?.widgets) {
-      const sizes: Record<string, string> = {};
-      const widgetMap: Record<string, string> = {};
-      dashboard.widgets.forEach((w) => {
-        const layoutItem = dashboard.layout.find((l) => l.i === w.instanceId);
-        sizes[w.instanceId] = (layoutItem?.w === 12) ? 'full' : 'half';
-        widgetMap[w.instanceId] = w.widgetType;
-      });
-      setWidgetSizes(sizes);
-      setLocalWidgetMap(widgetMap);
+    if (!dashboard) {
+      return;
     }
-  }, [dashboard?.widgets, dashboard?.layout, dashboardId]);
+    if (!isEditMode) {
+      resetEditor();
+    }
+  }, [dashboard, isEditMode, resetEditor]);
 
-  useEffect(() => {
-    if (dashboard) {
-      setLocalName(dashboard.name || '');
-      setLocalDesc(dashboard.description || '');
-      setLocalTimeRange(dashboard.defaultFilters?.timeRange || '7d');
-      setLocalTeam(dashboard.defaultFilters?.team || 'All teams');
-    }
-  }, [dashboard]);
+  const selectedWidgets = widgets;
+
+  const draftDashboard = dashboard && isEditMode
+    ? makeDraftDashboard(dashboard, useWizardStore.getState())
+    : dashboard;
 
   const handleDashboardChange = (newDashboard: string) => {
+    setInternalEditMode(false);
+    setWizardSidebarOpen(false);
+    resetEditor();
     setDashboardId(newDashboard);
     const selected = DASHBOARDS.find((r) => r.id === newDashboard);
     if (selected && onNavigate) {
@@ -112,89 +136,55 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  const handleLayoutChange = useCallback((newLayout: RGLLayout[]) => {
-    setLocalLayout(newLayout);
-  }, []);
+  const handleEnterEditMode = () => {
+    if (!dashboard) {
+      return;
+    }
+    setSaveError("");
+    useWizardStore.setState((current) => ({
+      ...current,
+      step: 0,
+      ...createEditorStateFromDashboard(dashboard),
+    }));
+    setInternalEditMode(true);
+    setWizardSidebarOpen(true);
+    setSidebarPinned(true);
+  };
 
-    const handleRemoveWidget = useCallback((instanceId: string) => {
-      setLocalLayout((prev) => prev.filter((l) => l.i !== instanceId));
-      setWidgetSizes((prev) => {
-        const next = { ...prev };
-        delete next[instanceId];
-        return next;
-      });
-      setLocalWidgetMap((prev) => {
-        const next = { ...prev };
-        delete next[instanceId];
-        return next;
-      });
-    }, []);
+  const handleExitEditMode = () => {
+    setSaveError("");
+    setInternalEditMode(false);
+    setWizardSidebarOpen(false);
+    setSidebarPinned(false);
+    resetEditor();
+  };
 
-    const handleAddWidget = useCallback((widgetId: string) => {
-      const widget = WIDGET_LIBRARY.find((w: any) => w.id === widgetId);
-      if (!widget) return;
-      
-      const newInstanceId = `widget-${Date.now()}`;
-      const newLayoutItem = { 
-        i: newInstanceId, 
-        x: 0, 
-        y: Infinity, 
-        w: widget.defaultSize?.w || 6, 
-        h: widget.defaultSize?.h || 4, 
-        minW: 3, 
-        minH: 2 
-      };
-      
-      setLocalLayout((prev: any) => [...prev, newLayoutItem]);
-      setWidgetSizes((prev: any) => ({ ...prev, [newInstanceId]: 'half' }));
-      // Add new mapping of instanceId -> widget type
-      setLocalWidgetMap((prev) => ({ ...prev, [newInstanceId]: widgetId }));
-    }, []);
+  const handleSaveLayout = async () => {
+    if (!dashboard) {
+      return;
+    }
+    setSaveError("");
+    try {
+      await updateDashboard(
+        dashboard.id,
+        buildUpdateDashboardRequest(useWizardStore.getState(), dashboard.version),
+      );
+      await refresh();
+      handleExitEditMode();
+    } catch (error) {
+      console.error("Failed to save dashboard:", error);
+      setSaveError(error instanceof Error ? error.message : "Failed to save dashboard");
+    }
+  };
 
-  const handleToggleSize = useCallback((instanceId: string) => {
-    const currentSize = widgetSizes[instanceId] || 'half';
-    const newSize = currentSize === 'full' ? 'half' : 'full';
-
-    setWidgetSizes((prev) => ({ ...prev, [instanceId]: newSize }));
-
-    setLocalLayout((layout) =>
-      layout.map((l) =>
-        l.i === instanceId
-          ? { ...l, w: newSize === 'full' ? 12 : 6 }
-          : l
-      )
-    );
-  }, [widgetSizes]);
-
-    const handleSaveLayout = useCallback(async () => {
-      if (!dashboard) return;
-      const newLayout: WidgetLayout[] = localLayout.map((item) => ({
-        i: item.i,
-        x: item.x,
-        y: item.y,
-        w: item.w,
-        h: item.h,
-      }));
-      const remainingIds = new Set(localLayout.map((l) => l.i));
-      // Build widgets from localWidgetMap, preserving order defined by layout
-      const newWidgets = localLayout
-        .filter((l) => localWidgetMap[l.i])
-        .map((l) => ({
-          instanceId: l.i,
-          widgetType: localWidgetMap[l.i],
-        } as any));
-      try {
-        await mockApi.updateDashboard(dashboard.id, {
-          layout: newLayout,
-          widgets: newWidgets,
-          version: dashboard.version,
-        });
-        console.log("Layout saved:", newLayout, "widgets:", newWidgets.length);
-      } catch (err) {
-        console.error("Failed to save layout:", err);
-      }
-      setInternalEditMode(false);
-    }, [localLayout, localWidgetMap, dashboard]);
+  const handleToggleWidget = (id: string) => {
+    const selected = widgets.find((widget) => widget.instanceId === id);
+    if (selected) {
+      removeWidget(selected.instanceId);
+      return;
+    }
+    addWidget(id);
+  };
 
   const renderDashboard = () => {
     if (isLoading) {
@@ -207,30 +197,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             height: "100%",
           }}
         >
-          <span style={{ color: "var(--muted)" }}>Loading dashboard...</span>
+          <span style={{ color: "var(--muted)" }}>Loading dashboard…</span>
         </div>
       );
     }
-    if (!dashboard) return null;
+    if (!draftDashboard) {
+      return null;
+    }
 
     if (isEditMode) {
       return (
         <DraggableDashboardRenderer
-          dashboard={{
-            ...dashboard,
-            layout: localLayout as any,
-          }}
+          dashboard={draftDashboard}
           widgetData={widgetData}
           isEditable={true}
-          onLayoutChange={handleLayoutChange}
-          onRemoveWidget={handleRemoveWidget}
-          onToggleSize={handleToggleSize}
+          onLayoutChange={updateLayout}
+          onRemoveWidget={removeWidget}
+          onToggleSize={toggleWidgetSize}
           widgetSizes={widgetSizes}
         />
       );
     }
 
-    return <DashboardRenderer dashboard={dashboard} widgetData={widgetData} />;
+    return <DashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
   };
 
   const TabBar = () => (
@@ -247,6 +236,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {DASHBOARDS.map((r) => (
         <button
           key={r.id}
+          type="button"
           onClick={() => handleDashboardChange(r.id)}
           style={{
             display: "flex",
@@ -281,7 +271,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {isEditMode ? (
         <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
           <button
-            onClick={() => setInternalEditMode(false)}
+            type="button"
+            onClick={handleExitEditMode}
             style={{
               display: "flex",
               alignItems: "center",
@@ -299,6 +290,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSaveLayout}
             style={{
               display: "flex",
@@ -320,10 +312,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       ) : (
         <>
           <button
-            onClick={() => {
-              setWizardSidebarOpen(true);
-              setSidebarPinned(true);
-            }}
+            type="button"
+            onClick={handleEnterEditMode}
             style={{
               display: "flex",
               alignItems: "center",
@@ -343,6 +333,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </button>
           {onNewDashboard && (
             <button
+              type="button"
               onClick={onNewDashboard}
               style={{
                 display: "flex",
@@ -368,7 +359,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     </div>
   );
 
-return (
+  return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
       <TabBar />
       {demoMode && (
@@ -414,6 +405,7 @@ return (
           </div>
           {onConfigureSources && (
             <button
+              type="button"
               onClick={onConfigureSources}
               style={{
                 padding: "7px 12px",
@@ -448,101 +440,63 @@ return (
             {renderDashboard()}
           </div>
         </div>
-        {isEditMode ? (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 400,
-            zIndex: 1000,
-          }}>
+        {isEditMode && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 400,
+              zIndex: 1000,
+            }}
+          >
             <WizardSidebar
               isOpen={isWizardSidebarOpen}
               isPinned={isSidebarPinned}
               onClose={() => setWizardSidebarOpen(false)}
               onTogglePin={() => setSidebarPinned(!isSidebarPinned)}
-              selectedWidgets={getWizardWidgets()}
+              selectedWidgets={selectedWidgets}
               widgetSizes={widgetSizes}
-              onToggleWidget={(id: string) => {
-                // If `id` matches a known instance id, it's a removal request; otherwise it's a widget type to add.
-                const isInstance = !!localWidgetMap[id];
-                if (isInstance) {
-                  // Remove existing widget instance
-                  handleRemoveWidget(id);
-                  setLocalWidgetMap(prev => {
-                    const next = { ...prev };
-                    delete next[id];
-                    return next;
-                  });
-                } else {
-                  // Add a new widget of type `id`
-                  handleAddWidget(id);
-                  // handleAddWidget will add to localWidgetMap; no need to set here.
-                }
-              }}
-              onToggleSize={handleToggleSize}
-              onMoveWidget={(from: number, to: number) => {
-                // Reorder logic if needed
-              }}
-              name={localName}
-              desc={localDesc}
-              timeRange={localTimeRange}
-              team={localTeam}
-              onNameChange={setLocalName}
-              onDescChange={setLocalDesc}
-              onTimeRangeChange={setLocalTimeRange}
-              onTeamChange={setLocalTeam}
-              onDelete={async () => {
-                if (dashboard && confirm('Are you sure you want to delete this dashboard?')) {
-                  handleDashboardChange('overview');
-                }
+              onToggleWidget={handleToggleWidget}
+              onToggleSize={toggleWidgetSize}
+              onMoveWidget={moveWidget}
+              showDefaultFilters={false}
+              showDelete={false}
+              name={name}
+              desc={desc}
+              timeRange={timeRange}
+              team={team}
+              onNameChange={setName}
+              onDescChange={setDesc}
+              onTimeRangeChange={setTimeRange}
+              onTeamChange={setTeam}
+              onDelete={() => {
+                handleExitEditMode();
               }}
             />
           </div>
-        ) : (
-          <WizardSidebar
-            isOpen={isWizardSidebarOpen}
-            isPinned={isSidebarPinned}
-            onClose={() => setWizardSidebarOpen(false)}
-            onTogglePin={() => setSidebarPinned(!isSidebarPinned)}
-            selectedWidgets={getWizardWidgets()}
-            widgetSizes={widgetSizes}
-            onToggleWidget={(id: string) => {
-              // If `id` matches a known instance id, it's a removal request; otherwise it's a widget type to add.
-              const isInstance = !!localWidgetMap[id];
-              if (isInstance) {
-                // Remove existing widget instance
-                handleRemoveWidget(id);
-                setLocalWidgetMap(prev => {
-                  const next = { ...prev };
-                  delete next[id];
-                  return next;
-                });
-              } else {
-                // Add a new widget of type `id`
-                handleAddWidget(id);
-                // handleAddWidget will add to localWidgetMap; no need to set here.
-              }
+        )}
+        {saveError && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "fixed",
+              right: 24,
+              bottom: 24,
+              zIndex: 1100,
+              maxWidth: 360,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,82,82,0.3)",
+              background: "rgba(255,82,82,0.12)",
+              color: "#FF8A8A",
+              fontSize: 13,
             }}
-            onToggleSize={handleToggleSize}
-            onMoveWidget={(from: number, to: number) => {
-              // Reorder logic if needed
-            }}
-            name={localName}
-            desc={localDesc}
-            timeRange={localTimeRange}
-            team={localTeam}
-            onNameChange={setLocalName}
-            onDescChange={setLocalDesc}
-            onTimeRangeChange={setLocalTimeRange}
-            onTeamChange={setLocalTeam}
-            onDelete={async () => {
-              if (dashboard && confirm('Are you sure you want to delete this dashboard?')) {
-                handleDashboardChange('overview');
-              }
-            }}
-          />
+          >
+            {saveError}
+          </div>
         )}
       </div>
     </div>

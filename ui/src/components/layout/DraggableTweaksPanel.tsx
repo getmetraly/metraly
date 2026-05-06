@@ -1,6 +1,5 @@
 // src/components/layout/DraggableTweaksPanel.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Icon } from '../shared/Icon';
 
 // Default values
 const DEFAULT_TWEAKS = {

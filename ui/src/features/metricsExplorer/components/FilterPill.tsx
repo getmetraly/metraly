@@ -30,7 +30,7 @@ export const FilterPill: React.FC<FilterPillProps> = ({ label, options, value, o
         color: value !== options?.[0] ? 'var(--cyan)' : 'var(--muted2)',
         fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--font-body)',
       }}>
-        {value} <Icon name="chevronDown" size={11} color="currentColor" />
+        {label ? `${label}: ${value}` : value} <Icon name="chevronDown" size={11} color="currentColor" />
       </button>
       {open && (
         <div style={{

@@ -1,9 +1,7 @@
-// @ts-nocheck
 import {
   DashboardFilters,
   WidgetLayout,
   Dashboard,
-  DashboardDraft,
   DashboardIndexEntry,
   SystemTemplate,
   DashboardWidgetInstance,
@@ -34,7 +32,6 @@ import {
   SprintBurndownConfig,
   AIInsightConfig,
   AnomalyDetectorConfig,
-  TableDataType,
 } from "../types/widgets";
 import {
   MetricId,
@@ -46,9 +43,6 @@ import {
 } from "../types/metrics";
 import {
   Plugin,
-  PluginsResponse,
-  SourceId,
-  SourceSyncConfig,
   ConnectSourceRequest,
   IntegrationStatus,
   InstallPluginResponse,
@@ -57,7 +51,6 @@ import {
   AIInsight,
   AIChatRequest,
   AIChatResponse,
-  ChatMessage,
 } from "../types/ai";
 import {
   CurrentUser,
@@ -65,7 +58,7 @@ import {
   MeResponse,
   ActivityEvent,
 } from "../types/user";
-import { TimeRange, TeamName, RepoName, DORALevel } from "../types/common";
+import { TeamName, DORALevel } from "../types/common";
 
 // ──────────────────────────────────────────────
 // 1. Генераторы фейковых данных
@@ -83,14 +76,6 @@ const teamNames: TeamName[] = [
   "Frontend",
   "Mobile",
   "Data",
-];
-const repoNames: RepoName[] = [
-  "monorepo",
-  "api-gateway",
-  "frontend-app",
-  "mobile-app",
-  "data-pipeline",
-  "auth-service",
 ];
 const allMetricIds: MetricId[] = [
   "deploy-freq",
@@ -231,7 +216,7 @@ function generateWidgetConfig(type: WidgetType, role?: string, wizardId?: string
   const pickMetric = () => pickRandom(metrics);
 
   switch (type) {
-    case "metric-chart":
+    case "metric-chart": {
       const mcMetricId = pickMetric();
       return {
         type: "metric-chart",
@@ -240,6 +225,7 @@ function generateWidgetConfig(type: WidgetType, role?: string, wizardId?: string
         showCompare: pseudoRandom() > 0.5,
         colorOverride: metricColorMap[mcMetricId] || "#00E5FF",
       } as MetricChartConfig;
+    }
     case "compare-bar-chart":
       return {
         type: "compare-bar-chart",
@@ -453,8 +439,6 @@ function generateRecentActivity(): ActivityEvent[] {
 }
 
 const sampleDashboardId = "dash-1";
-const sampleTemplateDashboardId = "tmpl-cto";
-
 // Инициализация хранилища дашбордов
 const dashboards: Map<string, Dashboard> = new Map();
 
@@ -1058,7 +1042,7 @@ export const mockApi = {
     await delay(100);
     // Генерируем данные в зависимости от типа виджета
     const { instanceId, widgetType, config } = req;
-    let data: any = null;
+    let data: any;
 
     switch (widgetType) {
       case "metric-chart":

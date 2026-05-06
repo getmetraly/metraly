@@ -2,11 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../components/shared/Icon';
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 const simulateAIResponse = async (userMessage: string): Promise<string> => {
   await new Promise(resolve => setTimeout(resolve, 800)); // fake latency
   const lower = userMessage.toLowerCase();
@@ -48,7 +43,7 @@ export const AIScreen = () => {
     try {
       const reply = await simulateAIResponse(userMsg);
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
-    } catch (error) {
+    } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I'm having trouble right now. Please try again later." }]);
     } finally {
       setIsLoading(false);

@@ -18,6 +18,8 @@ export interface WizardSettingsProps {
   onToggleWidget: (instanceId: string) => void;
   onToggleSize: (instanceId: string) => void;
   onMoveWidget: (fromIndex: number, toIndex: number) => void;
+  showDefaultFilters?: boolean;
+  showDelete?: boolean;
 }
 
 const getCatColor = (cat: string): string => {
@@ -40,6 +42,8 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
   onToggleWidget,
   onToggleSize,
   onMoveWidget,
+  showDefaultFilters = true,
+  showDelete = false,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', overflow: 'auto' }}>
@@ -49,11 +53,14 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
       </div>
       
       <div>
-        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Dashboard name *</label>
+        <label htmlFor="dashboard-settings-name" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Dashboard name *</label>
         <input
+          id="dashboard-settings-name"
+          name="dashboard-name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          placeholder="e.g. Backend Team Overview"
+          autoComplete="off"
+          placeholder="e.g. Backend Team Overview…"
           style={{
             width: '100%',
             background: 'var(--glass)',
@@ -62,17 +69,19 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
             padding: '9px 12px',
             color: 'var(--text)',
             fontSize: 13.5,
-            outline: 'none',
           }}
         />
       </div>
       
       <div>
-        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Description</label>
+        <label htmlFor="dashboard-settings-description" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Description</label>
         <input
+          id="dashboard-settings-description"
+          name="dashboard-description"
           value={desc}
           onChange={(e) => onDescChange(e.target.value)}
-          placeholder="Optional — visible to teammates"
+          autoComplete="off"
+          placeholder="Optional - visible to teammates…"
           style={{
             width: '100%',
             background: 'var(--glass)',
@@ -81,55 +90,62 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
             padding: '9px 12px',
             color: 'var(--text)',
             fontSize: 13.5,
-            outline: 'none',
           }}
         />
       </div>
-      
-      <div>
-        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Default time range</label>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['7d', '14d', '30d', '90d'].map((t) => (
-            <button
-              key={t}
-              onClick={() => onTimeRangeChange(t)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 7,
-                cursor: 'pointer',
-                fontSize: 13,
-                border: timeRange === t ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                background: timeRange === t ? 'rgba(0,229,255,0.1)' : 'transparent',
-                color: timeRange === t ? 'var(--cyan)' : 'var(--muted2)',
-              }}
-            >
-              {t}
-            </button>
-          ))}
+
+      {showDefaultFilters && (
+        <div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Default time range</div>
+          <div style={{ display: 'flex', gap: 6 }} role="group" aria-label="Default time range">
+            {['7d', '14d', '30d', '90d'].map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={timeRange === t}
+                onClick={() => onTimeRangeChange(t)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 7,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  border: timeRange === t ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
+                  background: timeRange === t ? 'rgba(0,229,255,0.1)' : 'transparent',
+                  color: timeRange === t ? 'var(--cyan)' : 'var(--muted2)',
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      
-      <div>
-        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Team scope</label>
-        <select
-          value={team}
-          onChange={(e) => onTeamChange(e.target.value)}
-          style={{
-            width: '100%',
-            background: 'var(--glass)',
-            border: '1px solid var(--border)',
-            borderRadius: 9,
-            padding: '9px 12px',
-            color: 'var(--text)',
-            fontSize: 13.5,
-            cursor: 'pointer',
-          }}
-        >
-          {['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'].map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
-      </div>
+      )}
+
+      {showDefaultFilters && (
+        <div>
+          <label htmlFor="dashboard-settings-team" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Team scope</label>
+          <select
+            id="dashboard-settings-team"
+            name="dashboard-team"
+            value={team}
+            onChange={(e) => onTeamChange(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'var(--glass)',
+              border: '1px solid var(--border)',
+              borderRadius: 9,
+              padding: '9px 12px',
+              color: 'var(--text)',
+              fontSize: 13.5,
+              cursor: 'pointer',
+            }}
+          >
+            {['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
         <div style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, marginBottom: 8, color: 'var(--text)' }}>
@@ -155,6 +171,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <button
                       type="button"
+                      aria-label={`Move ${widget.label} up`}
                       onClick={() => onMoveWidget(index, index - 1)}
                       disabled={index === 0}
                       style={{
@@ -167,6 +184,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                     </button>
                     <button
                       type="button"
+                      aria-label={`Move ${widget.label} down`}
                       onClick={() => onMoveWidget(index, index + 1)}
                       disabled={index === selectedWidgets.length - 1}
                       style={{
@@ -185,6 +203,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                   {!isEmpty && (
                     <button
                       type="button"
+                      aria-label={size === 'full' ? `Make ${widget.label} flexible width` : `Make ${widget.label} full width`}
                       onClick={() => onToggleSize(widget.instanceId)}
                       style={{
                         padding: '4px 10px',
@@ -202,6 +221,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                   )}
                   <button
                     type="button"
+                    aria-label={`Remove ${widget.label}`}
                     onClick={() => onToggleWidget(widget.instanceId)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted2)', padding: 4, flexShrink: 0 }}
                   >
@@ -215,29 +235,31 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
       </div>
 
       <div style={{ flex: 1 }} />
-      
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,82,82,0.9)', marginBottom: 8, fontWeight: 600 }}>Danger Zone</div>
-        <button
-          type="button"
-          onClick={onDelete}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 14px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontSize: 13,
-            border: '1px solid rgba(255,82,82,0.3)',
-            background: 'rgba(255,82,82,0.1)',
-            color: '#FF5252',
-          }}
-        >
-          <Icon name="trash" size={14} />
-          Delete Dashboard
-        </button>
-      </div>
+
+      {showDelete && (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,82,82,0.9)', marginBottom: 8, fontWeight: 600 }}>Danger Zone</div>
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontSize: 13,
+              border: '1px solid rgba(255,82,82,0.3)',
+              background: 'rgba(255,82,82,0.1)',
+              color: '#FF5252',
+            }}
+          >
+            <Icon name="trash" size={14} />
+            Delete Dashboard
+          </button>
+        </div>
+      )}
     </div>
   );
 };

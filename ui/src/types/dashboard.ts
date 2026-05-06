@@ -38,6 +38,7 @@ export interface Dashboard {
   id: string;
   name: string;
   description?: string;
+  icon?: string;
   sourceType: DashboardSourceType;
   sourceTemplateId?: SystemTemplateId;
   forkedFromId?: string;

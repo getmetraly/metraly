@@ -7,7 +7,7 @@ const DEFAULT_TWEAKS = {
   sidebarCollapsed: false,
 };
 
-const TweaksContext = createContext();
+const TweaksContext = createContext(null);
 
 export const TweaksProvider = ({ children }) => {
   const [tweaks, setTweaks] = useState(() => {
@@ -33,4 +33,7 @@ export const TweaksProvider = ({ children }) => {
   );
 };
 
-export const useTweaks = () => useContext(TweaksContext);
+export const useTweaks = () => useContext(TweaksContext) || {
+  tweaks: DEFAULT_TWEAKS,
+  setTweak: () => {},
+};

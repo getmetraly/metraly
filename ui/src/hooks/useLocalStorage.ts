@@ -17,7 +17,9 @@ export const useLocalStorage = <T>(key: string, initialValue: T): [T, SetValue<T
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch {}
+    } catch {
+      // Ignore storage failures and keep in-memory state unchanged.
+    }
   };
 
   return [storedValue, setValue];
