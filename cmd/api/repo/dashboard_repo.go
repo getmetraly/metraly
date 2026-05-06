@@ -30,7 +30,7 @@ func NewDashboardRepo(pool *pgxpool.Pool) DashboardRepo { return &pgDashboardRep
 
 func (r *pgDashboardRepo) List(ctx context.Context, userID string) ([]*domain.Dashboard, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, name, description, icon, owner_id, is_public, share_token,
+		`SELECT id, name, description, icon, owner_id, is_public, source_type, source_template_id, share_token,
 		        widgets, layout, version, forked_from_id, created_at, updated_at
 		 FROM dashboards WHERE owner_id=$1 OR is_public=true ORDER BY updated_at DESC`, userID)
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *pgDashboardRepo) List(ctx context.Context, userID string) ([]*domain.Da
 	for rows.Next() {
 		d := &domain.Dashboard{}
 		var widgetsJSON, layoutJSON []byte
-		err := rows.Scan(&d.ID, &d.Name, &d.Description, &d.Icon, &d.OwnerID, &d.IsPublic,
+		err := rows.Scan(&d.ID, &d.Name, &d.Description, &d.Icon, &d.OwnerID, &d.IsPublic, &d.SourceType, &d.SourceTemplateID,
 			&d.ShareToken, &widgetsJSON, &layoutJSON, &d.Version, &d.ForkedFromID, &d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return nil, err
@@ -62,10 +62,10 @@ func (r *pgDashboardRepo) GetByID(ctx context.Context, id string) (*domain.Dashb
 	d := &domain.Dashboard{}
 	var widgetsJSON, layoutJSON []byte
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, name, description, icon, owner_id, is_public, share_token,
+		`SELECT id, name, description, icon, owner_id, is_public, source_type, source_template_id, share_token,
 		        widgets, layout, version, forked_from_id, created_at, updated_at
 		 FROM dashboards WHERE id=$1`, id,
-	).Scan(&d.ID, &d.Name, &d.Description, &d.Icon, &d.OwnerID, &d.IsPublic,
+	).Scan(&d.ID, &d.Name, &d.Description, &d.Icon, &d.OwnerID, &d.IsPublic, &d.SourceType, &d.SourceTemplateID,
 		&d.ShareToken, &widgetsJSON, &layoutJSON, &d.Version, &d.ForkedFromID, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -89,10 +89,10 @@ func (r *pgDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) error
 		return fmt.Errorf("encode dashboard layout: %w", err)
 	}
 	_, err = r.pool.Exec(ctx,
-		`INSERT INTO dashboards(id, name, description, icon, owner_id, is_public, widgets, layout, forked_from_id)
-		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		`INSERT INTO dashboards(id, name, description, icon, owner_id, is_public, source_type, source_template_id, widgets, layout, forked_from_id)
+		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		 ON CONFLICT (id) DO NOTHING`,
-		d.ID, d.Name, d.Description, d.Icon, d.OwnerID, d.IsPublic,
+		d.ID, d.Name, d.Description, d.Icon, d.OwnerID, d.IsPublic, d.SourceType, d.SourceTemplateID,
 		widgetsJSON, layoutJSON, d.ForkedFromID,
 	)
 	return err

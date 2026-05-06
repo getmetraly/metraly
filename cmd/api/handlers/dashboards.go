@@ -53,15 +53,23 @@ func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sourceType := input.SourceType
+	if sourceType == "" {
+		sourceType = domain.DashboardSourceUserCreated
+	}
+
 	dashboard := &domain.Dashboard{
-		ID:          newDashboardID(),
-		Name:        input.Name,
-		Description: input.Description,
-		Icon:        input.Icon,
-		OwnerID:     dashboardOwnerID(r),
-		IsPublic:    false,
-		Widgets:     input.Widgets,
-		Layout:      input.Layout,
+		ID:               newDashboardID(),
+		Name:             input.Name,
+		Description:      input.Description,
+		Icon:             input.Icon,
+		OwnerID:          dashboardOwnerID(r),
+		IsPublic:         false,
+		SourceType:       sourceType,
+		SourceTemplateID: input.SourceTemplateID,
+		ForkedFromID:     input.ForkedFromID,
+		Widgets:          input.Widgets,
+		Layout:           input.Layout,
 	}
 
 	if err := h.svc.Create(r.Context(), dashboard); err != nil {
@@ -97,13 +105,28 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	current, err := h.svc.GetByID(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	dashboard := &domain.Dashboard{
-		ID:      chi.URLParam(r, "id"),
-		Name:    input.Name,
-		Icon:    input.Icon,
-		Widgets: input.Widgets,
-		Layout:  input.Layout,
-		Version: input.Version,
+		ID:               current.ID,
+		Name:             input.Name,
+		Description:      input.Description,
+		Icon:             input.Icon,
+		OwnerID:          current.OwnerID,
+		IsPublic:         current.IsPublic,
+		SourceType:       current.SourceType,
+		SourceTemplateID: current.SourceTemplateID,
+		ShareToken:       current.ShareToken,
+		Widgets:          input.Widgets,
+		Layout:           input.Layout,
+		Version:          input.Version,
+		ForkedFromID:     current.ForkedFromID,
+		CreatedAt:        current.CreatedAt,
+		UpdatedAt:        current.UpdatedAt,
 	}
 
 	updated, err := h.svc.Update(r.Context(), dashboard)
@@ -116,7 +139,12 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respond.JSON(w, http.StatusOK, dashboard)
+	updatedDashboard, err := h.svc.GetByID(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	respond.JSON(w, http.StatusOK, updatedDashboard)
 }
 
 func (h *DashboardHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +201,7 @@ func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond.JSON(w, http.StatusOK, map[string]any{
-		"isPublic":   input.IsPublic,
+		"isPublic":    input.IsPublic,
 		"shareToken":  shareToken,
 		"dashboardId": chi.URLParam(r, "id"),
 	})
@@ -192,14 +220,16 @@ func (h *DashboardHandler) Fork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	forked := &domain.Dashboard{
-		ID:          newDashboardID(),
-		Name:        source.Name + " Copy",
-		Description: source.Description,
-		Icon:        source.Icon,
-		OwnerID:     dashboardOwnerID(r),
-		IsPublic:    false,
-		Widgets:     source.Widgets,
-		Layout:      source.Layout,
+		ID:               newDashboardID(),
+		Name:             source.Name + " Copy",
+		Description:      source.Description,
+		Icon:             source.Icon,
+		OwnerID:          dashboardOwnerID(r),
+		IsPublic:         false,
+		SourceType:       domain.DashboardSourceForked,
+		SourceTemplateID: source.SourceTemplateID,
+		Widgets:          source.Widgets,
+		Layout:           source.Layout,
 		ForkedFromID: func() *string {
 			id := source.ID
 			return &id

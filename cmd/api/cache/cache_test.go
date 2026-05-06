@@ -64,7 +64,11 @@ func TestMetricsCache_GetSet(t *testing.T) {
 
 	got, err := c.Get(ctx, "deploy-freq", "Platform")
 	require.NoError(t, err)
-	assert.Equal(t, pts, got)
+	require.Len(t, got, len(pts))
+	for i := range pts {
+		assert.True(t, pts[i].Time.Equal(got[i].Time))
+		assert.Equal(t, pts[i].Value, got[i].Value)
+	}
 }
 
 func TestDashboardCache_GetSet(t *testing.T) {

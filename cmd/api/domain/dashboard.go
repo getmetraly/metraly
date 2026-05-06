@@ -9,20 +9,30 @@ import (
 	"time"
 )
 
+type DashboardSourceType string
+
+const (
+	DashboardSourceSystemTemplate DashboardSourceType = "system-template"
+	DashboardSourceUserCreated    DashboardSourceType = "user-created"
+	DashboardSourceForked         DashboardSourceType = "forked"
+)
+
 type Dashboard struct {
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	Description  string           `json:"description"`
-	Icon         string           `json:"icon"`
-	OwnerID      string           `json:"ownerId"`
-	IsPublic     bool             `json:"isPublic"`
-	ShareToken   *string          `json:"shareToken,omitempty"`
-	Widgets      []WidgetInstance `json:"widgets"`
-	Layout       []WidgetLayout   `json:"layout"`
-	Version      int              `json:"version"`
-	ForkedFromID *string          `json:"forkedFromId,omitempty"`
-	CreatedAt    time.Time        `json:"createdAt"`
-	UpdatedAt    time.Time        `json:"updatedAt"`
+	ID               string              `json:"id"`
+	Name             string              `json:"name"`
+	Description      string              `json:"description"`
+	Icon             string              `json:"icon"`
+	OwnerID          string              `json:"ownerId"`
+	IsPublic         bool                `json:"isPublic"`
+	SourceType       DashboardSourceType `json:"sourceType"`
+	SourceTemplateID *string             `json:"sourceTemplateId,omitempty"`
+	ShareToken       *string             `json:"shareToken,omitempty"`
+	Widgets          []WidgetInstance    `json:"widgets"`
+	Layout           []WidgetLayout      `json:"layout"`
+	Version          int                 `json:"version"`
+	ForkedFromID     *string             `json:"forkedFromId,omitempty"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
 }
 
 type WidgetInstance struct {
@@ -50,11 +60,14 @@ type DashboardTemplate struct {
 }
 
 type CreateDashboardInput struct {
-	Name        string           `json:"name" validate:"required"`
-	Description string           `json:"description"`
-	Icon        string           `json:"icon"`
-	Widgets     []WidgetInstance `json:"widgets"`
-	Layout      []WidgetLayout   `json:"layout"`
+	Name             string              `json:"name" validate:"required"`
+	Description      string              `json:"description"`
+	Icon             string              `json:"icon"`
+	SourceType       DashboardSourceType `json:"sourceType"`
+	SourceTemplateID *string             `json:"sourceTemplateId"`
+	ForkedFromID     *string             `json:"forkedFromId"`
+	Widgets          []WidgetInstance    `json:"widgets"`
+	Layout           []WidgetLayout      `json:"layout"`
 }
 
 type UpdateDashboardInput struct {

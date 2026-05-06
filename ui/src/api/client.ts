@@ -39,6 +39,8 @@ type ApiDashboard = {
   icon?: string;
   ownerId: string;
   isPublic: boolean;
+  sourceType?: Dashboard['sourceType'];
+  sourceTemplateId?: Dashboard['sourceTemplateId'] | null;
   shareToken?: string | null;
   widgets: DashboardWidgetInstance[];
   layout: ApiWidgetLayout[];
@@ -248,10 +250,6 @@ function resolveDashboardApiId(id: string): string {
   return id;
 }
 
-function isSystemTemplateId(id: string): boolean {
-  return ['overview', 'cto', 'vp', 'tl', 'devops', 'ic'].includes(id);
-}
-
 function mapLayoutFromApi(layout: ApiWidgetLayout[]): WidgetLayout[] {
   return layout.map((item) => ({
     i: item.i || item.instanceId || '',
@@ -278,14 +276,8 @@ function mapDashboard(dashboard: ApiDashboard): Dashboard {
     name: dashboard.name,
     description: dashboard.description || '',
     icon: dashboard.icon || '',
-    sourceType: dashboard.forkedFromId
-      ? 'forked'
-      : isSystemTemplateId(dashboard.id)
-        ? 'system-template'
-        : 'user-created',
-    sourceTemplateId: isSystemTemplateId(dashboard.id)
-      ? (dashboard.id as Dashboard['sourceTemplateId'])
-      : undefined,
+    sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
+    sourceTemplateId: dashboard.sourceTemplateId || undefined,
     forkedFromId: dashboard.forkedFromId || undefined,
     visibility: dashboard.isPublic ? 'org' : 'private',
     defaultFilters: defaultFilters(),
@@ -303,14 +295,8 @@ function mapDashboardIndex(dashboard: ApiDashboard): DashboardIndexEntry {
   return {
     id: dashboard.id,
     name: dashboard.name,
-    sourceType: dashboard.forkedFromId
-      ? 'forked'
-      : isSystemTemplateId(dashboard.id)
-        ? 'system-template'
-        : 'user-created',
-    sourceTemplateId: isSystemTemplateId(dashboard.id)
-      ? (dashboard.id as DashboardIndexEntry['sourceTemplateId'])
-      : undefined,
+    sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
+    sourceTemplateId: dashboard.sourceTemplateId || undefined,
     visibility: dashboard.isPublic ? 'org' : 'private',
     updatedAt: dashboard.updatedAt,
     hasDraft: false,

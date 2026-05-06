@@ -287,14 +287,20 @@ func mustJSON(v any) json.RawMessage {
 	return b
 }
 
+func stringPtr(s string) *string {
+	return &s
+}
+
 var sandboxDashboards = []*domain.Dashboard{
 	{
-		ID:          "sandbox-overview",
-		Name:        "Overview",
-		Description: "Sandbox Inc. first-run overview",
-		Icon:        "home",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-overview",
+		Name:             "Overview",
+		Description:      "Sandbox Inc. first-run overview",
+		Icon:             "home",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("overview"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "overview-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
 			{InstanceID: "overview-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
@@ -313,12 +319,14 @@ var sandboxDashboards = []*domain.Dashboard{
 		},
 	},
 	{
-		ID:          "sandbox-cto",
-		Name:        "CTO Dashboard",
-		Description: "Sandbox Inc. strategic overview",
-		Icon:        "trendingUp",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-cto",
+		Name:             "CTO Dashboard",
+		Description:      "Sandbox Inc. strategic overview",
+		Icon:             "trendingUp",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("cto"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "cto-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
 			{InstanceID: "cto-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
@@ -333,12 +341,14 @@ var sandboxDashboards = []*domain.Dashboard{
 		},
 	},
 	{
-		ID:          "sandbox-vp",
-		Name:        "VP Engineering Dashboard",
-		Description: "Delivery health and team performance",
-		Icon:        "users",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-vp",
+		Name:             "VP Engineering Dashboard",
+		Description:      "Delivery health and team performance",
+		Icon:             "users",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("vp"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "vp-pr-cycle", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "pr-cycle", "chartVariant": "bar-horizontal", "showCompare": false})},
 			{InstanceID: "vp-heatmap", WidgetType: "heatmap", Config: mustJSON(map[string]any{"type": "heatmap", "rowGroupBy": "team", "columns": 14})},
@@ -351,12 +361,14 @@ var sandboxDashboards = []*domain.Dashboard{
 		},
 	},
 	{
-		ID:          "sandbox-tl",
-		Name:        "Tech Lead Dashboard",
-		Description: "CI health and PR queue",
-		Icon:        "gitPR",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-tl",
+		Name:             "Tech Lead Dashboard",
+		Description:      "CI health and PR queue",
+		Icon:             "gitPR",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("tl"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "tl-ci-pass", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "ci-pass", "chartVariant": "area", "showCompare": false})},
 			{InstanceID: "tl-pr-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "pr-queue", "maxRows": 5})},
@@ -369,12 +381,14 @@ var sandboxDashboards = []*domain.Dashboard{
 		},
 	},
 	{
-		ID:          "sandbox-devops",
-		Name:        "DevOps Dashboard",
-		Description: "Deploy frequency, MTTR, and incidents",
-		Icon:        "cpu",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-devops",
+		Name:             "DevOps Dashboard",
+		Description:      "Deploy frequency, MTTR, and incidents",
+		Icon:             "cpu",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("devops"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "devops-deploy", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "deploy-freq", "chartVariant": "area", "showCompare": false})},
 			{InstanceID: "devops-mttr", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "mttr", "chartVariant": "area", "showCompare": false})},
@@ -387,12 +401,14 @@ var sandboxDashboards = []*domain.Dashboard{
 		},
 	},
 	{
-		ID:          "sandbox-ic",
-		Name:        "My Dashboard",
-		Description: "Personal sandbox view",
-		Icon:        "activity",
-		OwnerID:     "admin-seed",
-		IsPublic:    true,
+		ID:               "sandbox-ic",
+		Name:             "My Dashboard",
+		Description:      "Personal sandbox view",
+		Icon:             "activity",
+		OwnerID:          "admin-seed",
+		IsPublic:         true,
+		SourceType:       domain.DashboardSourceSystemTemplate,
+		SourceTemplateID: stringPtr("ic"),
 		Widgets: []domain.WidgetInstance{
 			{InstanceID: "ic-my-prs", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "my-prs", "maxRows": 5})},
 			{InstanceID: "ic-review-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "review-queue", "maxRows": 5})},

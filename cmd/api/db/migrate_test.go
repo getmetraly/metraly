@@ -7,6 +7,7 @@ package db_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,6 +39,9 @@ func TestMigrate_Integration(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "permission denied") || strings.Contains(err.Error(), "failed to create Docker provider") {
+			t.Skipf("skipping integration test: %v", err)
+		}
 		t.Fatalf("failed to start container: %v", err)
 	}
 	defer container.Terminate(ctx)
