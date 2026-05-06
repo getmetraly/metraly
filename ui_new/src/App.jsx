@@ -14,21 +14,21 @@ import { WizardScreen } from "./features/onboarding/WizardScreen";
 import { PlaceholderScreen } from "./components/ui/PlaceholderScreen";
 
 const routeConfig = {
-  "/": ["Overview", "Last updated 2 min ago"],
+  "/": ["Overview", "Synthetic demo data · not live company data"],
   "/dash-cto": [
     "CTO Dashboard",
-    "Strategic health, DORA trends, team velocity",
+    "Synthetic DORA trends, health score, and team velocity",
   ],
-  "/dash-vp": ["VP Engineering", "Delivery health & team performance"],
-  "/dash-tl": ["Tech Lead", "CI health, PR queue & sprint progress"],
-  "/dash-devops": ["DevOps / SRE", "Deploy frequency, MTTR & incidents"],
-  "/dash-ic": ["My Dashboard", "Personal metrics & sprint tasks"],
-  "/dash-wizard": ["New Dashboard", "Build a custom dashboard"],
-  "/metrics": ["Metrics Explorer", "DORA, CI/CD, PR & custom metrics"],
-  "/ai": ["AI Assistant", "Private · On-premise inference"],
-  "/plugins": ["Plugin Marketplace", "Browse & install integrations"],
-  "/wizard": ["Connect Sources", "Onboarding wizard"],
-  "/settings": ["Settings", "Platform configuration"],
+  "/dash-vp": ["VP Engineering", "Synthetic delivery health & team performance"],
+  "/dash-tl": ["Tech Lead", "Synthetic CI health, PR queue & sprint progress"],
+  "/dash-devops": ["DevOps / SRE", "Synthetic deploy frequency, MTTR & incidents"],
+  "/dash-ic": ["My Dashboard", "Synthetic personal metrics & sprint tasks"],
+  "/dash-wizard": ["Dashboard Preview", "Build a mock dashboard from demo widgets"],
+  "/metrics": ["Metrics Explorer", "Synthetic DORA, CI/CD, PR & custom metrics"],
+  "/ai": ["Synthetic AI Preview", "Scripted demo · not live AI inference"],
+  "/plugins": ["Plugin Preview", "Mock listings · install flow not implemented"],
+  "/wizard": ["Connector Setup Preview", "Simulated onboarding · do not enter credentials"],
+  "/settings": ["Settings", "Demo configuration"],
 };
 
 // Обёртка для шапки и боковой панели
@@ -68,4 +68,4 @@ const App = () => {
   );
 };
 
-export default App; // ← ВОТ ЭТО БЫЛО ПРОПУЩЕНО
+export default App;
