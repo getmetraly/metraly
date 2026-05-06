@@ -28,7 +28,18 @@ export const RoleDashboardScreen = () => {
   const location = useLocation();
   const { tweaks } = useTweaks();
   const density = tweaks.density;
-  const padding = { compact: '16px 20px', comfortable: '24px 28px', spacious: '32px 36px' }[density];
+
+  const contentPadding = {
+    compact: '10px 20px 16px',
+    comfortable: '12px 28px 24px',
+    spacious: '16px 36px 32px',
+  }[density];
+
+  const headerPadding = {
+    compact: '8px 20px 0',
+    comfortable: '10px 28px 0',
+    spacious: '12px 36px 0',
+  }[density];
 
   const path = location.pathname || "/dash-cto";
   const DashboardComponent = dashboardMap[path];
@@ -43,14 +54,18 @@ export const RoleDashboardScreen = () => {
   }
 
   return (
-    <div style={{ flex: 1, padding, overflow: 'auto' }}>
-      <SH
-        navItems={navItems}
-        activePath={path}
-        showNewDashboard
-      />
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0, padding: headerPadding }}>
+        <SH
+          navItems={navItems}
+          activePath={path}
+          showNewDashboard
+        />
+      </div>
 
-      <DashboardComponent />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: contentPadding }}>
+        <DashboardComponent />
+      </div>
     </div>
   );
 };
