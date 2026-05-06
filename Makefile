@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint docker-build docker-up docker-down docker-logs ui-run
+.PHONY: build run stop clean test lint up down logs ps docker-build docker-up docker-down docker-logs ui-run
 
 # Defaults
 APP_NAME := metraly
@@ -39,18 +39,32 @@ lint:
 	$(GO) vet ./...
 	@which staticcheck > /dev/null && staticcheck ./... || echo "staticcheck not installed"
 
+# Canonical local start command
+up: docker-up
+
+# Canonical local stop command
+down: docker-down
+
+# Canonical local logs command
+logs: docker-logs
+
+# Canonical local status command
+ps: docker-ps
+
 # Docker: build all
 docker-build:
 	@echo "Building Docker images..."
 	DOCKER_BUILDKIT=1 $(DOCKER_COMPOSE) build --parallel
 
-# Docker: start all services
+# Docker: start all services (legacy alias; prefer `make up`)
 docker-up:
 	@echo "Starting services..."
 	$(DOCKER_COMPOSE) up -d
 	@echo "Started Community Preview services: api, ui, postgres/timescaledb, redis"
+	@echo "UI: http://localhost:$(UI_PORT)"
+	@echo "API health: http://localhost:$(API_PORT)/api/v1/health"
 
-# Docker: stop all services
+# Docker: stop all services (legacy alias; prefer `make down`)
 docker-down:
 	@echo "Stopping services..."
 	$(DOCKER_COMPOSE) down
@@ -67,11 +81,11 @@ docker-build-api:
 docker-restart-api: docker-build-api
 	$(DOCKER_COMPOSE) up -d api
 
-# Docker: show logs
+# Docker: show logs (legacy alias; prefer `make logs`)
 docker-logs:
 	$(DOCKER_COMPOSE) logs -f
 
-# Docker: show status
+# Docker: show status (legacy alias; prefer `make ps`)
 docker-ps:
 	$(DOCKER_COMPOSE) ps
 
@@ -96,18 +110,22 @@ help:
 	@echo "Metraly - Team Engineering Metrics API"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  up                 - Start all local services (canonical quick start)"
+	@echo "  down               - Stop all local services"
+	@echo "  logs               - Show local service logs"
+	@echo "  ps                 - Show local service status"
 	@echo "  build              - Build Go API"
 	@echo "  run                - Run API locally"
 	@echo "  ui-run             - Run UI locally"
 	@echo "  test               - Run tests"
 	@echo "  lint               - Run linter"
-	@echo "  docker-up          - Start all Docker services"
-	@echo "  docker-down        - Stop all Docker services"
+	@echo "  docker-up          - Legacy alias for up"
+	@echo "  docker-down        - Legacy alias for down"
 	@echo "  docker-restart     - Restart all Docker services"
 	@echo "  docker-build-api   - Rebuild API only"
 	@echo "  docker-restart-api - Restart API only"
-	@echo "  docker-logs        - Show Docker logs"
-	@echo "  docker-ps          - Show Docker status"
+	@echo "  docker-logs        - Legacy alias for logs"
+	@echo "  docker-ps          - Legacy alias for ps"
 	@echo "  health             - Check API health"
 	@echo "  dashboard          - Check dashboard data"
 	@echo "  clean              - Clean build artifacts"
