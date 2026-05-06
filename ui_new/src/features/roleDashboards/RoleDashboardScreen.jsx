@@ -35,8 +35,15 @@ export const RoleDashboardScreen = () => {
     spacious: '12px 36px 0',
   }[density];
 
+  const contentPadding = {
+    compact: '14px 20px 24px',
+    comfortable: '16px 28px 28px',
+    spacious: '18px 36px 32px',
+  }[density];
+
   const path = location.pathname || "/dash-cto";
   const DashboardComponent = dashboardMap[path];
+  const isCTO = path === '/dash-cto';
 
   if (!DashboardComponent) {
     return (
@@ -58,7 +65,13 @@ export const RoleDashboardScreen = () => {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        <DashboardComponent />
+        {isCTO ? (
+          <DashboardComponent />
+        ) : (
+          <div style={{ padding: contentPadding }}>
+            <DashboardComponent />
+          </div>
+        )}
       </div>
     </div>
   );
