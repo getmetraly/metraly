@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { mockApi } from '../api/mockApi';
+import { getActivity, getDORA, getInsights } from '../api/client';
 import type { ActivityEvent } from '../types/user';
 
 interface Metric {
@@ -26,12 +26,48 @@ interface DashboardOverviewData {
   error: string | null;
 }
 
-const mockMetrics: Metric[] = [
-  { icon: 'gitPR', label: 'PRs awaiting review', value: '14', trend: '+3 today', trendDir: 'down', color: 'cyan', sparkData: [4,7,5,9,6,8,11,14] },
-  { icon: 'xCircle', label: 'Failed builds (24h)', value: '3', trend: '−5 vs avg', trendDir: 'up', color: 'error', sparkData: [12,9,11,7,5,8,4,3] },
-  { icon: 'alertTri', label: 'Blocked tasks', value: '7', trend: 'No change', trendDir: 'neutral', color: 'warning', sparkData: [5,6,7,7,6,8,7,7] },
-  { icon: 'clock', label: 'Median CI time', value: '4m 22s', trend: '−18s', trendDir: 'up', color: 'purple', sparkData: [8,7,9,6,7,5,5,4] },
-];
+function formatDelta(
+  detail: { currentValueRaw: number; timeSeries: { values: number[] } },
+  higherIsBetter = true,
+): {
+  trend: string;
+  trendDir: 'up' | 'down' | 'neutral';
+} {
+  const values = detail.timeSeries.values;
+  if (values.length < 2) {
+    return { trend: 'No recent change', trendDir: 'neutral' };
+  }
+  const delta = detail.currentValueRaw - values[values.length - 2];
+  if (Math.abs(delta) < 0.05) {
+    return { trend: 'No recent change', trendDir: 'neutral' };
+  }
+  return {
+    trend: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)} vs prev`,
+    trendDir: higherIsBetter
+      ? (delta > 0 ? 'up' : 'down')
+      : (delta < 0 ? 'up' : 'down'),
+  };
+}
+
+function metricFromDetail(
+  icon: string,
+  label: string,
+  color: string,
+  value: string,
+  detail: { currentValueRaw: number; timeSeries: { values: number[] } },
+  higherIsBetter = true,
+): Metric {
+  const trend = formatDelta(detail, higherIsBetter);
+  return {
+    icon,
+    label,
+    value,
+    trend: trend.trend,
+    trendDir: trend.trendDir,
+    color,
+    sparkData: detail.timeSeries.values.slice(-8),
+  };
+}
 
 export function useDashboardOverview(): DashboardOverviewData {
   const [data, setData] = useState<DashboardOverviewData>({
@@ -45,20 +81,27 @@ export function useDashboardOverview(): DashboardOverviewData {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [insights, recentActivity] = await Promise.all([
-          mockApi.getAIInsights(),
-          mockApi.getRecentActivity(),
+        const [dora, insights, recentActivity] = await Promise.all([
+          getDORA(),
+          getInsights(),
+          getActivity(),
         ]);
 
-        // Map mockApi data to component format
         const mappedInsights: Insight[] = insights.map((ins) => ({
           title: ins.title,
           body: ins.body,
           action: ins.action,
         }));
 
+        const metrics: Metric[] = [
+          metricFromDetail('zap', 'Deployment Frequency', 'cyan', dora.deployFrequency.currentValue, dora.deployFrequency, true),
+          metricFromDetail('clock', 'Lead Time for Changes', 'purple', dora.leadTime.currentValue, dora.leadTime, false),
+          metricFromDetail('xCircle', 'Change Failure Rate', 'warning', dora.changeFailureRate.currentValue, dora.changeFailureRate, false),
+          metricFromDetail('activity', 'MTTR', 'success', dora.mttr.currentValue, dora.mttr, false),
+        ];
+
         setData({
-          metrics: mockMetrics,
+          metrics,
           insights: mappedInsights,
           recentActivity,
           isLoading: false,
