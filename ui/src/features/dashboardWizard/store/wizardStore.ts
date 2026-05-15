@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Layout } from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout/legacy";
 import type {
   DashboardEditorState,
   DashboardEditorWidget,
@@ -27,7 +27,7 @@ interface WizardState extends DashboardEditorState {
   setTemplate: (id: string) => void;
   addWidget: (id: string) => void;
   removeWidget: (instanceId: string) => void;
-  updateLayout: (newLayout: Layout[]) => void;
+  updateLayout: (newLayout: LayoutItem[]) => void;
   toggleWidgetSize: (instanceId: string) => void;
   setName: (n: string) => void;
   setDesc: (d: string) => void;

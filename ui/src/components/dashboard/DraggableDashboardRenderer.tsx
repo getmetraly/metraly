@@ -3,8 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React from "react";
-import { Responsive, Layout as RGLLayout } from "react-grid-layout";
-import { WidthProvider } from "react-grid-layout/legacy";
+import { Responsive, WidthProvider, LayoutItem as RGLLayout } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import type { Dashboard } from "../../types/dashboard";
 import { widgetRegistry } from "./widgetRegistry";
@@ -17,7 +16,7 @@ interface DraggableDashboardRendererProps {
   dashboard: Dashboard;
   widgetData?: Record<string, MetricTimeSeries>;
   isEditable?: boolean;
-  onLayoutChange?: (layout: RGLLayout[]) => void;
+  onLayoutChange?: (layout: readonly RGLLayout[]) => void;
   onRemoveWidget?: (instanceId: string) => void;
   onToggleSize?: (instanceId: string) => void;
   widgetSizes?: Record<string, string>;
@@ -32,7 +31,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
   onToggleSize,
   widgetSizes = {},
 }) => {
-  const handleLayoutChange = (currentLayout: RGLLayout[]) => {
+  const handleLayoutChange = (currentLayout: readonly RGLLayout[]) => {
     if (onLayoutChange) {
       onLayoutChange(currentLayout);
     }
@@ -78,7 +77,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
               position: "relative",
               width: "100%",
               height: "100%",
-              background: isEditable && isEmpty ? 'rgba(0,229,255,0.03)' : 'transparent',
+              background: isEditable && isEmpty ? 'color-mix(in srgb, var(--cyan) 3%, transparent)' : 'transparent',
               border: isEditable && isEmpty ? '1px dashed var(--cyan)' : 'none',
               borderRadius: 8,
             }}
@@ -94,8 +93,8 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
                     borderRadius: 5,
                     fontSize: 11,
                     cursor: "pointer",
-                    border: isFull ? "1px solid rgba(0,229,255,0.3)" : "1px solid var(--border)",
-                    background: isFull ? "rgba(0,229,255,0.08)" : "transparent",
+                    border: isFull ? "1px solid color-mix(in srgb, var(--cyan) 30%, transparent)" : "1px solid var(--border)",
+                    background: isFull ? "color-mix(in srgb, var(--cyan) 8%, transparent)" : "transparent",
                     color: isFull ? "var(--cyan)" : "var(--muted)",
                   }}
                 >

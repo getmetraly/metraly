@@ -61,11 +61,11 @@ func (r *Runner) Run(ctx context.Context, adminEmail, adminPassword string) erro
 	if err := r.seedAdmin(ctx, adminEmail, adminPassword); err != nil {
 		return fmt.Errorf("seed admin: %w", err)
 	}
-	if err := r.seedDashboards(ctx); err != nil {
-		return fmt.Errorf("seed dashboards: %w", err)
-	}
 	if err := r.seedTemplates(ctx); err != nil {
 		return fmt.Errorf("seed templates: %w", err)
+	}
+	if err := r.seedDashboards(ctx); err != nil {
+		return fmt.Errorf("seed dashboards: %w", err)
 	}
 	if err := r.plugins.BulkInsert(ctx, seedPlugins); err != nil {
 		return fmt.Errorf("seed plugins: %w", err)

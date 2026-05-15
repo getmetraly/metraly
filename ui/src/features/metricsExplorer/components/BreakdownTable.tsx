@@ -1,7 +1,6 @@
 // src/features/metricsExplorer/components/BreakdownTable.tsx
 import React from 'react';
-import { DataTable } from '../../../components/ui/DataTable';
-import { DORABadge } from '../../../components/ui/DORABadge';
+import { DataTableCompat as DataTable, DORABadgeCompat as DORABadge } from '../../../design-system';
 
 interface BreakdownTableProps {
   metricId?: string;
@@ -32,7 +31,7 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
         r[0], r[1],
         <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{r[2]}</span>,
         <DORABadge level={r[3]}/>,
-        <span style={{ fontFamily: 'var(--font-mono)', color: r[4].startsWith('+') && r[4] !== '+0.0' ? '#00C853' : '#FF9100' }}>{r[4]}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', color: r[4].startsWith('+') && r[4] !== '+0.0' ? 'var(--success)' : 'var(--warning)' }}>{r[4]}</span>
       ])}
     />
   );

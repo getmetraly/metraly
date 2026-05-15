@@ -95,6 +95,10 @@ export interface RecentActivityConfig extends BaseWidgetConfig {
   maxItems?: number;
 }
 
+export interface EmptyWidgetConfig extends BaseWidgetConfig {
+  type: 'empty';
+}
+
 export type WidgetConfig =
   | MetricChartConfig
   | CompareBarChartConfig
@@ -108,6 +112,7 @@ export type WidgetConfig =
   | AIInsightConfig
   | AnomalyDetectorConfig
   | SectionHeaderConfig
-  | RecentActivityConfig;
+  | RecentActivityConfig
+  | EmptyWidgetConfig;
 
 export type WidgetType = WidgetConfig['type'];

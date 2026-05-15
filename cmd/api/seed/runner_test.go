@@ -40,7 +40,9 @@ func (r *recordingUserRepo) GetPasswordHash(ctx context.Context, email string) (
 }
 
 type recordingDashboardRepo struct {
-	created []*domain.Dashboard
+	created        []*domain.Dashboard
+	templates      []*domain.DashboardTemplate
+	templateSeeded bool
 }
 
 func (r *recordingDashboardRepo) List(ctx context.Context, userID string) ([]*domain.Dashboard, error) {
@@ -50,10 +52,15 @@ func (r *recordingDashboardRepo) GetByID(ctx context.Context, id string) (*domai
 	return nil, nil
 }
 func (r *recordingDashboardRepo) Create(ctx context.Context, d *domain.Dashboard) error {
+	if !r.templateSeeded {
+		return context.Canceled
+	}
 	r.created = append(r.created, d)
 	return nil
 }
 func (r *recordingDashboardRepo) CreateTemplate(ctx context.Context, t *domain.DashboardTemplate) error {
+	r.templateSeeded = true
+	r.templates = append(r.templates, t)
 	return nil
 }
 func (r *recordingDashboardRepo) Update(ctx context.Context, d *domain.Dashboard) (bool, error) {

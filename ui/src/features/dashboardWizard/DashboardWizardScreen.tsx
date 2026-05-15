@@ -31,7 +31,7 @@ const StepDot: React.FC<{
         background: done
           ? "var(--cyan)"
           : active
-            ? "rgba(0,229,255,0.15)"
+            ? "color-mix(in srgb, var(--cyan) 15%, transparent)"
             : "transparent",
         border: done
           ? "2px solid var(--cyan)"
@@ -41,7 +41,7 @@ const StepDot: React.FC<{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: active ? "0 0 12px rgba(0,229,255,0.3)" : "none",
+        boxShadow: active ? "0 0 12px color-mix(in srgb, var(--cyan) 30%, transparent)" : "none",
       }}
     >
       {done ? (
@@ -350,10 +350,10 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                       cursor: "pointer",
                       border:
                         widgetCat === c
-                          ? "1px solid rgba(0,229,255,0.4)"
+                          ? "1px solid color-mix(in srgb, var(--cyan) 40%, transparent)"
                           : "1px solid var(--border)",
                       background:
-                        widgetCat === c ? "rgba(0,229,255,0.1)" : "transparent",
+                        widgetCat === c ? "color-mix(in srgb, var(--cyan) 10%, transparent)" : "transparent",
                       color: widgetCat === c ? "var(--cyan)" : "var(--muted2)",
                     }}
                   >
@@ -536,11 +536,11 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                         fontSize: 13,
                         border:
                           timeRange === t
-                            ? "1px solid rgba(0,229,255,0.4)"
+                            ? "1px solid color-mix(in srgb, var(--cyan) 40%, transparent)"
                             : "1px solid var(--border)",
                         background:
                           timeRange === t
-                            ? "rgba(0,229,255,0.1)"
+                            ? "color-mix(in srgb, var(--cyan) 10%, transparent)"
                             : "transparent",
                         color:
                           timeRange === t ? "var(--cyan)" : "var(--muted2)",
@@ -706,9 +706,9 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                               borderRadius: 5,
                               fontSize: 11,
                               cursor: "pointer",
-                              border: `1px solid ${isLg ? "rgba(0,229,255,0.3)" : "var(--border)"}`,
+                              border: `1px solid ${isLg ? "color-mix(in srgb, var(--cyan) 30%, transparent)" : "var(--border)"}`,
                               background: isLg
-                                ? "rgba(0,229,255,0.08)"
+                                ? "color-mix(in srgb, var(--cyan) 8%, transparent)"
                                 : "transparent",
                               color: isLg ? "var(--cyan)" : "var(--muted)",
                             }}
@@ -768,7 +768,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               <div
                 role="status"
                 aria-live="polite"
-                style={{ color: "#FF8A8A", fontSize: 12.5, maxWidth: 280 }}
+                style={{ color: "var(--error)", fontSize: 12.5, maxWidth: 280 }}
               >
                 {saveError}
               </div>
@@ -787,7 +787,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 padding: "8px 22px",
                 borderRadius: 9,
                 cursor: canContinue && !isSaving ? "pointer" : "not-allowed",
-                background: step === steps.length - 1 ? "#00C853" : "var(--grad)",
+                background: step === steps.length - 1 ? "var(--success)" : "var(--grad)",
                 border: "none",
                 color: "#fff",
                 fontSize: 13.5,

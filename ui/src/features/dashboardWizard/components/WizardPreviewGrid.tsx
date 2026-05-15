@@ -1,6 +1,5 @@
 import React from "react";
-import { Responsive } from "react-grid-layout";
-import { WidthProvider } from "react-grid-layout/legacy";
+import { Responsive, WidthProvider, LayoutItem } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import { useWizardStore } from "../store/wizardStore";
 import { WidgetPreviewCard } from "./WidgetPreviewCard";
@@ -94,7 +93,7 @@ export const WizardPreviewGrid: React.FC = () => {
               rowHeight={100}
               isDraggable={true}
               isResizable={true}
-              onLayoutChange={(currentLayout) => updateLayout(currentLayout)}
+              onLayoutChange={(currentLayout: LayoutItem[]) => updateLayout(currentLayout)}
               draggableHandle=".widget-drag-handle"
               compactType="vertical"
               margin={[8, 8]}
