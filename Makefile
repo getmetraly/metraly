@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint up down dev logs ps ui-run
+.PHONY: build run stop clean test lint up down dev logs ps ui-run health dashboard help
 
 # Defaults
 APP_NAME := metraly
@@ -12,6 +12,13 @@ GOFLAGS := -v
 # Docker
 DOCKER := docker
 DOCKER_COMPOSE := docker compose
+
+# Runtime state
+RUN_DIR := .run
+API_PID_FILE := $(RUN_DIR)/api.pid
+UI_PID_FILE := $(RUN_DIR)/ui.pid
+API_LOG := $(RUN_DIR)/api.log
+UI_LOG := $(RUN_DIR)/ui.log
 
 # Build API
 build:
@@ -41,24 +48,46 @@ lint:
 
 # Canonical local start command
 up:
-	@echo "Building and starting all services..."
-	$(DOCKER_COMPOSE) up -d --build
+	@mkdir -p $(RUN_DIR)
+	@touch $(API_LOG) $(UI_LOG)
+	@echo "Starting database services..."
+	$(DOCKER_COMPOSE) up -d redis postgres
+	@echo "Waiting for database services to become healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]; do sleep 1; done
+	@echo "Building API..."
+	$(MAKE) build
+	@echo "Starting API..."
+	@nohup env POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379 ./bin/api > $(API_LOG) 2>&1 & echo $$! > $(API_PID_FILE)
+	@echo "Starting UI..."
+	@nohup sh -c 'cd ui && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev -- --host 0.0.0.0 --port 3000' > $(UI_LOG) 2>&1 & echo $$! > $(UI_PID_FILE)
+
+	@echo "Project is running."
 
 # Canonical local stop command
 down:
 	@echo "Stopping services..."
-	$(DOCKER_COMPOSE) down
+	@if [ -f $(UI_PID_FILE) ]; then kill "$$(cat $(UI_PID_FILE))" || true; rm -f $(UI_PID_FILE); fi
+	@if [ -f $(API_PID_FILE) ]; then kill "$$(cat $(API_PID_FILE))" || true; rm -f $(API_PID_FILE); fi
 
+	$(DOCKER_COMPOSE) down
 # Alias for one-shot local startup
 dev: up
 
 # Canonical local logs command
 logs:
-	$(DOCKER_COMPOSE) logs -f
+	@tail -f $(API_LOG) $(UI_LOG)
 
 # Canonical local status command
 ps:
-	$(DOCKER_COMPOSE) ps
+	@$(DOCKER_COMPOSE) ps
+	@for pidfile in $(API_PID_FILE) $(UI_PID_FILE); do \
+		if [ -f "$$pidfile" ]; then \
+			printf '%s: ' "$$pidfile"; \
+			cat "$$pidfile"; \
+		else \
+			printf '%s: not running\n' "$$pidfile"; \
+		fi; \
+	done
 
 # Health check
 health:
@@ -73,7 +102,7 @@ dashboard:
 # Clean build artifacts
 clean:
 	@echo "Cleaning..."
-	rm -rf bin/
+	rm -rf bin/ $(RUN_DIR)/
 	$(DOCKER) system prune -f --filter "label=com.docker.compose.project=$(APP_NAME)" 2>/dev/null || true
 
 # Show help
