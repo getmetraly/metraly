@@ -1,10 +1,11 @@
 /**
- * Local app-facing design-system entrypoint.
+ * design-system — app-facing barrel
  *
- * Phase 1 / Phase 2 contract:
- * - keep app logic separate from brandbook primitives
- * - do not re-export unstable brandbook components here yet
- * - use this barrel once the compat layer is introduced in Phase 3
+ * Import all design-system primitives from here, never from individual
+ * component paths. This indirection lets Phase 3 swap local implementations
+ * for @metraly/ui imports in one file without touching every caller.
+ *
+ * Usage:
+ *   import { StatusBadgeCompat, DataTableCompat } from '../design-system';
  */
-
-export {};
+export * from './compat/brandbook-legacy';
