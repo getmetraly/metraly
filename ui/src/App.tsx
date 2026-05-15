@@ -619,7 +619,7 @@ const App = () => {
           <Topbar title={title} subtitle={subtitle} />
           {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
         </div>
-        <DraggableTweaksPanel />
+        {import.meta.env.DEV && <DraggableTweaksPanel />}
       </div>
     </TweaksProvider>
   );
