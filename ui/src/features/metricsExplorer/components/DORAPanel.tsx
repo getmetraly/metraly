@@ -1,7 +1,7 @@
 // src/features/metricsExplorer/components/DORAPanel.tsx
 import React from 'react';
+import { DORABadgeCompat as DORABadge } from '../../../design-system';
 import { Icon } from '../../../components/shared/Icon';
-import { DORABadge } from '../../../components/ui/DORABadge';
 
 interface DORACard {
   id: string;

@@ -1,7 +1,6 @@
 // src/features/metricsExplorer/components/BreakdownTable.tsx
 import React from 'react';
-import { DataTable } from '../../../components/ui/DataTable';
-import { DORABadge } from '../../../components/ui/DORABadge';
+import { DataTableCompat as DataTable, DORABadgeCompat as DORABadge } from '../../../design-system';
 
 interface BreakdownTableProps {
   metricId?: string;

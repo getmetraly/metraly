@@ -1,6 +1,8 @@
 import type { Preview } from '@storybook/react-vite';
 import '@metraly/ui/styles/metraly-theme.css';
 import '@metraly/ui/styles/metraly-empty-state.css';
+import '@metraly/ui/styles/metraly-state-badge.css';
+import '@metraly/ui/styles/metraly-table.css';
 import '../src/index.css';
 
 const preview: Preview = {
