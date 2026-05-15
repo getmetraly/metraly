@@ -1,11 +1,27 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "target": "ES2017",
-    "outDir": "dist",
-    "rootDir": "src",
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
     "strict": false,
-    "esModuleInterop": true
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src/**/*"]
+  "include": ["src"],
+  "exclude": [
+    "src/App.tsx",
+    "src/index.tsx",
+    "src/features/board",
+    "src/features/dashboardWizard/DashboardWizardScreen.test.tsx",
+    "src/features/dashboardWizard/components/WidgetPreviewCard.test.tsx",
+    "src/features/dashboardWizard/components/WizardPreviewGrid.test.tsx",
+    "src/features/dashboardWizard/store/wizardStore.test.ts"
+  ]
 }

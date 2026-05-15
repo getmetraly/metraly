@@ -4,9 +4,11 @@ type DORALevel = 'Elite' | 'High' | 'Med' | 'Low';
 
 interface DORABadgeProps {
   level: DORALevel | string;
+  label?: string;
+  value?: string;
 }
 
-export const DORABadge = ({ level }: DORABadgeProps) => {
+export const DORABadge = ({ level, label, value }: DORABadgeProps) => {
   const map: Record<string, [string, string]> = {
     Elite: ['#00C853', 'rgba(0,200,83,0.12)'],
     High:  ['#00E5FF', 'rgba(0,229,255,0.12)'],
@@ -24,7 +26,7 @@ export const DORABadge = ({ level }: DORABadgeProps) => {
       padding: '2px 8px',
       fontFamily: 'var(--font-mono)',
     }}>
-      {level}
+      {label && <span style={{ opacity: 0.7 }}>{label} </span>}{value ?? level}
     </span>
   );
 };

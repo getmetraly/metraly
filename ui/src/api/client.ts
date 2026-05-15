@@ -168,8 +168,7 @@ async function refreshAccessToken(): Promise<AuthSession | null> {
 client.interceptors.request.use((config) => {
   const session = readSession();
   if (session?.accessToken) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
+    config.headers['Authorization'] = `Bearer ${session.accessToken}`;
   }
   return config;
 });
@@ -182,8 +181,7 @@ client.interceptors.response.use(
       original._retry = true;
       const refreshed = await refreshAccessToken();
       if (refreshed?.accessToken) {
-        original.headers = original.headers ?? {};
-        original.headers.Authorization = `Bearer ${refreshed.accessToken}`;
+        original.headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
         return client(original);
       }
     }

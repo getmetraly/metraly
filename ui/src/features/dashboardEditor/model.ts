@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { Layout as RGLLayout } from "react-grid-layout";
+import type { LayoutItem as RGLLayout } from "react-grid-layout/legacy";
 import type { Dashboard, DashboardWidgetInstance } from "../../types/dashboard";
 import { TEMPLATE_WIDGETS, TEMPLATES, WIDGET_LIBRARY, getDefaultWidgetSize, getWidgetColor, isFullWidthWidget } from "./catalog";
 import { createDefaultWidgetConfig } from "./widgetConfig";

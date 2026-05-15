@@ -3,8 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React from "react";
-import { Responsive, Layout as RGLLayout } from "react-grid-layout";
-import { WidthProvider } from "react-grid-layout/legacy";
+import { Responsive, WidthProvider, LayoutItem as RGLLayout } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import type { Dashboard } from "../../types/dashboard";
 import { widgetRegistry } from "./widgetRegistry";
@@ -17,7 +16,7 @@ interface DraggableDashboardRendererProps {
   dashboard: Dashboard;
   widgetData?: Record<string, MetricTimeSeries>;
   isEditable?: boolean;
-  onLayoutChange?: (layout: RGLLayout[]) => void;
+  onLayoutChange?: (layout: readonly RGLLayout[]) => void;
   onRemoveWidget?: (instanceId: string) => void;
   onToggleSize?: (instanceId: string) => void;
   widgetSizes?: Record<string, string>;
@@ -32,7 +31,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
   onToggleSize,
   widgetSizes = {},
 }) => {
-  const handleLayoutChange = (currentLayout: RGLLayout[]) => {
+  const handleLayoutChange = (currentLayout: readonly RGLLayout[]) => {
     if (onLayoutChange) {
       onLayoutChange(currentLayout);
     }

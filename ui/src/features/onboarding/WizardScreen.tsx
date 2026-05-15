@@ -185,12 +185,12 @@ const ConfigureStep = () => {
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>Set refresh intervals and which repos to include.</div>
       </div>
       <div style={{ padding: '24px 28px' }}>
-        {[
-          { label: 'Sync interval', value: syncInterval, setter: setSyncInterval, options: ['Every 5 minutes', 'Every 15 minutes', 'Every hour'] },
-          { label: 'Repositories', value: repos, setter: setRepos, options: ['All repos in org', 'Selected repos only'] },
-          { label: 'Include archived repos', value: includeArchived, setter: setIncludeArchived, type: 'toggle' },
-          { label: 'Historical backfill', value: backfill, setter: setBackfill, options: ['30 days', '90 days', '1 year'] },
-        ].map((row, i) => (
+        {([
+            { label: 'Sync interval', value: syncInterval, setter: setSyncInterval as (v: string | boolean) => void, options: ['Every 5 minutes', 'Every 15 minutes', 'Every hour'], type: 'select' as const },
+            { label: 'Repositories', value: repos, setter: setRepos as (v: string | boolean) => void, options: ['All repos in org', 'Selected repos only'], type: 'select' as const },
+            { label: 'Include archived repos', value: includeArchived, setter: setIncludeArchived as (v: string | boolean) => void, type: 'toggle' as const, options: [] as string[] },
+            { label: 'Historical backfill', value: backfill, setter: setBackfill as (v: string | boolean) => void, options: ['30 days', '90 days', '1 year'], type: 'select' as const },
+          ]).map((row, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
             <span style={{ fontSize: 13.5, color: 'var(--text)' }}>{row.label}</span>
             {row.type === 'toggle' ? (
