@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Icon } from "../../components/shared/Icon";
-import { DashboardRenderer } from "../../components/dashboard/DashboardRenderer";
+import { DashboardRendererCompat as DashboardRenderer } from "../../design-system";
 import { DraggableDashboardRenderer } from "../../components/dashboard/DraggableDashboardRenderer";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
@@ -321,8 +321,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               padding: "6px 14px",
               borderRadius: 8,
               cursor: "pointer",
-              background: "rgba(0,229,255,0.08)",
-              border: "1px solid rgba(0,229,255,0.2)",
+              background: "color-mix(in srgb, var(--cyan) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
               color: "var(--cyan)",
               fontSize: 12.5,
               fontWeight: 500,
@@ -342,8 +342,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 padding: "6px 14px",
                 borderRadius: 8,
                 cursor: "pointer",
-                background: "rgba(0,229,255,0.08)",
-                border: "1px solid rgba(0,229,255,0.2)",
+                background: "color-mix(in srgb, var(--cyan) 8%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
                 color: "var(--cyan)",
                 fontSize: 12.5,
                 fontWeight: 500,
@@ -368,8 +368,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             margin: "16px 24px 0",
             padding: "12px 14px",
             borderRadius: 12,
-            border: "1px solid rgba(0,229,255,0.18)",
-            background: "rgba(0,229,255,0.06)",
+            border: "1px solid color-mix(in srgb, var(--cyan) 18%, transparent)",
+            background: "color-mix(in srgb, var(--cyan) 6%, transparent)",
             display: "flex",
             alignItems: "center",
             gap: 12,
@@ -383,8 +383,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                background: "rgba(0,229,255,0.15)",
-                border: "1px solid rgba(0,229,255,0.25)",
+                background: "color-mix(in srgb, var(--cyan) 15%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--cyan) 25%, transparent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -411,8 +411,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 padding: "7px 12px",
                 borderRadius: 8,
                 cursor: "pointer",
-                background: "rgba(0,229,255,0.1)",
-                border: "1px solid rgba(0,229,255,0.2)",
+                background: "color-mix(in srgb, var(--cyan) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
                 color: "var(--cyan)",
                 fontSize: 12.5,
                 fontWeight: 600,
@@ -489,9 +489,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               maxWidth: 360,
               padding: "10px 12px",
               borderRadius: 8,
-              border: "1px solid rgba(255,82,82,0.3)",
-              background: "rgba(255,82,82,0.12)",
-              color: "#FF8A8A",
+              border: "1px solid color-mix(in srgb, var(--error) 30%, transparent)",
+              background: "color-mix(in srgb, var(--error) 12%, transparent)",
+              color: "var(--error)",
               fontSize: 13,
             }}
           >

@@ -1,4 +1,4 @@
-.PHONY: build run stop clean test lint up down dev logs ps ui-run health dashboard help
+.PHONY: build run seed stop clean test lint up down dev logs ps ui-run health dashboard help
 
 # Defaults
 APP_NAME := metraly
@@ -19,6 +19,8 @@ API_PID_FILE := $(RUN_DIR)/api.pid
 UI_PID_FILE := $(RUN_DIR)/ui.pid
 API_LOG := $(RUN_DIR)/api.log
 UI_LOG := $(RUN_DIR)/ui.log
+LOCAL_SEED_ENV := POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379
+LOCAL_SEED_ONLY_ENV := SEED_ONLY=true SEED_ON_START=true SEED_ADMIN_EMAIL=admin@metraly.local SEED_ADMIN_PASSWORD=admin123
 
 # Build API
 build:
@@ -28,7 +30,15 @@ build:
 # Run API locally
 run: build
 	@echo "Starting API on port $(API_PORT)..."
-	POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379 ./bin/api
+	env $(LOCAL_SEED_ENV) ./bin/api
+
+# Seed local database
+seed: build
+	@echo "Seeding local database..."
+	$(DOCKER_COMPOSE) up -d redis postgres
+	@echo "Waiting for database services to become healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]; do sleep 1; done
+	@env $(LOCAL_SEED_ONLY_ENV) $(LOCAL_SEED_ENV) ./bin/api
 
 # Run UI locally
 ui-run:
@@ -57,7 +67,7 @@ up:
 	@echo "Building API..."
 	$(MAKE) build
 	@echo "Starting API..."
-	@nohup env POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379 ./bin/api > $(API_LOG) 2>&1 & echo $$! > $(API_PID_FILE)
+	@nohup env $(LOCAL_SEED_ENV) ./bin/api > $(API_LOG) 2>&1 & echo $$! > $(API_PID_FILE)
 	@echo "Starting UI..."
 	@nohup sh -c 'cd ui && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev -- --host 0.0.0.0 --port 3000' > $(UI_LOG) 2>&1 & echo $$! > $(UI_PID_FILE)
 
@@ -116,6 +126,7 @@ help:
 	@echo "  ps                 - Show local service status"
 	@echo "  build              - Build Go API"
 	@echo "  run                - Run API locally"
+	@echo "  seed               - Seed local database"
 	@echo "  ui-run             - Run UI locally"
 	@echo "  test               - Run tests"
 	@echo "  lint               - Run linter"

@@ -8,7 +8,7 @@ import { TreeItem } from './components/TreeItem';
 import { DORAPanel } from './components/DORAPanel';
 import { BreakdownTable } from './components/BreakdownTable';
 import { ExportBar } from './components/ExportBar';
-import { Leaderboard } from '../../components/ui/Leaderboard';
+import { Leaderboard } from '../../design-system';
 
 // ---------- Static Data (unchanged from original) ----------
 const WEEK_LABELS_30 = Array.from({ length: 30 }, (_, i) => {
@@ -221,7 +221,7 @@ export const MetricsScreen = () => {
                   borderRadius: 6,
                   border: 'none',
                   cursor: 'pointer',
-                  background: timeRange === t ? 'rgba(0,229,255,0.15)' : 'transparent',
+                  background: timeRange === t ? 'color-mix(in srgb, var(--cyan) 15%, transparent)' : 'transparent',
                   color: timeRange === t ? 'var(--cyan)' : 'var(--muted2)',
                   fontSize: 12,
                   fontWeight: timeRange === t ? 600 : 400,
@@ -243,8 +243,8 @@ export const MetricsScreen = () => {
               gap: 6,
               padding: '5px 11px',
               borderRadius: 7,
-              background: compareMode ? 'rgba(180,76,255,0.12)' : 'var(--glass)',
-              border: compareMode ? '1px solid rgba(180,76,255,0.3)' : '1px solid var(--border)',
+              background: compareMode ? 'color-mix(in srgb, var(--purple) 12%, transparent)' : 'var(--glass)',
+              border: compareMode ? '1px solid color-mix(in srgb, var(--purple) 30%, transparent)' : '1px solid var(--border)',
               color: compareMode ? 'var(--purple)' : 'var(--muted2)',
               fontSize: 12.5,
               cursor: 'pointer',
@@ -402,8 +402,8 @@ export const MetricsScreen = () => {
                             'pr-cycle',
                             'pr-review',
                           ].includes(selected))
-                          ? '#00C853'
-                          : '#FF1744',
+                          ? 'var(--success)'
+                          : 'var(--error)',
                     }}
                   >
                     {deltaStr} {currentMetric?.unit?.startsWith('%') ? 'pp' : currentMetric?.unit} vs{' '}
@@ -420,7 +420,7 @@ export const MetricsScreen = () => {
                       borderRadius: 6,
                       fontSize: 12,
                       border: '1px solid var(--border)',
-                      background: t === 'Area' ? 'rgba(0,229,255,0.1)' : 'transparent',
+                      background: t === 'Area' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                       color: t === 'Area' ? 'var(--cyan)' : 'var(--muted2)',
                       cursor: 'pointer',
                     }}
@@ -457,15 +457,15 @@ export const MetricsScreen = () => {
                 <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => setBreakdownView('table')} style={{
                     padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'table' ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                    background: breakdownView === 'table' ? 'rgba(0,229,255,0.1)' : 'transparent',
+                    border: breakdownView === 'table' ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
+                    background: breakdownView === 'table' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                     color: breakdownView === 'table' ? 'var(--cyan)' : 'var(--muted2)',
                     cursor: 'pointer'
                     }}>Table</button>
                     <button onClick={() => setBreakdownView('leaderboard')} style={{
                     padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'leaderboard' ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                    background: breakdownView === 'leaderboard' ? 'rgba(0,229,255,0.1)' : 'transparent',
+                    border: breakdownView === 'leaderboard' ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
+                    background: breakdownView === 'leaderboard' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                     color: breakdownView === 'leaderboard' ? 'var(--cyan)' : 'var(--muted2)',
                     cursor: 'pointer'
                     }}>Leaderboard</button>
@@ -534,8 +534,8 @@ export const MetricsScreen = () => {
                   fontFamily: 'var(--font-mono)',
                   fontSize: 12.5,
                   color: 'var(--cyan)',
-                  background: 'rgba(0,229,255,0.04)',
-                  border: '1px solid rgba(0,229,255,0.15)',
+                  background: 'color-mix(in srgb, var(--cyan) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
                   borderRadius: 8,
                   padding: '10px 14px',
                 }}
@@ -546,8 +546,8 @@ export const MetricsScreen = () => {
                 style={{
                   padding: '9px 16px',
                   borderRadius: 8,
-                  background: 'rgba(0,229,255,0.1)',
-                  border: '1px solid rgba(0,229,255,0.2)',
+                  background: 'color-mix(in srgb, var(--cyan) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
                   color: 'var(--cyan)',
                   fontSize: 13,
                   cursor: 'pointer',

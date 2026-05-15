@@ -24,6 +24,12 @@
   --sidebar-w: 228px;
 }
 html, body, #root { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; overflow: hidden; }
+html.metraly-login-scroll, html.metraly-login-scroll body, html.metraly-login-scroll #root {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }

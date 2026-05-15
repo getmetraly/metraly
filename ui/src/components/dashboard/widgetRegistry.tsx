@@ -1,9 +1,8 @@
 import type { WidgetType, WidgetConfig } from '../../types/widgets';
 import React from 'react';
 import { DataTableCompat as DataTable, DORABadgeCompat as DORABadge } from '../../design-system';
+import { StatCardCompat as StatCard, Leaderboard } from '../../design-system';
 import { Icon } from '../shared/Icon';
-import { StatCard } from '../ui/StatCard';
-import { Leaderboard } from '../ui/Leaderboard';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { AreaChart } from '../charts/AreaChart';
 import { BarChart } from '../charts/BarChart';

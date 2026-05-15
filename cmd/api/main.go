@@ -231,6 +231,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer deps.Close()
+	if cfg.SeedOnly {
+		return
+	}
 
 	r := NewRouter(RouterDeps{
 		KeyManager:   deps.keyManager,

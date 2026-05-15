@@ -77,7 +77,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
               position: "relative",
               width: "100%",
               height: "100%",
-              background: isEditable && isEmpty ? 'rgba(0,229,255,0.03)' : 'transparent',
+              background: isEditable && isEmpty ? 'color-mix(in srgb, var(--cyan) 3%, transparent)' : 'transparent',
               border: isEditable && isEmpty ? '1px dashed var(--cyan)' : 'none',
               borderRadius: 8,
             }}
@@ -93,8 +93,8 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
                     borderRadius: 5,
                     fontSize: 11,
                     cursor: "pointer",
-                    border: isFull ? "1px solid rgba(0,229,255,0.3)" : "1px solid var(--border)",
-                    background: isFull ? "rgba(0,229,255,0.08)" : "transparent",
+                    border: isFull ? "1px solid color-mix(in srgb, var(--cyan) 30%, transparent)" : "1px solid var(--border)",
+                    background: isFull ? "color-mix(in srgb, var(--cyan) 8%, transparent)" : "transparent",
                     color: isFull ? "var(--cyan)" : "var(--muted)",
                   }}
                 >

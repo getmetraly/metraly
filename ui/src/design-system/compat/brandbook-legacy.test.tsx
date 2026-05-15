@@ -5,6 +5,7 @@ import { expect, test } from 'vitest';
 import {
   DataTableCompat,
   DORABadgeCompat,
+  StatCardCompat,
   StatusBadgeCompat,
 } from './brandbook-legacy';
 import { BreakdownTable } from '../../features/metricsExplorer/components/BreakdownTable';
@@ -51,5 +52,36 @@ test('breakdown table stays accessible through compat barrel adapters', async ()
   const { container, getByRole } = render(<BreakdownTable metricId="deploy-freq" />);
 
   expect(getByRole('table', { name: 'Data table' })).toBeInTheDocument();
+  expect((await axe(container)).violations).toHaveLength(0);
+});
+
+test('stat card compat renders trend badge in footer when trend is provided', async () => {
+  const { container, getByText } = render(
+    <StatCardCompat
+      icon="chart"
+      label="Deploy frequency"
+      value="4.2/day"
+      trend="+8%"
+      trendDir="up"
+      color="cyan"
+    />,
+  );
+
+  expect(getByText('Deploy frequency')).toBeInTheDocument();
+  expect(getByText('+8%')).toBeInTheDocument();
+  expect((await axe(container)).violations).toHaveLength(0);
+});
+
+test('stat card compat renders without trend badge when trend is absent', async () => {
+  const { container, getByText } = render(
+    <StatCardCompat
+      icon="chart"
+      label="Lead time"
+      value="38h"
+      color="purple"
+    />,
+  );
+
+  expect(getByText('Lead time')).toBeInTheDocument();
   expect((await axe(container)).violations).toHaveLength(0);
 });

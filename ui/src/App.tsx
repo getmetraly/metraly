@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
-import { Topbar } from './components/layout/Topbar';
+import { SidebarCompat as Sidebar, TopbarCompat as Topbar, PlaceholderScreenCompat as PlaceholderScreen } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
 import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
-import { PlaceholderScreenCompat as PlaceholderScreen } from './design-system';
+// TweaksProvider + DraggableTweaksPanel are DEV-only: gated at render time so Rollup eliminates
+// both from the production bundle via dead-code elimination on `import.meta.env.DEV`.
 import { TweaksProvider } from './context/TweaksContext';
 import { DraggableTweaksPanel } from './components/layout/DraggableTweaksPanel';
 import { Icon } from './components/shared/Icon';
@@ -95,6 +95,13 @@ const App = () => {
     return () => window.removeEventListener('metraly-auth-changed', syncSession);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('metraly-login-scroll', !session);
+    return () => {
+      document.documentElement.classList.remove('metraly-login-scroll');
+    };
+  }, [session]);
+
   const handleSignIn = async (event) => {
     event.preventDefault();
     setSignInError('');
@@ -131,7 +138,7 @@ const App = () => {
   const renderFirstRunChoice = () => (
     <div
       style={{
-        minHeight: '100%',
+        minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -612,17 +619,16 @@ const App = () => {
     return <>{renderFirstRunChoice()}</>;
   }
 
-  return (
-    <TweaksProvider>
-      <div style={{ display: 'flex', height: '100%', width: '100%', overflow: 'hidden' }}>
-        <Sidebar active={active} onNav={setActive} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <Topbar title={title} subtitle={subtitle} />
-          {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
-        </div>
-        {import.meta.env.DEV && <DraggableTweaksPanel />}
+  const shell = (
+    <div style={{ display: 'flex', height: '100%', width: '100%', overflow: 'hidden' }}>
+      <Sidebar active={active} onNav={setActive} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <Topbar title={title} subtitle={subtitle} />
+        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
       </div>
-    </TweaksProvider>
+      {import.meta.env.DEV && <DraggableTweaksPanel />}
+    </div>
   );
+  return import.meta.env.DEV ? <TweaksProvider>{shell}</TweaksProvider> : shell;
 };
 export default App;

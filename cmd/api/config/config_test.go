@@ -32,8 +32,10 @@ func TestLoad_defaults(t *testing.T) {
 func TestLoad_fromEnv(t *testing.T) {
 	os.Setenv("PORT", "9090")
 	os.Setenv("SEED_ADMIN_EMAIL", "admin@test.com")
+	os.Setenv("SEED_ONLY", "true")
 	defer os.Unsetenv("PORT")
 	defer os.Unsetenv("SEED_ADMIN_EMAIL")
+	defer os.Unsetenv("SEED_ONLY")
 
 	cfg := config.Load()
 
@@ -42,6 +44,9 @@ func TestLoad_fromEnv(t *testing.T) {
 	}
 	if cfg.SeedAdminEmail != "admin@test.com" {
 		t.Fatalf("expected admin@test.com, got %s", cfg.SeedAdminEmail)
+	}
+	if !cfg.SeedOnly {
+		t.Fatal("expected SeedOnly to be true")
 	}
 }
 

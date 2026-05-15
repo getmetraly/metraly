@@ -79,9 +79,9 @@ export const AIScreen = () => {
                 borderRadius: 8,
                 flexShrink: 0,
                 background: m.role === 'assistant'
-                  ? 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(180,76,255,0.2))'
+                  ? 'linear-gradient(135deg, color-mix(in srgb, var(--cyan) 20%, transparent), color-mix(in srgb, var(--purple) 20%, transparent))'
                   : 'rgba(255,255,255,0.06)',
-                border: m.role === 'assistant' ? '1px solid rgba(180,76,255,0.3)' : '1px solid var(--border)',
+                border: m.role === 'assistant' ? '1px solid color-mix(in srgb, var(--purple) 30%, transparent)' : '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -119,8 +119,8 @@ export const AIScreen = () => {
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                background: 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(180,76,255,0.2))',
-                border: '1px solid rgba(180,76,255,0.3)',
+                background: 'linear-gradient(135deg, color-mix(in srgb, var(--cyan) 20%, transparent), color-mix(in srgb, var(--purple) 20%, transparent))',
+                border: '1px solid color-mix(in srgb, var(--purple) 30%, transparent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -230,7 +230,7 @@ export const AIScreen = () => {
             cursor: 'pointer',
             transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.1)'; e.currentTarget.style.color = 'var(--cyan)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--cyan) 10%, transparent)'; e.currentTarget.style.color = 'var(--cyan)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--muted2)'; }}
         >
             {question}

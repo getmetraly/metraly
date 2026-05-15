@@ -1,15 +1,27 @@
-import { createElement, type ReactElement, type ReactNode } from "react";
+import React, { createElement, type ReactElement, type ReactNode } from "react";
 import {
+  DashboardGrid,
+  DashboardWidget,
   MetralyEmptyState,
+  MetralyMetricCard,
   MetralyTable,
   StateBadge,
   StatusBadge,
+  TrendBadge,
+  type DashboardGridProps,
+  type DashboardWidgetProps,
+  type MetralyMetricCardVariant,
   type MetralyTableProps,
   type StateBadgeProps,
   type StateBadgeState,
   type StatusBadgeProps,
   type StatusBadgeStatus,
+  type TrendBadgeDirection,
+  type TrendBadgeSentiment,
 } from "@metraly/ui";
+import { widgetRegistry } from "../../components/dashboard/widgetRegistry";
+import type { Dashboard, DashboardWidgetInstance } from "../../types/dashboard";
+import type { MetricTimeSeries } from "../../types/metrics";
 import { Icon } from "../../components/shared/Icon";
 /**
  * brandbook-legacy.ts — compatibility layer during the brandbook cutover
@@ -180,14 +192,87 @@ export function DataTableCompat({
 }
 
 // ── Metric / stat card ─────────────────────────────────────────────────────────
-// Phase 3 follow-up: replace with `export { MetralyMetricCard as StatCardCompat } from '@metraly/ui'`
-export { StatCard as StatCardCompat } from "../../components/ui/StatCard";
+// ── Metric / stat card ─────────────────────────────────────────────────────────
+// Phase 3 complete: StatCard → MetralyMetricCard via prop mapping
+type LegacyColorKey = "cyan" | "purple" | "success" | "warning" | "error";
+type LegacyTrendDir = "up" | "down" | "neutral";
+
+interface StatCardCompatProps {
+  icon: string;
+  label: string;
+  value: ReactNode;
+  sub?: string;
+  trend?: string;
+  trendDir?: LegacyTrendDir;
+  color?: LegacyColorKey | string;
+  spark?: number[];
+  delay?: number;
+}
+
+const STAT_VARIANT_MAP: Record<LegacyColorKey, MetralyMetricCardVariant> = {
+  cyan: "primary",
+  purple: "secondary",
+  success: "success",
+  warning: "warning",
+  error: "error",
+};
+
+const TREND_DIRECTION: Record<LegacyTrendDir, TrendBadgeDirection> = {
+  up: "up",
+  down: "down",
+  neutral: "flat",
+};
+
+const TREND_SENTIMENT: Record<LegacyTrendDir, TrendBadgeSentiment> = {
+  up: "positive",
+  down: "negative",
+  neutral: "neutral",
+};
+
+export function StatCardCompat({
+  icon,
+  label,
+  value,
+  sub,
+  trend,
+  trendDir = "neutral",
+  color,
+  spark,
+}: StatCardCompatProps) {
+  const variant: MetralyMetricCardVariant =
+    STAT_VARIANT_MAP[color as LegacyColorKey] ?? "primary";
+
+  const footerNode =
+    trend || spark ? (
+      createElement(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: 8 } },
+        trend
+          ? createElement(TrendBadge, {
+              direction: TREND_DIRECTION[trendDir],
+              sentiment: TREND_SENTIMENT[trendDir],
+              value: trend,
+              size: "sm",
+            })
+          : null,
+      )
+    ) : undefined;
+
+  return createElement(MetralyMetricCard, {
+    title: label,
+    value,
+    description: sub,
+    icon: createElement(Icon, { name: icon, size: 15, color: "currentColor" }),
+    variant,
+    footer: footerNode,
+  });
+}
 
 // ── Shell: sidebar + topbar ────────────────────────────────────────────────────
-// Phase 3 follow-up: replace with MetralySidebar + MetralySidebarSection + MetralySidebarItem
-export { Sidebar as SidebarCompat } from "../../components/layout/Sidebar";
-// Phase 3 follow-up: replace with MetralyTopbar
-export { Topbar as TopbarCompat } from "../../components/layout/Topbar";
+// Phase 4 complete: SidebarCompat → MetralySidebar adapter
+export { SidebarCompat } from "./SidebarCompat";
+// Phase 4 complete: TopbarCompat → MetralyTopbar adapter
+export { TopbarCompat } from "./TopbarCompat";
 
 // ── Empty / placeholder state ──────────────────────────────────────────────────
 export function PlaceholderScreenCompat({ name }: PlaceholderScreenCompatProps) {
@@ -234,12 +319,80 @@ export function DORABadgeCompat({
 }
 
 // ── Dashboard widget shell ─────────────────────────────────────────────────────
-// Phase 3 follow-up: replace with DashboardWidget from '@metraly/ui'
-export { Widget as WidgetCompat } from "../../components/ui/Widget";
+// Phase 3 complete: Widget → DashboardWidget via compat adapter
+type WidgetCompatProps = Pick<
+  DashboardWidgetProps,
+  | 'id'
+  | 'title'
+  | 'subtitle'
+  | 'state'
+  | 'stateLabel'
+  | 'selected'
+  | 'dragging'
+  | 'resizing'
+  | 'resizable'
+  | 'loading'
+  | 'fullWidth'
+  | 'children'
+  | 'footer'
+  | 'stateTitle'
+  | 'stateDescription'
+  | 'stateAction'
+  | 'className'
+  | 'onSelect'
+  | 'onRemove'
+  | 'onDragStart'
+>;
+
+export function WidgetCompat(props: WidgetCompatProps) {
+  return createElement(DashboardWidget, props);
+}
 
 // ── Dashboard grid ─────────────────────────────────────────────────────────────
-// Phase 3 follow-up: replace with DashboardGrid from '@metraly/ui'
-export { DashboardRenderer } from "../../components/dashboard/DashboardRenderer";
+// Phase 3 complete: DashboardRenderer → DashboardGrid compat adapter
+export { DashboardGrid };
+export type { DashboardGridProps };
+
+// createElement can't infer DashboardGrid's generic, so we anchor the concrete widget type.
+type DashboardGridWidget = DashboardWidgetInstance & { id: string };
+const ConcreteDashboardGrid = DashboardGrid as React.ComponentType<
+  DashboardGridProps<DashboardGridWidget>
+>;
+
+interface DashboardRendererCompatProps {
+  dashboard: Dashboard;
+  widgetData?: Record<string, MetricTimeSeries>;
+}
+
+export function DashboardRendererCompat({
+  dashboard,
+  widgetData = {},
+}: DashboardRendererCompatProps) {
+  const activeWidgets: DashboardGridWidget[] = dashboard.widgets
+    .filter((w) => w.widgetType !== "empty")
+    .map((w) => ({ ...w, id: w.instanceId }));
+  return createElement(ConcreteDashboardGrid, {
+    widgets: activeWidgets,
+    layout: dashboard.layout,
+    renderWidget: (widget: DashboardGridWidget) => {
+      const WidgetComponent = widgetRegistry[widget.widgetType];
+      if (!WidgetComponent) {
+        return createElement(
+          "div",
+          { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--muted)", fontSize: 12 } },
+          `Unknown widget: ${widget.widgetType}`,
+        );
+      }
+      const scopedId = `${dashboard.id}-${widget.instanceId}`;
+      return createElement(
+        WidgetComponent as React.ComponentType<{ config: unknown; data: MetricTimeSeries | undefined }>,
+        { config: widget.config, data: widgetData[scopedId] },
+      );
+    },
+  });
+}
+
+// ── Draggable dashboard (no brandbook equivalent yet — tracked for Phase 4) ───
 export { DraggableDashboardRenderer } from "../../components/dashboard/DraggableDashboardRenderer";
 
 // ── AI / Insight (no brandbook equivalent — tracked in P2-4) ───────────────────
@@ -248,3 +401,22 @@ export { InlineInsight } from "../../components/ui/InlineInsight";
 
 // ── Leaderboard (no brandbook equivalent — tracked in P2-4) ───────────────────
 export { Leaderboard } from "../../components/ui/Leaderboard";
+
+// ── AI Workspace (Phase 9 complete) ──────────────────────────────────────────
+export type { EvidenceCitation, AnswerCardProps } from "@metraly/ui";
+export { AnswerCard } from "@metraly/ui";
+export type { EvidencePanelProps } from "@metraly/ui";
+export { EvidencePanel } from "@metraly/ui";
+export type { TraceStep, TraceStepStatus, TraceDrawerProps } from "@metraly/ui";
+export { TraceDrawer } from "@metraly/ui";
+export type { ChatMessage, AIWorkspaceLayoutProps } from "@metraly/ui";
+export { AIWorkspaceLayout } from "@metraly/ui";
+// ── Plugins (Phase 9 complete) ───────────────────────────────────────────────
+export type { PermissionLevel, PermissionBadgeProps } from "@metraly/ui";
+export { PermissionBadge } from "@metraly/ui";
+export type { SigningStatus, SigningBannerProps } from "@metraly/ui";
+export { SigningBanner } from "@metraly/ui";
+export type { Plugin, PluginCatalogProps } from "@metraly/ui";
+export { PluginCatalog } from "@metraly/ui";
+export type { PluginPermission, PluginReviewDrawerProps } from "@metraly/ui";
+export { PluginReviewDrawer } from "@metraly/ui";

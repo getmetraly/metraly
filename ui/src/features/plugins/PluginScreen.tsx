@@ -210,8 +210,8 @@ export const PluginScreen = () => {
                 padding: '7px 14px',
                 borderRadius: 8,
                 cursor: 'pointer',
-                border: filter === f ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                background: filter === f ? 'rgba(0,229,255,0.1)' : 'var(--glass)',
+                border: filter === f ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
+                background: filter === f ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'var(--glass)',
                 color: filter === f ? 'var(--cyan)' : 'var(--muted2)',
                 fontSize: 13,
                 fontFamily: 'var(--font-body)',
@@ -266,8 +266,8 @@ export const PluginScreen = () => {
                     fontSize: 10.5,
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--success)',
-                    background: 'rgba(0,200,83,0.1)',
-                    border: '1px solid rgba(0,200,83,0.2)',
+                    background: 'color-mix(in srgb, var(--success) 10%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)',
                     borderRadius: 5,
                     padding: '2px 7px',
                   }}>
@@ -304,8 +304,8 @@ export const PluginScreen = () => {
                     fontWeight: 500,
                     fontFamily: 'var(--font-body)',
                     transition: 'all 0.15s',
-                    background: p.installed ? 'transparent' : 'rgba(0,229,255,0.1)',
-                    border: p.installed ? '1px solid var(--border)' : '1px solid rgba(0,229,255,0.25)',
+                    background: p.installed ? 'transparent' : 'color-mix(in srgb, var(--cyan) 10%, transparent)',
+                    border: p.installed ? '1px solid var(--border)' : '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
                     color: p.installed ? 'var(--muted)' : 'var(--cyan)',
                   }}
                 >

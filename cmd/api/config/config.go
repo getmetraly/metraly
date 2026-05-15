@@ -22,6 +22,7 @@ type AppConfig struct {
 	OIDCClientSecret   string
 	OIDCRedirectURL    string
 	SeedOnStart        bool
+	SeedOnly           bool
 	SeedAdminEmail     string
 	SeedAdminPassword  string
 	MetricsCacheTTL    int
@@ -59,6 +60,7 @@ func Load() AppConfig {
 		OIDCClientSecret:   getEnv("OIDC_CLIENT_SECRET", ""),
 		OIDCRedirectURL:    getEnv("OIDC_REDIRECT_URL", ""),
 		SeedOnStart:        getEnv("SEED_ON_START", "false") == "true",
+		SeedOnly:           getEnv("SEED_ONLY", "false") == "true",
 		SeedAdminEmail:     getEnv("SEED_ADMIN_EMAIL", ""),
 		SeedAdminPassword:  getEnv("SEED_ADMIN_PASSWORD", ""),
 		MetricsCacheTTL:    getEnvInt("METRICS_CACHE_TTL", 300),

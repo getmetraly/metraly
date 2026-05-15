@@ -35,10 +35,10 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => (
           <div
             style={{
               width: 32, height: 32, borderRadius: '50%',
-              background: i < step ? 'var(--cyan)' : i === step ? 'rgba(0,229,255,0.15)' : 'var(--glass)',
+              background: i < step ? 'var(--cyan)' : i === step ? 'color-mix(in srgb, var(--cyan) 15%, transparent)' : 'var(--glass)',
               border: i <= step ? '2px solid var(--cyan)' : '2px solid var(--border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: i === step ? '0 0 12px rgba(0,229,255,0.3)' : 'none',
+              boxShadow: i === step ? '0 0 12px color-mix(in srgb, var(--cyan) 30%, transparent)' : 'none',
               transition: 'all 0.3s ease',
             }}
           >
@@ -91,9 +91,9 @@ const SourceSelectionStep: React.FC<StepProps> = ({ selected, setSelected }) => 
               style={{
                 padding: '16px 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
                 border: sel ? '2px solid var(--cyan)' : '1px solid var(--border)',
-                background: sel ? 'rgba(0,229,255,0.06)' : 'transparent',
+                background: sel ? 'color-mix(in srgb, var(--cyan) 6%, transparent)' : 'transparent',
                 transition: 'all 0.15s ease',
-                boxShadow: sel ? '0 0 0 1px rgba(0,229,255,0.2)' : 'none',
+                boxShadow: sel ? '0 0 0 1px color-mix(in srgb, var(--cyan) 20%, transparent)' : 'none',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -137,7 +137,7 @@ const AuthenticateStep: React.FC<AuthStepProps> = ({ selected, connected, setCon
       </div>
       <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {selectedSources.map(src => (
-          <div key={src.id} style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div key={src.id} style={{ background: 'color-mix(in srgb, var(--cyan) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ width: 36, height: 36, borderRadius: 8, background: `${src.color}15`, border: `1px solid ${src.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name={src.icon} size={20} color={src.color} />
             </div>
@@ -150,7 +150,7 @@ const AuthenticateStep: React.FC<AuthStepProps> = ({ selected, connected, setCon
               disabled={connected[src.id]}
               style={{
                 padding: '6px 16px', borderRadius: 8, cursor: connected[src.id] ? 'default' : 'pointer',
-                background: connected[src.id] ? 'rgba(0,200,83,0.1)' : 'var(--text)',
+                background: connected[src.id] ? 'color-mix(in srgb, var(--success) 10%, transparent)' : 'var(--text)',
                 border: 'none', color: connected[src.id] ? 'var(--success)' : 'var(--bg)',
                 fontSize: 13, fontWeight: 600,
               }}
@@ -232,7 +232,7 @@ const ReviewStep: React.FC<{ selected: string[] }> = ({ selected }) => {
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>Everything looks good. Metraly will begin indexing shortly.</div>
       </div>
       <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-        <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(0,200,83,0.12)', border: '1px solid rgba(0,200,83,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 64, height: 64, borderRadius: 20, background: 'color-mix(in srgb, var(--success) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 25%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="check" size={28} color="var(--success)" />
         </div>
         <div style={{ textAlign: 'center' }}>
@@ -241,7 +241,7 @@ const ReviewStep: React.FC<{ selected: string[] }> = ({ selected }) => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 340 }}>
           {selectedSources.map(src => (
-            <div key={src.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,200,83,0.06)', border: '1px solid rgba(0,200,83,0.15)', borderRadius: 10 }}>
+            <div key={src.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'color-mix(in srgb, var(--success) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 15%, transparent)', borderRadius: 10 }}>
               <Icon name={src.icon} size={15} color={src.color} />
               <span style={{ fontSize: 13, color: 'var(--text)' }}>{src.name}</span>
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -308,8 +308,8 @@ const OnboardingChecklist: React.FC<{ step: number }> = ({ step }) => {
               gap: 10,
               padding: '10px 12px',
               borderRadius: 10,
-              border: item.done ? '1px solid rgba(0,200,83,0.18)' : '1px solid var(--border)',
-              background: item.done ? 'rgba(0,200,83,0.04)' : 'rgba(255,255,255,0.02)',
+              border: item.done ? '1px solid color-mix(in srgb, var(--success) 18%, transparent)' : '1px solid var(--border)',
+              background: item.done ? 'color-mix(in srgb, var(--success) 4%, transparent)' : 'rgba(255,255,255,0.02)',
             }}
           >
             <div
@@ -393,8 +393,8 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({
             marginBottom: 16,
             padding: '10px 14px',
             borderRadius: 12,
-            border: '1px solid rgba(180,76,255,0.18)',
-            background: 'rgba(180,76,255,0.06)',
+            border: '1px solid color-mix(in srgb, var(--purple) 18%, transparent)',
+            background: 'color-mix(in srgb, var(--purple) 6%, transparent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -419,8 +419,8 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({
               padding: '7px 12px',
               borderRadius: 8,
               cursor: 'pointer',
-              background: 'rgba(180,76,255,0.1)',
-              border: '1px solid rgba(180,76,255,0.22)',
+              background: 'color-mix(in srgb, var(--purple) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--purple) 22%, transparent)',
               color: 'var(--purple)',
               fontSize: 12.5,
               fontWeight: 600,
@@ -457,7 +457,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({
           style={{
             padding: '10px 28px', borderRadius: 9, background: canGoNext() ? 'var(--grad)' : 'rgba(255,255,255,0.1)',
             border: 'none', color: canGoNext() ? '#fff' : 'var(--muted)', fontWeight: 600, fontSize: 13.5,
-            cursor: canGoNext() ? 'pointer' : 'default', boxShadow: canGoNext() ? '0 0 16px rgba(0,229,255,0.2)' : 'none',
+            cursor: canGoNext() ? 'pointer' : 'default', boxShadow: canGoNext() ? '0 0 16px color-mix(in srgb, var(--cyan) 20%, transparent)' : 'none',
           }}
         >
           {step === steps.length - 1 ? 'Go to Dashboard' : 'Continue →'}
