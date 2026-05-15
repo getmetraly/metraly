@@ -1,4 +1,7 @@
 import type { Preview } from '@storybook/react-vite';
+import '@metraly/ui/styles/metraly-theme.css';
+import '@metraly/ui/styles/metraly-empty-state.css';
+import '../src/index.css';
 
 const preview: Preview = {
   parameters: {

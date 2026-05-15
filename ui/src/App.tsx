@@ -7,7 +7,7 @@ import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
 import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
-import { PlaceholderScreen } from './components/ui/PlaceholderScreen';
+import { PlaceholderScreenCompat as PlaceholderScreen } from './design-system';
 import { TweaksProvider } from './context/TweaksContext';
 import { DraggableTweaksPanel } from './components/layout/DraggableTweaksPanel';
 import { Icon } from './components/shared/Icon';
