@@ -154,22 +154,15 @@ const pinnedItems: SidebarItem[] = pinned
                 <span style={{ fontSize: 12 }}>📌</span>
                 {!collapsed && item.label}
                 {!collapsed && (
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     aria-label="Unpin"
                     onClick={(e) => { e.stopPropagation(); togglePin(item.id); }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        togglePin(item.id);
-                      }
-                    }}
                     title="Unpin"
-                    style={{ marginLeft: 'auto', cursor: 'pointer', color: 'rgba(0,229,255,0.5)', fontSize: 12, padding: '0 2px', display: 'inline-flex', alignItems: 'center' }}
+                    style={{ marginLeft: 'auto', cursor: 'pointer', color: 'rgba(0,229,255,0.5)', fontSize: 12, padding: '0 2px', display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none' }}
                   >
                     ×
-                  </span>
+                  </button>
                 )}
               </button>
             ))}
@@ -206,17 +199,10 @@ const pinnedItems: SidebarItem[] = pinned
                       <Icon name={item.icon} size={15} color={isActive ? 'var(--cyan)' : 'currentColor'}/>
                       {!collapsed && <span style={{ marginLeft: collapsed ? 0 : 9 }}>{item.label}</span>}
                       {!collapsed && (
-                        <span
-                          role="button"
-                          tabIndex={0}
+                        <button
+                          type="button"
                           aria-label={pinned.includes(item.id) ? 'Unpin' : 'Pin to top'}
                           onClick={(e) => { e.stopPropagation(); togglePin(item.id); }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              togglePin(item.id);
-                            }
-                          }}
                           title={pinned.includes(item.id) ? 'Unpin' : 'Pin to top'}
                           style={{
                             marginLeft: 'auto',
@@ -229,10 +215,13 @@ const pinnedItems: SidebarItem[] = pinned
                             color: pinned.includes(item.id) ? 'var(--cyan)' : 'var(--muted)',
                             cursor: 'pointer',
                             flexShrink: 0,
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
                           }}
                         >
                           📌
-                        </span>
+                        </button>
                       )}
                     </button>
                   );
