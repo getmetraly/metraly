@@ -13,6 +13,7 @@ import { DraggableTweaksPanel } from './components/layout/DraggableTweaksPanel';
 import { Icon } from './components/shared/Icon';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
+  type FirstRunMode,
   FIRST_RUN_CHOICES,
   FIRST_RUN_MODE,
   getInitialScreen,
@@ -74,12 +75,12 @@ function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
 
 const App = () => {
   const [session, setSession] = useState(() => loadSession());
-  const [firstRunMode, setFirstRunMode] = useLocalStorage(
+  const [firstRunMode, setFirstRunMode] = useLocalStorage<FirstRunMode>(
     'metraly.first-run-mode',
     FIRST_RUN_MODE.undecided,
   );
   const [active, setActive] = useState(getInitialScreen(firstRunMode));
-  const [firstRunSelection, setFirstRunSelection] = useState(
+  const [firstRunSelection, setFirstRunSelection] = useState<FirstRunMode>(
     FIRST_RUN_MODE.demo,
   );
   const [email, setEmail] = useState('admin@metraly.local');

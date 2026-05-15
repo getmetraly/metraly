@@ -4,7 +4,7 @@ import {
   FIRST_RUN_MODE,
   getChoiceByMode,
   getInitialScreen,
-} from "./firstRun.js";
+} from "./firstRun";
 
 describe("first run", () => {
   it("defaults to explicit choice screen", () => {
