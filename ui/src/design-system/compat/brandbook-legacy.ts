@@ -420,3 +420,12 @@ export type { Plugin, PluginCatalogProps } from "@metraly/ui";
 export { PluginCatalog } from "@metraly/ui";
 export type { PluginPermission, PluginReviewDrawerProps } from "@metraly/ui";
 export { PluginReviewDrawer } from "@metraly/ui";
+// ── Wizard + shared primitives (Phase 5 wiring) ───────────────────────────────
+export type { WizardLayoutProps, WizardLayoutStep } from "@metraly/ui";
+export { WizardLayout } from "@metraly/ui";
+export type { ReviewPanelItem, ReviewPanelProps } from "@metraly/ui";
+export { ReviewPanel } from "@metraly/ui";
+export type { StickyWizardFooterProps } from "@metraly/ui";
+export { StickyWizardFooter } from "@metraly/ui";
+export { MetralyButton, MetralyIcon, MetralyInput, CardShell } from "@metraly/ui";
+export type { MetralyIconName } from "@metraly/ui";

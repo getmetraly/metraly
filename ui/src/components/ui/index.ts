@@ -1,4 +1,3 @@
-export { StatCard } from './StatCard';
 export { Widget } from './Widget';
 export { AIInsightCard } from './AIInsightCard';
 export { Badge } from './Badge';

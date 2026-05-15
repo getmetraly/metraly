@@ -1,20 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Icon } from '../../components/shared/Icon';
+import { CardShell, PluginCatalog, PluginReviewDrawer } from '../../design-system';
+import type { Plugin, PluginPermission } from '../../design-system';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
-
-const plugins = [
-  { name: 'GitHub Advanced',  cat: 'Sources',   icon: 'github',   desc: 'Deep PR analytics, CODEOWNERS, security alerts and advanced workflow metrics.',  rating: 4.9, installs: '12.4k', installed: true,  color: '#E8EDF5' },
-  { name: 'Jira Sync Pro',    cat: 'Sources',   icon: 'jira',     desc: 'Bi‑directional sync with Jira epics, sprints, velocity and burndown charts.',       rating: 4.7, installs: '8.1k',  installed: false, color: '#2684FF' },
-  { name: 'AI Explainer',     cat: 'AI',        icon: 'brain',    desc: 'Adds natural language summaries to any metric card. Powered by your local LLM.',    rating: 4.8, installs: '5.6k',  installed: true,  color: '#B44CFF' },
-  { name: 'Slack Digest',     cat: 'Alerts',    icon: 'slack',    desc: 'Daily and weekly engineering digests posted directly to your Slack channels.',       rating: 4.5, installs: '9.3k',  installed: false, color: '#4A154B' },
-  { name: 'PagerDuty Bridge', cat: 'Alerts',    icon: 'pagerduty',desc: 'Surface incident impact on engineering metrics. MTTD, MTTR in your dashboards.',     rating: 4.6, installs: '3.8k',  installed: false, color: '#06AC38' },
-  { name: 'CSV Exporter',     cat: 'Exporters', icon: 'database', desc: 'Export any dashboard to CSV with configurable date ranges and field mapping.',        rating: 4.2, installs: '6.7k',  installed: false, color: '#FF9100' },
-  { name: 'Linear Tracker',   cat: 'Sources',   icon: 'linear',   desc: 'Sync Linear cycles, projects and issue velocity into your engineering health view.',  rating: 4.8, installs: '4.2k',  installed: false, color: '#5E6AD2' },
-  { name: 'Grafana Bridge',   cat: 'Exporters', icon: 'chart',    desc: 'Push Metraly metrics into your existing Grafana instance via a native datasource.',   rating: 4.4, installs: '2.9k',  installed: false, color: '#FF6B35' },
-  { name: 'AI Anomaly Guard', cat: 'AI',        icon: 'sparkles', desc: 'ML‑powered anomaly detection across all your DORA metrics with Slack/email alerts.', rating: 4.9, installs: '1.7k',  installed: false, color: '#00E5FF' },
-];
-
-const filters = ['All', 'Sources', 'Exporters', 'AI', 'Alerts'];
 
 type NotificationChannelId = 'slack' | 'pagerduty';
 
@@ -24,23 +11,51 @@ interface NotificationChannelConfig {
   cadence: 'Daily' | 'Weekly';
 }
 
+const DEFAULT_PLUGINS: Plugin[] = [
+  { id: 'github-advanced', name: 'GitHub Advanced', category: 'Sources', icon: 'github', description: 'Deep PR analytics, CODEOWNERS, security alerts and advanced workflow metrics.', rating: 4.9, installCount: '12.4k', installed: true, iconColor: 'var(--m-fg-0, var(--text))' },
+  { id: 'jira-sync-pro', name: 'Jira Sync Pro', category: 'Sources', icon: 'jira', description: 'Bi-directional sync with Jira epics, sprints, velocity and burndown charts.', rating: 4.7, installCount: '8.1k', installed: false, iconColor: 'var(--m-cyan-500, var(--cyan))' },
+  { id: 'ai-explainer', name: 'AI Explainer', category: 'AI', icon: 'brain', description: 'Adds natural-language summaries to any metric card with local model execution.', rating: 4.8, installCount: '5.6k', installed: true, iconColor: 'var(--m-purple, var(--purple))' },
+  { id: 'slack-digest', name: 'Slack Digest', category: 'Alerts', icon: 'slack', description: 'Daily and weekly engineering digests posted directly to team channels.', rating: 4.5, installCount: '9.3k', installed: false, iconColor: 'var(--m-purple, var(--purple))' },
+  { id: 'pagerduty-bridge', name: 'PagerDuty Bridge', category: 'Alerts', icon: 'pagerduty', description: 'Surface incident impact on engineering metrics and incident response KPIs.', rating: 4.6, installCount: '3.8k', installed: false, iconColor: 'var(--m-success, var(--success))' },
+  { id: 'csv-exporter', name: 'CSV Exporter', category: 'Exporters', icon: 'database', description: 'Export dashboards to CSV with configurable date ranges and field mapping.', rating: 4.2, installCount: '6.7k', installed: false, iconColor: 'var(--m-warning, var(--warning))' },
+  { id: 'linear-tracker', name: 'Linear Tracker', category: 'Sources', icon: 'linear', description: 'Sync Linear cycles, projects and issue velocity into engineering health views.', rating: 4.8, installCount: '4.2k', installed: false, iconColor: 'var(--m-cyan-500, var(--cyan))' },
+  { id: 'grafana-bridge', name: 'Grafana Bridge', category: 'Exporters', icon: 'chart', description: 'Push Metraly metrics into Grafana through a native datasource bridge.', rating: 4.4, installCount: '2.9k', installed: false, iconColor: 'var(--m-warning, var(--warning))' },
+  { id: 'ai-anomaly-guard', name: 'AI Anomaly Guard', category: 'AI', icon: 'sparkles', description: 'Anomaly detection across DORA metrics with alert routing.', rating: 4.9, installCount: '1.7k', installed: false, iconColor: 'var(--m-cyan-500, var(--cyan))', status: 'preview' },
+];
+
 const defaultNotificationChannels: Record<NotificationChannelId, NotificationChannelConfig> = {
-  slack: {
-    enabled: true,
-    destination: '#engineering-health',
-    cadence: 'Daily',
-  },
-  pagerduty: {
-    enabled: false,
-    destination: 'Primary on-call',
-    cadence: 'Weekly',
-  },
+  slack: { enabled: true, destination: '#engineering-health', cadence: 'Daily' },
+  pagerduty: { enabled: false, destination: 'Primary on-call', cadence: 'Weekly' },
 };
 
+function permissionTemplate(plugin: Plugin | null): PluginPermission[] {
+  if (!plugin) return [];
+  if (plugin.category === 'Sources') {
+    return [
+      { scope: 'Read repositories', description: 'Read metadata, pull requests, and commits.', risk: 'low' },
+      { scope: 'Read pipelines', description: 'Read CI/CD execution status and durations.', risk: 'medium' },
+      { scope: 'Read organization', description: 'Read teams and membership graph.', risk: 'medium' },
+    ];
+  }
+  if (plugin.category === 'Alerts') {
+    return [
+      { scope: 'Read incidents', description: 'Read incident timeline and severity metadata.', risk: 'medium' },
+      { scope: 'Send notifications', description: 'Push digest and threshold alerts.', risk: 'medium' },
+    ];
+  }
+  if (plugin.category === 'AI') {
+    return [
+      { scope: 'Read metrics', description: 'Read aggregated metrics for model prompts.', risk: 'low' },
+      { scope: 'Access summaries', description: 'Write generated summaries to workspace.', risk: 'medium' },
+      { scope: 'Manage prompts', description: 'Update prompt templates and execution settings.', risk: 'high' },
+    ];
+  }
+  return [{ scope: 'Read exports', description: 'Read dashboard datasets for export pipelines.', risk: 'low' }];
+}
+
 export const PluginScreen = () => {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All');
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [plugins, setPlugins] = useState<Plugin[]>(DEFAULT_PLUGINS);
+  const [reviewPluginId, setReviewPluginId] = useState<string | null>(null);
   const [channels, setChannels] = useLocalStorage<Record<NotificationChannelId, NotificationChannelConfig>>(
     'metraly.notification-channels',
     defaultNotificationChannels,
@@ -51,271 +66,73 @@ export const PluginScreen = () => {
     [channels],
   );
 
-  const filteredPlugins = plugins.filter(p => {
-    const matchesFilter = filter === 'All' || p.cat === filter;
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-                          p.desc.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const reviewPlugin = useMemo(() => plugins.find((plugin) => plugin.id === reviewPluginId) ?? null, [plugins, reviewPluginId]);
+  const reviewPermissions = useMemo(() => permissionTemplate(reviewPlugin), [reviewPlugin]);
+
+  function handleInstall(id: string) {
+    setPlugins((prev) => prev.map((plugin) => (plugin.id === id ? { ...plugin, installed: true } : plugin)));
+    setReviewPluginId(null);
+  }
+
+  function handleManage(id: string) {
+    setReviewPluginId(id);
+  }
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: '24px 28px' }}>
-      <div
-        className="fade-up"
-        style={{
-          marginBottom: 18,
-          padding: 18,
-          borderRadius: 14,
-          border: '1px solid var(--border)',
-          background: 'var(--glass)',
-        }}
+    <div style={{ flex: 1, overflow: 'auto', padding: '24px 28px', display: 'grid', gap: 16 }}>
+      <CardShell
+        title="Notification channels"
+        subtitle="Configure Slack digests and PagerDuty routing for plugin alerts."
+        trailing={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>{activeChannels.length} active</span>}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Notification channels</div>
-            <div style={{ fontSize: 12, color: 'var(--muted2)' }}>Configure a Slack digest or PagerDuty bridge for alerts.</div>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-            {activeChannels.length} active
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-          {(Object.entries(channels) as [NotificationChannelId, NotificationChannelConfig][]).map(([id, channel]) => {
-            const label = id === 'slack' ? 'Slack' : 'PagerDuty';
-            const icon = id === 'slack' ? 'slack' : 'pagerduty';
-            const accent = id === 'slack' ? '#4A154B' : '#06AC38';
-            return (
-              <div
-                key={id}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  border: channel.enabled ? `1px solid ${accent}33` : '1px solid var(--border)',
-                  background: channel.enabled ? `${accent}0a` : 'rgba(255,255,255,0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: `${accent}18`, border: `1px solid ${accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name={icon} size={16} color={accent} />
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--muted2)' }}>Digest and incident routing</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], enabled: !prev[id].enabled } }))}
-                    style={{
-                      width: 40,
-                      height: 22,
-                      borderRadius: 999,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: channel.enabled ? 'var(--cyan)' : 'rgba(255,255,255,0.14)',
-                      position: 'relative',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 2,
-                        left: channel.enabled ? 20 : 2,
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        background: 'white',
-                        transition: 'left 0.15s ease',
-                      }}
-                    />
-                  </button>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+          {(Object.entries(channels) as [NotificationChannelId, NotificationChannelConfig][]).map(([id, channel]) => (
+            <div key={id} style={{ border: '1px solid var(--m-line, var(--border))', borderRadius: 10, background: 'var(--m-bg-1, var(--glass))', padding: '10px 12px', display: 'grid', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 600, color: 'var(--m-fg-0, var(--text))' }}>
+                  {id === 'slack' ? 'Slack' : 'PagerDuty'}
                 </div>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Destination</span>
-                  <input
-                    value={channel.destination}
-                    onChange={(e) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], destination: e.target.value } }))}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'var(--glass2)',
-                      color: 'var(--text)',
-                      fontSize: 12.5,
-                      outline: 'none',
-                    }}
-                  />
-                </label>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Cadence</span>
-                  <select
-                    value={channel.cadence}
-                    onChange={(e) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], cadence: e.target.value as NotificationChannelConfig['cadence'] } }))}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'var(--glass2)',
-                      color: 'var(--text)',
-                      fontSize: 12.5,
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="Daily">Daily</option>
-                    <option value="Weekly">Weekly</option>
-                  </select>
-                </label>
+                <input
+                  type="checkbox"
+                  checked={channel.enabled}
+                  onChange={() => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], enabled: !prev[id].enabled } }))}
+                />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Search and filters bar */}
-      <div className="fade-up" style={{ display: 'flex', gap: 12, marginBottom: 22, alignItems: 'center' }}>
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          background: 'var(--glass)',
-          border: '1px solid var(--border)',
-          borderRadius: 10,
-          padding: '8px 14px',
-        }}>
-          <Icon name="search" size={14} color="var(--muted)" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search plugins…"
-            style={{
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--text)',
-              fontSize: 13.5,
-              fontFamily: 'var(--font-body)',
-              width: '100%',
-            }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {filters.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding: '7px 14px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                border: filter === f ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
-                background: filter === f ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'var(--glass)',
-                color: filter === f ? 'var(--cyan)' : 'var(--muted2)',
-                fontSize: 13,
-                fontFamily: 'var(--font-body)',
-                transition: 'all 0.15s',
-              }}
-            >
-              {f}
-            </button>
+              <input
+                value={channel.destination}
+                onChange={(event) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], destination: event.target.value } }))}
+                style={{ border: '1px solid var(--m-line, var(--border))', borderRadius: 8, padding: '6px 8px', background: 'var(--m-bg-2, var(--glass2))', color: 'var(--m-fg-0, var(--text))' }}
+              />
+              <select
+                value={channel.cadence}
+                onChange={(event) => setChannels((prev) => ({ ...prev, [id]: { ...prev[id], cadence: event.target.value as NotificationChannelConfig['cadence'] } }))}
+                style={{ border: '1px solid var(--m-line, var(--border))', borderRadius: 8, padding: '6px 8px', background: 'var(--m-bg-2, var(--glass2))', color: 'var(--m-fg-0, var(--text))' }}
+              >
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+              </select>
+            </div>
           ))}
         </div>
-      </div>
+      </CardShell>
 
-      {/* Plugin grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-       {filteredPlugins.map((p, i) => {
-          const isHovered = hoveredIndex === i;
-          return (
-            <div
-              key={p.name}
-              className={`fade-up-${Math.min(i + 1, 6)}`}
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              style={{
-                background: isHovered ? 'var(--glass2)' : 'var(--glass)',
-                border: isHovered ? '1px solid var(--border2)' : '1px solid var(--border)',
-                borderRadius: 14,
-                padding: '18px 18px 16px',
-                transition: 'all 0.2s ease',
-                transform: isHovered ? 'translateY(-2px)' : 'none',
-                boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.35)' : 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-              }}
-            >
-              {/* Card content – unchanged */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: `${p.color}15`,
-                  border: `1px solid ${p.color}25`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Icon name={p.icon} size={18} color={p.color} />
-                </div>
-                {p.installed && (
-                  <div style={{
-                    fontSize: 10.5,
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--success)',
-                    background: 'color-mix(in srgb, var(--success) 10%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)',
-                    borderRadius: 5,
-                    padding: '2px 7px',
-                  }}>
-                    Installed
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{
-                  fontFamily: 'var(--font-head)',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  color: 'var(--text)',
-                  marginBottom: 5,
-                }}>
-                  {p.name}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>
-                  {p.desc}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name="star" size={12} color="#FFD600" style={{ fill: '#FFD600' }} />
-                  <span style={{ fontSize: 12, color: 'var(--muted2)', fontFamily: 'var(--font-mono)' }}>{p.rating}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>· {p.installs}</span>
-                </div>
-                <button
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-body)',
-                    transition: 'all 0.15s',
-                    background: p.installed ? 'transparent' : 'color-mix(in srgb, var(--cyan) 10%, transparent)',
-                    border: p.installed ? '1px solid var(--border)' : '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
-                    color: p.installed ? 'var(--muted)' : 'var(--cyan)',
-                  }}
-                >
-                  {p.installed ? 'Manage' : 'Install'}
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <PluginCatalog
+        plugins={plugins}
+        categories={['Sources', 'Exporters', 'AI', 'Alerts']}
+        onInstall={handleInstall}
+        onManage={handleManage}
+        onReview={setReviewPluginId}
+      />
+
+      <PluginReviewDrawer
+        open={reviewPlugin !== null}
+        plugin={reviewPlugin}
+        permissions={reviewPermissions}
+        onInstall={() => {
+          if (reviewPlugin) handleInstall(reviewPlugin.id);
+        }}
+        onClose={() => setReviewPluginId(null)}
+      />
     </div>
   );
 };
