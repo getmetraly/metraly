@@ -53,11 +53,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = '', onNav }) => {
     ]},
     { label: 'Analytics', items: [
       { id: 'metrics', icon: 'bar2', label: 'Metrics Explorer' },
-      { id: 'ai', icon: 'brain', label: 'AI Assistant' },
+      { id: 'ai', icon: 'brain', label: 'AI Workspace' },
     ]},
     { label: 'Configure', items: [
-      { id: 'plugins', icon: 'puzzle', label: 'Marketplace' },
-      { id: 'wizard', icon: 'link', label: 'Connect Sources' },
+      { id: 'plugins', icon: 'puzzle', label: 'Plugins' },
+      { id: 'wizard', icon: 'link', label: 'Connectors' },
     ]},
     { label: 'System', items: [
       { id: 'settings', icon: 'settings', label: 'Settings' },

@@ -16,9 +16,6 @@
   },
   "include": ["src"],
   "exclude": [
-    "src/App.tsx",
-    "src/index.tsx",
-    "src/features/board",
     "src/features/dashboardWizard/DashboardWizardScreen.test.tsx",
     "src/features/dashboardWizard/components/WidgetPreviewCard.test.tsx",
     "src/features/dashboardWizard/components/WizardPreviewGrid.test.tsx",

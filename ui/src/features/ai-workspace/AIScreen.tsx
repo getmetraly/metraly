@@ -1,4 +1,4 @@
-// src/features/aiAssistant/AIScreen.tsx
+// src/features/ai-workspace/AIScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../components/shared/Icon';
 

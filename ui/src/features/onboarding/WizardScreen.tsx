@@ -206,13 +206,7 @@ const ConfigureStep = () => {
             ) : (
               <select
                 value={String(row.value)}
-                onChange={e => {
-                  if (typeof row.value === 'boolean') {
-                    row.setter(e.target.value === 'true');
-                  } else {
-                    row.setter(e.target.value);
-                  }
-                }}
+                onChange={e => row.setter(e.target.value)}
                 style={{
                   background: 'var(--glass2)', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 10px',
                   color: 'var(--cyan)', fontSize: 13, fontFamily: 'var(--font-mono)', cursor: 'pointer',

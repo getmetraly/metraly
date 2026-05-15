@@ -26,6 +26,14 @@ function isoDate(): string {
   return new Date().toISOString();
 }
 
+function cloneDashboard(dash: Dashboard): Dashboard {
+  return {
+    ...dash,
+    widgets: dash.widgets.map((w) => ({ ...w } as DashboardWidgetInstance)),
+    layout: dash.layout.map((l) => ({ ...l } as WidgetLayout)),
+  };
+}
+
 export const mockApi = {
   async getDashboardList(): Promise<DashboardIndexEntry[]> {
     return Array.from(dashboards.values()).map((d) => ({ id: d.id, name: d.name }));
@@ -34,12 +42,7 @@ export const mockApi = {
   async getDashboard(id: string): Promise<Dashboard> {
     const dash = dashboards.get(id);
     if (!dash) throw new Error('Dashboard not found');
-    // Return a shallow copy to prevent accidental mutations.
-    return {
-      ...dash,
-      widgets: dash.widgets.map((w) => ({ ...w } as DashboardWidgetInstance)),
-      layout: dash.layout.map((l) => ({ ...l } as WidgetLayout)),
-    };
+    return cloneDashboard(dash);
   },
 
   async createDashboard(
@@ -59,7 +62,7 @@ export const mockApi = {
       sourceType: req.sourceType,
     };
     dashboards.set(id, dash);
-    return { dashboard: dash };
+    return { dashboard: cloneDashboard(dash) };
   },
 
   async updateDashboard(id: string, req: UpdateDashboardRequest): Promise<{ dashboard: Dashboard }> {
@@ -70,7 +73,7 @@ export const mockApi = {
     if (req.widgets !== undefined) dash.widgets = req.widgets;
     if (req.layout !== undefined) dash.layout = req.layout;
     dash.version += 1;
-    return { dashboard: { ...dash } };
+    return { dashboard: cloneDashboard(dash) };
   },
 
   async updateLayout(id: string, req: UpdateLayoutRequest): Promise<void> {
