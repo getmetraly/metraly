@@ -39,6 +39,9 @@ func TestMetricsCache_GetMiss(t *testing.T) {
 
 	c := NewMetricsCache(rdb, time.Minute*5)
 
+	// Delete any stale key from a previous test run before asserting a cache miss.
+	rdb.Del(context.Background(), "metrics:deploy-freq:Platform")
+
 	_, err := c.Get(context.Background(), "deploy-freq", "Platform")
 	assert.ErrorIs(t, err, ErrCacheMiss)
 }
