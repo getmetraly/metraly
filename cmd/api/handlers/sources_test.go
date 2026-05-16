@@ -20,7 +20,7 @@ import (
 func TestSourceHandler_Create_MissingSourceType(t *testing.T) {
 	key := biz.DeriveKey("test-secret-key-for-handler-tests")
 	repo := &fakeSourceRepoForHandler{sources: map[string]any{}, creds: map[string]any{}, secrets: map[string]string{}}
-	svc, err := biz.NewSourceSvc(repo, key)
+	svc, err := biz.NewSourceSvc(repo, key, biz.NewAdapterRegistry())
 	require.NoError(t, err)
 	h := handlers.NewSourceHandler(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources", bytes.NewReader([]byte(`{"displayName":"test","secret":"tok"}`)))
@@ -32,7 +32,7 @@ func TestSourceHandler_Create_MissingSourceType(t *testing.T) {
 func TestSourceHandler_Create_MissingSecret(t *testing.T) {
 	key := biz.DeriveKey("test-secret-key-for-handler-tests")
 	repo := &fakeSourceRepoForHandler{sources: map[string]any{}, creds: map[string]any{}, secrets: map[string]string{}}
-	svc, err := biz.NewSourceSvc(repo, key)
+	svc, err := biz.NewSourceSvc(repo, key, biz.NewAdapterRegistry())
 	require.NoError(t, err)
 	h := handlers.NewSourceHandler(svc)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources", bytes.NewReader([]byte(`{"sourceType":"github","displayName":"test"}`)))
@@ -44,7 +44,7 @@ func TestSourceHandler_Create_MissingSecret(t *testing.T) {
 func TestSourceHandler_Create_HappyPath(t *testing.T) {
 	key := biz.DeriveKey("test-secret-key-for-handler-tests")
 	repo := &fakeSourceRepoForHandler{sources: map[string]any{}, creds: map[string]any{}, secrets: map[string]string{}}
-	svc, err := biz.NewSourceSvc(repo, key)
+	svc, err := biz.NewSourceSvc(repo, key, biz.NewAdapterRegistry())
 	require.NoError(t, err)
 	h := handlers.NewSourceHandler(svc)
 	body := []byte(`{"sourceType":"github","displayName":"test","secret":"ghp_testtoken1234","config":{"org":"acme"}}`)
@@ -62,7 +62,7 @@ func TestSourceHandler_Create_HappyPath(t *testing.T) {
 func TestSourceHandler_Create_ResponseNoRawSecret(t *testing.T) {
 	key := biz.DeriveKey("test-secret-key-for-handler-tests")
 	repo := &fakeSourceRepoForHandler{sources: map[string]any{}, creds: map[string]any{}, secrets: map[string]string{}}
-	svc, err := biz.NewSourceSvc(repo, key)
+	svc, err := biz.NewSourceSvc(repo, key, biz.NewAdapterRegistry())
 	require.NoError(t, err)
 	h := handlers.NewSourceHandler(svc)
 	secret := "superprivatesecrettoken"
