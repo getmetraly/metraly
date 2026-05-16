@@ -9,11 +9,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 )
+
+// ErrNoCollectorRegistered is returned when no Collector is registered for the source's type.
+var ErrNoCollectorRegistered = errors.New("no collector registered")
 
 // CollectResult is the output of a single collector execution.
 type CollectResult struct {
@@ -94,7 +98,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 
 	collector, ok := s.collectors[sc.SourceType]
 	if !ok {
-		return nil, fmt.Errorf("no collector registered for source type %q", sc.SourceType)
+		return nil, fmt.Errorf("%w for source type %q", ErrNoCollectorRegistered, sc.SourceType)
 	}
 
 	run := &domain.CollectorRun{

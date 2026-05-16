@@ -11,7 +11,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
@@ -54,14 +53,14 @@ func (h *CollectorHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, biz.ErrSourceNotFound) {
-		respond.Error(w, http.StatusNotFound, "source_not_found", "source not found")
+		respond.Error(w, http.StatusNotFound, "SOURCE_NOT_FOUND", "source not found")
 		return
 	}
-	if strings.Contains(err.Error(), "no collector registered") {
-		respond.Error(w, http.StatusUnprocessableEntity, "no_collector_registered", err.Error())
+	if errors.Is(err, biz.ErrNoCollectorRegistered) {
+		respond.Error(w, http.StatusUnprocessableEntity, "NO_COLLECTOR_REGISTERED", err.Error())
 		return
 	}
-	respond.Error(w, http.StatusInternalServerError, "collector_error", err.Error())
+	respond.Error(w, http.StatusInternalServerError, "COLLECTOR_ERROR", err.Error())
 }
 
 // ListRuns handles GET /api/v1/sources/{id}/collector-runs.
@@ -79,7 +78,7 @@ func (h *CollectorHandler) ListRuns(w http.ResponseWriter, r *http.Request) {
 
 	runs, err := h.runRepo.ListCollectorRuns(r.Context(), sourceID, limit)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "internal_error", "failed to list runs")
+		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to list runs")
 		return
 	}
 	if runs == nil {
@@ -93,11 +92,11 @@ func (h *CollectorHandler) GetRun(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	run, err := h.runRepo.GetCollectorRun(r.Context(), id)
 	if errors.Is(err, repo.ErrNotFound) {
-		respond.Error(w, http.StatusNotFound, "run_not_found", "collector run not found")
+		respond.Error(w, http.StatusNotFound, "RUN_NOT_FOUND", "collector run not found")
 		return
 	}
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "internal_error", "failed to get run")
+		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to get run")
 		return
 	}
 	respond.JSON(w, http.StatusOK, run)

@@ -7,6 +7,7 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -164,7 +165,7 @@ func TestCollectorHandler_Trigger_NoCollectorRegistered(t *testing.T) {
 	var body map[string]any
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body))
 	errObj, _ := body["error"].(map[string]any)
-	assert.Equal(t, "no_collector_registered", errObj["code"])
+	assert.Equal(t, "NO_COLLECTOR_REGISTERED", errObj["code"])
 }
 
 func TestCollectorHandler_ListRuns_Default(t *testing.T) {
@@ -196,20 +197,33 @@ func TestCollectorHandler_ListRuns_Default(t *testing.T) {
 
 func TestCollectorHandler_ListRuns_MaxLimit(t *testing.T) {
 	svc, runRepo, _ := buildCollectorSvc("src-4", domain.SourceTypeGitHub, false)
+
+	// Seed 101 runs with the target source ID so clamping must actually fire.
+	now := time.Now().UTC()
+	for i := range 101 {
+		id := fmt.Sprintf("run-max-%d", i)
+		runRepo.runs[id] = &domain.CollectorRun{
+			ID:                 id,
+			SourceConnectionID: "src-4",
+			Status:             domain.CollectorRunStatusSucceeded,
+			StartedAt:          now,
+			RateLimitState:     domain.RateLimitStateOK,
+		}
+	}
+
 	h := handlers.NewCollectorHandler(svc, runRepo)
 	router := chiRouterWithCollector(h)
 
-	// Request a limit over 100 — should be clamped.
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/sources/src-4/collector-runs?limit=9999", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	// The handler should respond 200 with an empty list (no runs seeded).
 	assert.Equal(t, http.StatusOK, rec.Code)
 	var body map[string]any
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body))
-	_, ok := body["runs"]
-	assert.True(t, ok, "response must contain 'runs' key")
+	runs, ok := body["runs"].([]any)
+	require.True(t, ok, "response must contain 'runs' key")
+	assert.Len(t, runs, 100, "handler must clamp limit to 100")
 }
 
 func TestCollectorHandler_GetRun_HappyPath(t *testing.T) {
