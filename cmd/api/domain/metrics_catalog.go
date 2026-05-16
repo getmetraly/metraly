@@ -115,3 +115,15 @@ type LineageContract struct {
 	// NormalizedEventTypes are the event types that fed this metric.
 	NormalizedEventTypes []string `json:"normalizedEventTypes"`
 }
+
+// MetricRow is a single result row from a metric aggregation query.
+// BucketStart is the start of the time bucket (truncated to granularity).
+// Dimensions contains optional group-by values (e.g., team_id, repository_id).
+// Value is the primary numeric metric; nil when no data exists for the bucket.
+// Count is the number of events that fed this value.
+type MetricRow struct {
+	BucketStart time.Time
+	Dimensions  map[string]string
+	Value       *float64
+	Count       int64
+}

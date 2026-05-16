@@ -177,3 +177,158 @@ func TestNormalizerSvc_Normalize_DoesNotPersist(t *testing.T) {
 	assert.NotNil(t, ev)
 	assert.Len(t, repo.events, 0) // Normalize alone does not persist
 }
+
+// fakeIdentityResolver implements biz.IdentityResolver for tests.
+type fakeIdentityResolver struct {
+	mappings    map[string]biz.IdentityResolution // key: externalID
+	upserted    []string                           // externalIDs passed to UpsertUnresolved
+	resolveErr  error
+	upsertErr   error
+}
+
+func (f *fakeIdentityResolver) ResolveIdentity(_ context.Context, _ string, _ domain.SourceType, externalID string) (biz.IdentityResolution, error) {
+	if f.resolveErr != nil {
+		return biz.IdentityResolution{}, f.resolveErr
+	}
+	res, ok := f.mappings[externalID]
+	if !ok {
+		return biz.IdentityResolution{Resolved: false}, nil
+	}
+	return res, nil
+}
+
+func (f *fakeIdentityResolver) UpsertUnresolved(_ context.Context, _ string, _ domain.SourceType, externalID, _ string) error {
+	f.upserted = append(f.upserted, externalID)
+	return f.upsertErr
+}
+
+func TestNormalizerSvc_AuthorResolved_SetsUserID(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+	resolver := &fakeIdentityResolver{
+		mappings: map[string]biz.IdentityResolution{
+			"octocat": {UserID: "usr_abc", TeamID: "team_xyz", Resolved: true},
+		},
+	}
+	svc.WithIdentityResolver(resolver)
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_1", "pull_request.opened", map[string]any{
+		"author_login": "octocat",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.Equal(t, "usr_abc", ev.AuthorID)
+	assert.Equal(t, "team_xyz", ev.TeamID)
+	assert.False(t, ev.AuthorUnresolved)
+	assert.Empty(t, resolver.upserted)
+}
+
+func TestNormalizerSvc_AuthorUnresolved_SetsFlag(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+	svc.WithIdentityResolver(&fakeIdentityResolver{mappings: map[string]biz.IdentityResolution{}})
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_2", "pull_request.opened", map[string]any{
+		"author_login": "unknown-dev",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.True(t, ev.AuthorUnresolved)
+	assert.Equal(t, "unknown-dev", ev.AuthorID) // original login preserved
+}
+
+func TestNormalizerSvc_ReviewerResolved(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+	resolver := &fakeIdentityResolver{
+		mappings: map[string]biz.IdentityResolution{
+			"reviewer99": {UserID: "usr_rev", Resolved: true},
+		},
+	}
+	svc.WithIdentityResolver(resolver)
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_3", "pull_request.review_requested", map[string]any{
+		"reviewer_login": "reviewer99",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.Equal(t, "usr_rev", ev.ReviewerID)
+	assert.False(t, ev.ReviewerUnresolved)
+}
+
+func TestNormalizerSvc_ReviewerUnresolved_UpsertsCalled(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+	resolver := &fakeIdentityResolver{mappings: map[string]biz.IdentityResolution{}}
+	svc.WithIdentityResolver(resolver)
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_4", "pull_request.review_requested", map[string]any{
+		"reviewer_login": "new-reviewer",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.True(t, ev.ReviewerUnresolved)
+	assert.Contains(t, resolver.upserted, "new-reviewer")
+}
+
+func TestNormalizerSvc_JiraAuthorResolved(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+	resolver := &fakeIdentityResolver{
+		mappings: map[string]biz.IdentityResolution{
+			"5b10a2844c20165700ede21g": {UserID: "usr_jira1", Resolved: true},
+		},
+	}
+	svc.WithIdentityResolver(resolver)
+
+	raw := rawEvent(domain.SourceTypeJira, "PROJ-10", "issue.created", map[string]any{
+		"reporter_account_id": "5b10a2844c20165700ede21g",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.Equal(t, "usr_jira1", ev.AuthorID)
+	assert.False(t, ev.AuthorUnresolved)
+}
+
+func TestNormalizerSvc_NoResolver_NoResolution(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo) // no resolver set
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_5", "pull_request.opened", map[string]any{
+		"author_login": "somebody",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	// Without resolver the raw login is kept, no unresolved flag
+	assert.Equal(t, "somebody", ev.AuthorID)
+	assert.False(t, ev.AuthorUnresolved)
+}
+
+func TestNormalizerSvc_WorkflowRunCompleted_Conclusion(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+
+	raw := rawEvent(domain.SourceTypeGitHubActions, "run_200", "workflow_run.completed", map[string]any{
+		"conclusion":       "failure",
+		"duration_seconds": float64(45),
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	assert.Equal(t, "failure", ev.Conclusion)
+}
+
+func TestNormalizerSvc_JiraSprintClosed_WithPoints(t *testing.T) {
+	repo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(repo)
+
+	raw := rawEvent(domain.SourceTypeJira, "sprint_8", "sprint.closed", map[string]any{
+		"completed_points": float64(34),
+		"planned_points":   float64(40),
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	require.NotNil(t, ev.PointsCompleted)
+	require.NotNil(t, ev.PointsPlanned)
+	assert.Equal(t, int64(34), *ev.PointsCompleted)
+	assert.Equal(t, int64(40), *ev.PointsPlanned)
+}

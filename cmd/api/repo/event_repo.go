@@ -150,17 +150,19 @@ func (r *EventRepo) InsertNormalizedEvent(ctx context.Context, ev *domain.Normal
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO normalized_events
 		(id, raw_source_event_id, source_connection_id, event_type, entity_kind, entity_id,
-		 repository_id, team_id, author_id, reviewer_id, author_unresolved, reviewer_unresolved,
-		 occurred_at, received_at, cycle_time_seconds, review_latency_seconds, duration_seconds,
+		 repository_id, team_id, author_id, author_unresolved, reviewer_id, reviewer_unresolved,
+		 occurred_at, received_at,
+		 cycle_time_seconds, review_latency_seconds, duration_seconds,
+		 conclusion, points_completed, points_planned,
 		 schema_version)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
 		ON CONFLICT (id) DO NOTHING
 	`, ev.ID, ev.RawSourceEventID, ev.SourceConnectionID, string(ev.EventType),
 		ev.EntityKind, ev.EntityID,
-		ev.RepositoryID, ev.TeamID, ev.AuthorID, ev.ReviewerID,
-		ev.AuthorID == "", ev.ReviewerID == "",
+		ev.RepositoryID, ev.TeamID, ev.AuthorID, ev.AuthorUnresolved, ev.ReviewerID, ev.ReviewerUnresolved,
 		ev.OccurredAt, ev.ReceivedAt,
 		ev.CycleTimeSeconds, ev.ReviewLatencySeconds, ev.DurationSeconds,
+		nilIfEmpty(ev.Conclusion), ev.PointsCompleted, ev.PointsPlanned,
 		ev.SchemaVersion,
 	)
 	return err
@@ -170,21 +172,23 @@ func (r *EventRepo) InsertNormalizedEvent(ctx context.Context, ev *domain.Normal
 func (r *EventRepo) ListNormalizedEventsByRawID(ctx context.Context, rawID string) ([]*domain.NormalizedEvent, error) {
 	return r.queryNormalizedEvents(ctx,
 		`SELECT id, raw_source_event_id, source_connection_id, event_type, entity_kind, entity_id,
-		        repository_id, team_id, author_id, reviewer_id, occurred_at, received_at,
-		        cycle_time_seconds, review_latency_seconds, duration_seconds, schema_version
+		        repository_id, team_id, author_id, author_unresolved, reviewer_id, reviewer_unresolved,
+		        occurred_at, received_at,
+		        cycle_time_seconds, review_latency_seconds, duration_seconds,
+		        conclusion, points_completed, points_planned, schema_version
 		 FROM normalized_events WHERE raw_source_event_id=$1`, rawID)
 }
-
 // ListNormalizedEventsByEntity returns normalized events for a specific entity.
 func (r *EventRepo) ListNormalizedEventsByEntity(ctx context.Context, entityKind, entityID string) ([]*domain.NormalizedEvent, error) {
 	return r.queryNormalizedEvents(ctx,
 		`SELECT id, raw_source_event_id, source_connection_id, event_type, entity_kind, entity_id,
-		        repository_id, team_id, author_id, reviewer_id, occurred_at, received_at,
-		        cycle_time_seconds, review_latency_seconds, duration_seconds, schema_version
+		        repository_id, team_id, author_id, author_unresolved, reviewer_id, reviewer_unresolved,
+		        occurred_at, received_at,
+		        cycle_time_seconds, review_latency_seconds, duration_seconds,
+		        conclusion, points_completed, points_planned, schema_version
 		 FROM normalized_events WHERE entity_kind=$1 AND entity_id=$2 ORDER BY occurred_at ASC`,
 		entityKind, entityID)
 }
-
 func (r *EventRepo) queryNormalizedEvents(ctx context.Context, q string, args ...any) ([]*domain.NormalizedEvent, error) {
 	rows, err := r.pool.Query(ctx, q, args...)
 	if err != nil {
@@ -205,18 +209,23 @@ func (r *EventRepo) queryNormalizedEvents(ctx context.Context, q string, args ..
 func scanNormalizedEvent(row rowScanner) (*domain.NormalizedEvent, error) {
 	var ev domain.NormalizedEvent
 	var eventType string
+	var conclusion *string
 	err := row.Scan(
 		&ev.ID, &ev.RawSourceEventID, &ev.SourceConnectionID, &eventType,
 		&ev.EntityKind, &ev.EntityID,
-		&ev.RepositoryID, &ev.TeamID, &ev.AuthorID, &ev.ReviewerID,
+		&ev.RepositoryID, &ev.TeamID, &ev.AuthorID, &ev.AuthorUnresolved, &ev.ReviewerID, &ev.ReviewerUnresolved,
 		&ev.OccurredAt, &ev.ReceivedAt,
 		&ev.CycleTimeSeconds, &ev.ReviewLatencySeconds, &ev.DurationSeconds,
+		&conclusion, &ev.PointsCompleted, &ev.PointsPlanned,
 		&ev.SchemaVersion,
 	)
 	if err != nil {
 		return nil, err
 	}
 	ev.EventType = domain.NormalizedEventType(eventType)
+	if conclusion != nil {
+		ev.Conclusion = *conclusion
+	}
 	return &ev, nil
 }
 
