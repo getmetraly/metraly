@@ -1,0 +1,14 @@
+{
+  "id": "src_github_test_01",
+  "workspaceId": "ws_test_01",
+  "sourceType": "github",
+  "displayName": "acme-org GitHub",
+  "status": "ready",
+  "config": {
+    "org": "acme-org",
+    "backfill_days": "30"
+  },
+  "credentialId": "cred_01",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

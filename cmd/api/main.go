@@ -64,6 +64,7 @@ type RouterDeps struct {
 	TemplateSvc  *biz.TemplateSvc
 	MetricsSvc   *biz.MetricsSvc
 	IngestionSvc *biz.IngestionSvc
+	SourceSvc    *biz.SourceSvc
 	ActivityRepo repo.ActivityRepo
 	InsightRepo  repo.AIInsightRepo
 }
@@ -119,6 +120,13 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Get("/api/v1/activity", previewHandler.Activity)
 			r.Get("/api/v1/me", meHandler)
 			r.With(localMiddleware.RequireRole("admin")).Get("/api/v1/admin/summary", adminSummaryHandler)
+			if deps.SourceSvc != nil {
+				sourceHandler := handlers.NewSourceHandler(deps.SourceSvc)
+				r.Get("/api/v1/sources", sourceHandler.List)
+				r.Post("/api/v1/sources", sourceHandler.Create)
+				r.Get("/api/v1/sources/{id}", sourceHandler.Get)
+				r.Post("/api/v1/sources/{id}/test", sourceHandler.Test)
+			}
 		})
 	} else if deps.DashboardSvc != nil {
 		r.Get("/api/v1/dashboards", dashboardHandler.List)
@@ -130,6 +138,13 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 		r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
 		r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
 		r.Post("/api/v1/ingest/pm", ingestionHandler.PM)
+		if deps.SourceSvc != nil {
+			sourceHandler := handlers.NewSourceHandler(deps.SourceSvc)
+			r.Get("/api/v1/sources", sourceHandler.List)
+			r.Post("/api/v1/sources", sourceHandler.Create)
+			r.Get("/api/v1/sources/{id}", sourceHandler.Get)
+			r.Post("/api/v1/sources/{id}/test", sourceHandler.Test)
+		}
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
 		r.Post("/api/v1/dashboards", serviceUnavailableHandler)
@@ -242,6 +257,7 @@ func main() {
 		TemplateSvc:  deps.templateSvc,
 		MetricsSvc:   deps.metricsSvc,
 		IngestionSvc: deps.ingestionSvc,
+		SourceSvc:    deps.sourceSvc,
 		ActivityRepo: deps.activityRepo,
 		InsightRepo:  deps.insightRepo,
 	})

@@ -1,0 +1,10 @@
+{
+  "id": "run_01",
+  "sourceConnectionId": "src_github_test_01",
+  "collectorType": "github_pr",
+  "status": "running",
+  "startedAt": "2026-01-01T12:00:00Z",
+  "cursor": "",
+  "rawEventCount": 0,
+  "rateLimitState": "ok"
+}

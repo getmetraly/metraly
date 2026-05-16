@@ -44,6 +44,7 @@ type runtimeDeps struct {
 	metricsSvc   *biz.MetricsSvc
 	ingestionSvc *biz.IngestionSvc
 	templateSvc  *biz.TemplateSvc
+	sourceSvc    *biz.SourceSvc
 	authSvc      *auth.Service
 	activityRepo repo.ActivityRepo
 	insightRepo  repo.AIInsightRepo
@@ -130,6 +131,19 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		templateSvc:  biz.NewTemplateSvc(dashboardRepo, templateCache),
 		activityRepo: activityRepo,
 		insightRepo:  insightRepo,
+	}
+
+	sourceSecretKey := biz.DeriveKey(cfg.SourceSecretKey)
+	if len(cfg.SourceSecretKey) == 0 {
+		sourceSecretKey = biz.DeriveKey(cfg.JWTPrivateKey + "source-key-v1")
+	}
+	deps.sourceSvc, err = biz.NewSourceSvc(repo.NewSourceRepo(pool), sourceSecretKey)
+	if err != nil {
+		if rdb != nil {
+			_ = rdb.Close()
+		}
+		pool.Close()
+		return nil, fmt.Errorf("create source service: %w", err)
 	}
 
 	if tokenStore != nil {

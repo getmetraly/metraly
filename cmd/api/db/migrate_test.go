@@ -7,6 +7,7 @@ package db_test
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"strings"
 	"testing"
 	"time"
@@ -73,7 +74,12 @@ func TestMigrate_Integration(t *testing.T) {
 		t.Fatalf("failed to query schema_migrations: %v", err)
 	}
 
-	if count != 7 {
-		t.Errorf("expected 7 migration rows, got %d", count)
+	files, err := fs.Glob(migrations.FS, "*.sql")
+	if err != nil {
+		t.Fatalf("failed to glob migrations: %v", err)
+	}
+	expected := len(files)
+	if count != expected {
+		t.Errorf("expected %d migration rows, got %d", expected, count)
 	}
 }
