@@ -22,6 +22,14 @@ type NormalizerError struct {
 
 func (e *NormalizerError) Error() string { return e.Category + ": " + e.Msg }
 
+// NormCategory* constants for NormalizerError.Category.
+const (
+	NormCategoryIgnoredKnown   = "ignored_known_unsupported"
+	NormCategoryUnsupportedSrc = "unsupported_source"
+	NormCategoryInvalidPayload = "invalid_payload"
+	NormCategoryMappingError   = "mapping_error"
+)
+
 // NormalizedEventRepo persists normalized events.
 type NormalizedEventRepo interface {
 	InsertNormalizedEvent(ctx context.Context, ev *domain.NormalizedEvent) error
@@ -61,7 +69,7 @@ func (s *NormalizerSvc) Normalize(raw *domain.RawSourceEvent) (*domain.Normalize
 		return normalizeJira(raw)
 	default:
 		return nil, &NormalizerError{
-			Category: "unsupported_source",
+			Category: NormCategoryUnsupportedSrc,
 			Msg:      "no normalizer for source type " + string(raw.SourceType),
 		}
 	}
@@ -190,7 +198,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	default:
 		return nil, &NormalizerError{
-			Category: "ignored_known_unsupported",
+			Category: NormCategoryIgnoredKnown,
 			Msg:      "GitHub event type not mapped: " + raw.EventType,
 		}
 	}
@@ -271,7 +279,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 
 	default:
 		return nil, &NormalizerError{
-			Category: "ignored_known_unsupported",
+			Category: NormCategoryIgnoredKnown,
 			Msg:      "Jira event type not mapped: " + raw.EventType,
 		}
 	}

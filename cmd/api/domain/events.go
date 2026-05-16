@@ -59,3 +59,9 @@ type NormalizedEvent struct {
 	DurationSeconds      *int64              `json:"durationSeconds,omitempty"`
 	SchemaVersion        int                 `json:"schemaVersion"`
 }
+
+// RawEventInsertOutcome records the result of inserting one raw source event.
+type RawEventInsertOutcome struct {
+	Event    *RawSourceEvent
+	Inserted bool // true if newly inserted; false if duplicate
+}

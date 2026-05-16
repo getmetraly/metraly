@@ -97,11 +97,8 @@ func buildCollectorSvc(
 // fakeEventRepo satisfies biz.RawEventIngestRepo.
 type fakeEventRepo struct{}
 
-func (f *fakeEventRepo) InsertRawSourceEventsBatch(_ context.Context, _ []*domain.RawSourceEvent) (int, error) {
-	return 0, nil
-}
 
-func (f *fakeEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, _ []*domain.RawSourceEvent) ([]repo.RawEventInsertOutcome, error) {
+func (f *fakeEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, _ []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
 	return nil, nil
 }
 

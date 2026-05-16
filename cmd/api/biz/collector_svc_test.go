@@ -13,7 +13,6 @@ import (
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
-	"github.com/getmetraly/metraly/cmd/api/repo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,26 +66,16 @@ func newFakeRawEventRepo() *fakeRawEventRepo {
 	return &fakeRawEventRepo{events: make(map[string]*domain.RawSourceEvent)}
 }
 
-func (f *fakeRawEventRepo) InsertRawSourceEventsBatch(_ context.Context, events []*domain.RawSourceEvent) (int, error) {
-	inserted := 0
-	for _, ev := range events {
-		if _, exists := f.events[ev.DeduplicationKey]; !exists {
-			f.events[ev.DeduplicationKey] = ev
-			inserted++
-		}
-	}
-	return inserted, nil
-}
 
-func (f *fakeRawEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, events []*domain.RawSourceEvent) ([]repo.RawEventInsertOutcome, error) {
-	outcomes := make([]repo.RawEventInsertOutcome, 0, len(events))
+func (f *fakeRawEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
+	outcomes := make([]domain.RawEventInsertOutcome, 0, len(events))
 	for _, ev := range events {
 		inserted := false
 		if _, exists := f.events[ev.DeduplicationKey]; !exists {
 			f.events[ev.DeduplicationKey] = ev
 			inserted = true
 		}
-		outcomes = append(outcomes, repo.RawEventInsertOutcome{Event: ev, Inserted: inserted})
+		outcomes = append(outcomes, domain.RawEventInsertOutcome{Event: ev, Inserted: inserted})
 	}
 	return outcomes, nil
 }

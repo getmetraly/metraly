@@ -71,21 +71,17 @@ func (r *EventRepo) InsertRawSourceEventsBatch(ctx context.Context, events []*do
 }
 
 // RawEventInsertOutcome records the result of inserting one raw event.
-type RawEventInsertOutcome struct {
-	Event    *domain.RawSourceEvent
-	Inserted bool // true if newly inserted; false if duplicate
-}
 
 // InsertRawSourceEventsBatchWithOutcomes inserts events and returns per-event outcomes.
 // Duplicates are silently skipped and reported as Inserted=false.
-func (r *EventRepo) InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]RawEventInsertOutcome, error) {
-	outcomes := make([]RawEventInsertOutcome, 0, len(events))
+func (r *EventRepo) InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
+	outcomes := make([]domain.RawEventInsertOutcome, 0, len(events))
 	for _, ev := range events {
 		result, err := r.InsertRawSourceEvent(ctx, ev)
 		if err != nil {
 			return outcomes, err
 		}
-		outcomes = append(outcomes, RawEventInsertOutcome{
+		outcomes = append(outcomes, domain.RawEventInsertOutcome{
 			Event:    ev,
 			Inserted: result == InsertResultInserted,
 		})

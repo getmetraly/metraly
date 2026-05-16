@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
-	"github.com/getmetraly/metraly/cmd/api/repo"
 )
 
 // ErrNoCollectorRegistered is returned when no Collector is registered for the source's type.
@@ -51,8 +50,7 @@ type CollectorRunRepo interface {
 
 // RawEventIngestRepo handles persistence of raw source events.
 type RawEventIngestRepo interface {
-	InsertRawSourceEventsBatch(ctx context.Context, events []*domain.RawSourceEvent) (int, error)
-	InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]repo.RawEventInsertOutcome, error)
+	InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error)
 }
 
 // CollectorSvc orchestrates the collector run lifecycle:
@@ -181,10 +179,13 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 			_, nerr := s.normalizer.NormalizeAndStore(ctx, outcome.Event)
 			if nerr != nil {
 				var normErr *NormalizerError
-				if errors.As(nerr, &normErr) && (normErr.Category == "ignored_known_unsupported" || normErr.Category == "unsupported_source") {
+				if errors.As(nerr, &normErr) && (normErr.Category == NormCategoryIgnoredKnown || normErr.Category == NormCategoryUnsupportedSrc) {
+					// Expected skip — event type not mapped for this source type.
 					continue
 				}
-				// non-fatal: single bad event must not abort the run
+				// Unexpected normalization error (DB error, schema error, etc.) — log but don't fail run.
+				// A single bad event doesn't abort the whole collection.
+				_ = nerr // TODO: slog.Warn or similar when slog is wired in
 				continue
 			}
 		}
