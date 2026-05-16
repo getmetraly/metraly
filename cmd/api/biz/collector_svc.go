@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
+	"github.com/getmetraly/metraly/cmd/api/repo"
 )
 
 // ErrNoCollectorRegistered is returned when no Collector is registered for the source's type.
@@ -51,6 +52,7 @@ type CollectorRunRepo interface {
 // RawEventIngestRepo handles persistence of raw source events.
 type RawEventIngestRepo interface {
 	InsertRawSourceEventsBatch(ctx context.Context, events []*domain.RawSourceEvent) (int, error)
+	InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]repo.RawEventInsertOutcome, error)
 }
 
 // CollectorSvc orchestrates the collector run lifecycle:
@@ -65,6 +67,7 @@ type CollectorSvc struct {
 	runRepo    CollectorRunRepo
 	eventRepo  RawEventIngestRepo
 	collectors map[domain.SourceType]Collector
+	normalizer *NormalizerSvc // optional; nil means skip normalization
 }
 
 // NewCollectorSvc creates a CollectorSvc.
@@ -84,6 +87,11 @@ func (s *CollectorSvc) RegisterCollector(c Collector) {
 		panic(fmt.Sprintf("collector already registered for source type %q", c.SourceType()))
 	}
 	s.collectors[c.SourceType()] = c
+}
+
+// WithNormalizer attaches a NormalizerSvc to the CollectorSvc pipeline.
+func (s *CollectorSvc) WithNormalizer(n *NormalizerSvc) {
+	s.normalizer = n
 }
 
 // Run executes a full collector lifecycle for the given source connection.
@@ -154,9 +162,32 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 		}
 	}
 
-	inserted, err := s.eventRepo.InsertRawSourceEventsBatch(ctx, result.Events)
+	outcomes, err := s.eventRepo.InsertRawSourceEventsBatchWithOutcomes(ctx, result.Events)
 	if err != nil {
 		return s.failRun(ctx, run, "storage_error", "failed to persist raw events: "+err.Error())
+	}
+	inserted := 0
+	for _, o := range outcomes {
+		if o.Inserted {
+			inserted++
+		}
+	}
+
+	if s.normalizer != nil {
+		for _, outcome := range outcomes {
+			if !outcome.Inserted {
+				continue // skip duplicates
+			}
+			_, nerr := s.normalizer.NormalizeAndStore(ctx, outcome.Event)
+			if nerr != nil {
+				var normErr *NormalizerError
+				if errors.As(nerr, &normErr) && (normErr.Category == "ignored_known_unsupported" || normErr.Category == "unsupported_source") {
+					continue
+				}
+				// non-fatal: single bad event must not abort the run
+				continue
+			}
+		}
 	}
 
 	finished := time.Now().UTC()

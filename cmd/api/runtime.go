@@ -154,6 +154,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	eventRepo := repo.NewEventRepo(pool)
 	deps.collectorSvc = biz.NewCollectorSvc(deps.sourceSvc, sourceRepo, sourceRepo, eventRepo)
 	deps.normalizerSvc = biz.NewNormalizerSvc(eventRepo)
+	deps.collectorSvc.WithNormalizer(deps.normalizerSvc)
 
 	if tokenStore != nil {
 		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)

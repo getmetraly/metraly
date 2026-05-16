@@ -101,6 +101,10 @@ func (f *fakeEventRepo) InsertRawSourceEventsBatch(_ context.Context, _ []*domai
 	return 0, nil
 }
 
+func (f *fakeEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, _ []*domain.RawSourceEvent) ([]repo.RawEventInsertOutcome, error) {
+	return nil, nil
+}
+
 // noopCollector is a do-nothing collector for tests.
 type noopCollector struct{ sourceType domain.SourceType }
 
