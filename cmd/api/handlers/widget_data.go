@@ -82,6 +82,16 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "MISSING_WIDGET_TYPE", "widgetType is required")
 		return
 	}
+	// Validate widgetType before executing the query so unsupported types are
+	// rejected without a wasted DB round-trip.
+	switch req.WidgetType {
+	case "kpi_card", "line_chart", "bar_chart", "table":
+		// valid
+	default:
+		respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_WIDGET_TYPE",
+			fmt.Sprintf("unsupported widgetType %q; supported: kpi_card, line_chart, bar_chart, table", req.WidgetType))
+		return
+	}
 	if req.Query.MetricID == "" {
 		respond.Error(w, http.StatusBadRequest, "MISSING_METRIC_ID", "query.metricId is required")
 		return
@@ -101,8 +111,15 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "INVALID_TIME_RANGE", "end must be after start")
 		return
 	}
-	if req.Query.Granularity == "" {
+	switch req.Query.Granularity {
+	case "", "day":
 		req.Query.Granularity = "day"
+	case "week", "month":
+		// valid
+	default:
+		respond.Error(w, http.StatusBadRequest, "INVALID_GRANULARITY",
+			fmt.Sprintf("unsupported granularity %q; supported: day, week, month", req.Query.Granularity))
+		return
 	}
 
 	q := domain.MetricQuery{
@@ -127,8 +144,8 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	data, err := adaptToWidgetShape(req.WidgetType, result)
 	if err != nil {
-		respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_WIDGET_TYPE",
-			fmt.Sprintf("unsupported widgetType %q; supported: kpi_card, line_chart, bar_chart, table", req.WidgetType))
+		// Should not reach here since widgetType is pre-validated above, but guard defensively.
+		respond.Error(w, http.StatusInternalServerError, "ADAPT_FAILED", err.Error())
 		return
 	}
 

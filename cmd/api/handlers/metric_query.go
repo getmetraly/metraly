@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -36,8 +37,8 @@ type metricQueryRequest struct {
 	MetricID    string            `json:"metricId"`
 	WorkspaceID string            `json:"workspaceId"`
 	Granularity string            `json:"granularity"`
-	Start       time.Time         `json:"start"`
-	End         time.Time         `json:"end"`
+	Start       string            `json:"start"` // RFC3339
+	End         string            `json:"end"`   // RFC3339
 	Filters     map[string]string `json:"filters,omitempty"`
 	GroupBy     []string          `json:"groupBy,omitempty"`
 }
@@ -55,24 +56,41 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "MISSING_METRIC_ID", "metricId is required")
 		return
 	}
-	if req.Start.IsZero() || req.End.IsZero() {
+	if req.Start == "" || req.End == "" {
 		respond.Error(w, http.StatusBadRequest, "MISSING_TIME_RANGE", "start and end are required")
 		return
 	}
-	if !req.End.After(req.Start) {
+	start, err := time.Parse(time.RFC3339, req.Start)
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "INVALID_START", "start must be RFC3339: "+err.Error())
+		return
+	}
+	end, err := time.Parse(time.RFC3339, req.End)
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "INVALID_END", "end must be RFC3339: "+err.Error())
+		return
+	}
+	if !end.After(start) {
 		respond.Error(w, http.StatusBadRequest, "INVALID_TIME_RANGE", "end must be after start")
 		return
 	}
-	if req.Granularity == "" {
+	switch req.Granularity {
+	case "", "day":
 		req.Granularity = "day"
+	case "week", "month":
+		// valid
+	default:
+		respond.Error(w, http.StatusBadRequest, "INVALID_GRANULARITY",
+			fmt.Sprintf("unsupported granularity %q; supported: day, week, month", req.Granularity))
+		return
 	}
 
 	q := domain.MetricQuery{
 		MetricID:    req.MetricID,
 		WorkspaceID: req.WorkspaceID,
 		Granularity: req.Granularity,
-		Start:       req.Start,
-		End:         req.End,
+		Start:       start,
+		End:         end,
 		Filters:     req.Filters,
 		GroupBy:     req.GroupBy,
 	}

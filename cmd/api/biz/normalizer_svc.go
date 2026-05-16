@@ -83,7 +83,9 @@ func (s *NormalizerSvc) NormalizeAndStore(ctx context.Context, raw *domain.RawSo
 		return nil, err
 	}
 	if s.resolver != nil {
-		s.resolveIdentities(ctx, raw.SourceType, ev)
+		if err := s.resolveIdentities(ctx, raw.SourceType, ev); err != nil {
+			return nil, fmt.Errorf("resolve identities: %w", err)
+		}
 	}
 	if err := s.repo.InsertNormalizedEvent(ctx, ev); err != nil {
 		return nil, fmt.Errorf("persist normalized event: %w", err)
@@ -92,12 +94,18 @@ func (s *NormalizerSvc) NormalizeAndStore(ctx context.Context, raw *domain.RawSo
 }
 
 // resolveIdentities mutates ev by replacing external logins with internal user IDs.
-// Resolution failures are non-fatal: they set the *Unresolved flag and record the
-// identity for later manual mapping.
-func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain.SourceType, ev *domain.NormalizedEvent) {
+// Returns an error only on transient resolver failures (e.g. DB unavailable); in that
+// case the event must NOT be marked as unresolved — the caller should surface the error
+// so it can be retried.
+// When no mapping exists (Resolved=false, nil error), AuthorUnresolved/ReviewerUnresolved
+// is set and the identity is recorded for later manual mapping.
+func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain.SourceType, ev *domain.NormalizedEvent) error {
 	if ev.AuthorID != "" {
 		res, err := s.resolver.ResolveIdentity(ctx, defaultWorkspaceID, sourceType, ev.AuthorID)
-		if err == nil && res.Resolved {
+		if err != nil {
+			return fmt.Errorf("resolve author %q: %w", ev.AuthorID, err)
+		}
+		if res.Resolved {
 			ev.AuthorID = res.UserID
 			if ev.TeamID == "" {
 				ev.TeamID = res.TeamID
@@ -111,7 +119,10 @@ func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain
 	}
 	if ev.ReviewerID != "" {
 		res, err := s.resolver.ResolveIdentity(ctx, defaultWorkspaceID, sourceType, ev.ReviewerID)
-		if err == nil && res.Resolved {
+		if err != nil {
+			return fmt.Errorf("resolve reviewer %q: %w", ev.ReviewerID, err)
+		}
+		if res.Resolved {
 			ev.ReviewerID = res.UserID
 		} else {
 			login := ev.ReviewerID
@@ -119,6 +130,7 @@ func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain
 			_ = s.resolver.UpsertUnresolved(ctx, defaultWorkspaceID, sourceType, login, login)
 		}
 	}
+	return nil
 }
 
 // Normalize converts a raw event into a normalized event without persisting.
@@ -338,10 +350,10 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 			ReceivedAt:         raw.ReceivedAt,
 			SchemaVersion:      1,
 		}
-		if c := int64Field(p, "completed_points"); c > 0 {
+		if c, ok := int64FieldOpt(p, "completed_points"); ok {
 			ev.PointsCompleted = &c
 		}
-		if pl := int64Field(p, "planned_points"); pl > 0 {
+		if pl, ok := int64FieldOpt(p, "planned_points"); ok {
 			ev.PointsPlanned = &pl
 		}
 		return ev, nil
@@ -379,6 +391,24 @@ func int64Field(p map[string]any, key string) int64 {
 		return int64(n)
 	}
 	return 0
+}
+
+// int64FieldOpt returns (value, true) when the key is present (including zero),
+// and (0, false) when absent. Use for numeric measures where 0 is a meaningful value.
+func int64FieldOpt(p map[string]any, key string) (int64, bool) {
+	v, ok := p[key]
+	if !ok {
+		return 0, false
+	}
+	switch n := v.(type) {
+	case int64:
+		return n, true
+	case float64:
+		return int64(n), true
+	case int:
+		return int64(n), true
+	}
+	return 0, false
 }
 
 func timeField(p map[string]any, key string, fallback *time.Time, def time.Time) time.Time {

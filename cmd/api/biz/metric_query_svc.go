@@ -80,7 +80,7 @@ func (s *MetricQuerySvc) dispatchQuery(ctx context.Context, q domain.MetricQuery
 func (s *MetricQuerySvc) buildResult(q domain.MetricQuery, rows []domain.MetricRow) (domain.MetricDataFrame, domain.DataQualityLevel, []string) {
 	if len(rows) == 0 {
 		return domain.MetricDataFrame{
-			Columns: []string{"bucket", "value"},
+			Columns: []string{"bucket", "value", "count"},
 			Rows:    [][]any{},
 		}, domain.DataQualityEmpty, []string{
 			fmt.Sprintf("no %s data in the requested time range (%s to %s)", q.MetricID, q.Start.Format("2006-01-02"), q.End.Format("2006-01-02")),

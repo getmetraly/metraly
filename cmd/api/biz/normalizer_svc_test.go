@@ -6,6 +6,7 @@ package biz_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -331,4 +332,43 @@ func TestNormalizerSvc_JiraSprintClosed_WithPoints(t *testing.T) {
 	require.NotNil(t, ev.PointsPlanned)
 	assert.Equal(t, int64(34), *ev.PointsCompleted)
 	assert.Equal(t, int64(40), *ev.PointsPlanned)
+}
+
+func TestNormalizerSvc_ResolveIdentityError_PropagatesError(t *testing.T) {
+	// When ResolveIdentity returns a transient error (not "no mapping"), NormalizeAndStore
+	// must propagate the error. The event must NOT be persisted and must NOT be marked
+	// AuthorUnresolved — doing so would permanently corrupt attribution data.
+	eventRepo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(eventRepo)
+	resolver := &fakeIdentityResolver{
+		resolveErr: errors.New("identity store unavailable"),
+	}
+	svc.WithIdentityResolver(resolver)
+
+	raw := rawEvent(domain.SourceTypeGitHub, "pr_10", "pull_request.opened", map[string]any{
+		"author_login": "alice",
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.Error(t, err)
+	assert.Nil(t, ev)
+	assert.Empty(t, eventRepo.events)   // must not persist
+	assert.Empty(t, resolver.upserted)  // must not call UpsertUnresolved on transient error
+}
+
+func TestNormalizerSvc_JiraSprintClosed_ZeroPointsCompleted(t *testing.T) {
+	// completed_points=0 is a meaningful value (sprint delivered nothing).
+	// It must be stored as 0, not NULL. Regression test for the > 0 guard bug.
+	eventRepo := &fakeNormalizedEventRepo{}
+	svc := biz.NewNormalizerSvc(eventRepo)
+
+	raw := rawEvent(domain.SourceTypeJira, "sprint_fail", "sprint.closed", map[string]any{
+		"completed_points": float64(0),
+		"planned_points":   float64(20),
+	})
+	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	require.NoError(t, err)
+	require.NotNil(t, ev.PointsCompleted, "completed_points=0 must be stored, not dropped")
+	assert.Equal(t, int64(0), *ev.PointsCompleted)
+	require.NotNil(t, ev.PointsPlanned)
+	assert.Equal(t, int64(20), *ev.PointsPlanned)
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -30,7 +31,7 @@ func (r *MetricQueryRepo) QueryPRCount(ctx context.Context, q domain.MetricQuery
 	filter, args := buildFilter(q.Filters, args)
 
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
 		       COUNT(*)::FLOAT AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
@@ -52,7 +53,7 @@ func (r *MetricQueryRepo) QueryPRCycleTimeMedian(ctx context.Context, q domain.M
 	filter, args := buildFilter(q.Filters, args)
 
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
 		       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cycle_time_seconds) AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
@@ -75,7 +76,7 @@ func (r *MetricQueryRepo) QueryReviewLatencyMedian(ctx context.Context, q domain
 	filter, args := buildFilter(q.Filters, args)
 
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
 		       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY review_latency_seconds) AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
@@ -97,13 +98,18 @@ func (r *MetricQueryRepo) QueryBuildFailureRate(ctx context.Context, q domain.Me
 	args := []any{q.Start, q.End}
 	filter, args := buildFilter(q.Filters, args)
 
+	// Cast to float8 so pgx decodes as float64, not pgtype.Numeric.
+	// Exclude NULL-conclusion rows: they are pre-migration data and must not
+	// dilute the denominator. This also lets the partial index on (event_type, conclusion)
+	// WHERE conclusion IS NOT NULL be used by the planner.
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
-		       SUM(CASE WHEN conclusion = 'failure' THEN 1.0 ELSE 0.0 END)
-		           / NULLIF(COUNT(*), 0) AS value,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
+		       (SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END)::float8
+		           / NULLIF(COUNT(*), 0)) AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
 		WHERE event_type = 'workflow_run.completed'
+		  AND conclusion IS NOT NULL
 		  AND occurred_at >= $1 AND occurred_at < $2
 		  %s
 		GROUP BY bucket
@@ -121,7 +127,7 @@ func (r *MetricQueryRepo) QueryBuildDurationP95(ctx context.Context, q domain.Me
 	filter, args := buildFilter(q.Filters, args)
 
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
 		       PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_seconds) AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
@@ -143,12 +149,15 @@ func (r *MetricQueryRepo) QuerySprintPredictability(ctx context.Context, q domai
 	args := []any{q.Start, q.End}
 	filter, args := buildFilter(q.Filters, args)
 
+	// Require both measures to be non-NULL; sprints ingested before migration 011
+	// or via a normalizer path that omits points must not dilute the ratio.
 	sql := fmt.Sprintf(`
-		SELECT DATE_TRUNC('%s', occurred_at) AS bucket,
-		       SUM(points_completed::FLOAT) / NULLIF(SUM(points_planned), 0) AS value,
+		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
+		       SUM(points_completed::float8) / NULLIF(SUM(points_planned), 0) AS value,
 		       COUNT(*) AS cnt
 		FROM normalized_events
 		WHERE event_type = 'sprint.closed'
+		  AND points_completed IS NOT NULL
 		  AND points_planned IS NOT NULL
 		  AND occurred_at >= $1 AND occurred_at < $2
 		  %s
@@ -238,6 +247,14 @@ func (r *MetricQueryRepo) queryRows(ctx context.Context, sql string, args []any)
 				case int64:
 					f := float64(v)
 					row.Value = &f
+				case pgtype.Numeric:
+					// Ratio expressions without an explicit ::float8 cast return
+					// pgtype.Numeric. Convert defensively so future metrics don't silently
+					// lose their values.
+					if f, err := v.Float64Value(); err == nil && f.Valid {
+						val := f.Float64
+						row.Value = &val
+					}
 				}
 			case "cnt":
 				if c, ok := vals[i].(int64); ok {

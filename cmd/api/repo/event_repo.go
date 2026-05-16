@@ -320,6 +320,24 @@ func (r *EventRepo) MarkIdentityMappingIgnored(ctx context.Context, workspaceID,
 	return err
 }
 
+// UpsertUnresolvedIdentityMapping records an identity that could not be resolved
+// so operators can map it later. Unlike UpsertIdentityMapping, this never overwrites
+// an already-mapped identity: the conflict update is guarded by status='unresolved',
+// so rows with status='mapped', 'ignored', or 'conflict' are left intact.
+func (r *EventRepo) UpsertUnresolvedIdentityMapping(ctx context.Context, m *IdentityMapping) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO identity_mappings
+		(id, workspace_id, source_type, external_id, external_login, external_email_hash,
+		 user_id, team_id, confidence, status)
+		VALUES ($1,$2,$3,$4,$5,'','','',0,'unresolved')
+		ON CONFLICT (workspace_id, source_type, external_id) DO UPDATE SET
+		    external_login = EXCLUDED.external_login,
+		    updated_at     = NOW()
+		WHERE identity_mappings.status = 'unresolved'
+	`, m.ID, m.WorkspaceID, string(m.SourceType), m.ExternalID, m.ExternalLogin)
+	return err
+}
+
 func scanIdentityMapping(row rowScanner) (*IdentityMapping, error) {
 	var m IdentityMapping
 	var sourceType, status string

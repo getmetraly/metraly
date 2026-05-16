@@ -229,8 +229,13 @@ func (a *identityResolverAdapter) ResolveIdentity(ctx context.Context, workspace
 }
 
 func (a *identityResolverAdapter) UpsertUnresolved(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID, externalLogin string) error {
-	return a.repo.UpsertIdentityMapping(ctx, &repo.IdentityMapping{
-		ID:            "idm_" + externalID + "_" + string(sourceType),
+	// Use UpsertUnresolvedIdentityMapping rather than UpsertIdentityMapping: the
+	// conditional DO UPDATE ensures we never overwrite a mapping that was already
+	// resolved by an operator (status='mapped', 'ignored', 'conflict').
+	return a.repo.UpsertUnresolvedIdentityMapping(ctx, &repo.IdentityMapping{
+		// Include workspaceID in the PK to avoid collisions across workspaces when
+		// two tenants share the same (sourceType, externalID) pair.
+		ID:            "idm_" + workspaceID + "_" + string(sourceType) + "_" + externalID,
 		WorkspaceID:   workspaceID,
 		SourceType:    sourceType,
 		ExternalID:    externalID,
