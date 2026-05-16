@@ -70,6 +70,25 @@ func (r *EventRepo) InsertRawSourceEventsBatch(ctx context.Context, events []*do
 	return inserted, nil
 }
 
+// RawEventInsertOutcome records the result of inserting one raw event.
+
+// InsertRawSourceEventsBatchWithOutcomes inserts events and returns per-event outcomes.
+// Duplicates are silently skipped and reported as Inserted=false.
+func (r *EventRepo) InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
+	outcomes := make([]domain.RawEventInsertOutcome, 0, len(events))
+	for _, ev := range events {
+		result, err := r.InsertRawSourceEvent(ctx, ev)
+		if err != nil {
+			return outcomes, err
+		}
+		outcomes = append(outcomes, domain.RawEventInsertOutcome{
+			Event:    ev,
+			Inserted: result == InsertResultInserted,
+		})
+	}
+	return outcomes, nil
+}
+
 // GetRawSourceEvent retrieves a raw event by ID.
 func (r *EventRepo) GetRawSourceEvent(ctx context.Context, id string) (*domain.RawSourceEvent, error) {
 	row := r.pool.QueryRow(ctx, `

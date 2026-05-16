@@ -66,15 +66,18 @@ func newFakeRawEventRepo() *fakeRawEventRepo {
 	return &fakeRawEventRepo{events: make(map[string]*domain.RawSourceEvent)}
 }
 
-func (f *fakeRawEventRepo) InsertRawSourceEventsBatch(_ context.Context, events []*domain.RawSourceEvent) (int, error) {
-	inserted := 0
+
+func (f *fakeRawEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
+	outcomes := make([]domain.RawEventInsertOutcome, 0, len(events))
 	for _, ev := range events {
+		inserted := false
 		if _, exists := f.events[ev.DeduplicationKey]; !exists {
 			f.events[ev.DeduplicationKey] = ev
-			inserted++
+			inserted = true
 		}
+		outcomes = append(outcomes, domain.RawEventInsertOutcome{Event: ev, Inserted: inserted})
 	}
-	return inserted, nil
+	return outcomes, nil
 }
 
 // fakeCollector is a test Collector implementation.
@@ -276,4 +279,133 @@ func TestBuildPayloadHash_Stable(t *testing.T) {
 	assert.Equal(t, h1, h2)
 	assert.True(t, len(h1) > 10)
 	assert.Contains(t, h1, "sha256:")
+}
+
+// — fakeNormEventRepo —
+
+type fakeNormEventRepo struct {
+	events []*domain.NormalizedEvent
+}
+
+func (f *fakeNormEventRepo) InsertNormalizedEvent(_ context.Context, ev *domain.NormalizedEvent) error {
+	f.events = append(f.events, ev)
+	return nil
+}
+
+func (f *fakeNormEventRepo) ListNormalizedEventsByRawID(_ context.Context, _ string) ([]*domain.NormalizedEvent, error) {
+	return nil, nil
+}
+
+func (f *fakeNormEventRepo) ListNormalizedEventsByEntity(_ context.Context, _, _ string) ([]*domain.NormalizedEvent, error) {
+	return nil, nil
+}
+
+func makeRawGitHubEvent(id, sourceID string) *domain.RawSourceEvent {
+	now := time.Now().UTC()
+	return &domain.RawSourceEvent{
+		ID:                 id,
+		SourceConnectionID: sourceID,
+		SourceType:         domain.SourceTypeGitHub,
+		ExternalID:         id,
+		EventType:          "pull_request.opened",
+		PayloadHash:        biz.BuildPayloadHash(map[string]any{"number": 1, "id": id}),
+		DeduplicationKey:   biz.BuildDeduplicationKey(domain.SourceTypeGitHub, id, "pull_request.opened", &now),
+		Payload: map[string]any{
+			"number": 1,
+			"id":     id,
+			"merged": false,
+			"state":  "open",
+			"title":  "Test PR",
+			"user":   map[string]any{"login": "octocat"},
+			"base":   map[string]any{"repo": map[string]any{"name": "repo", "owner": map[string]any{"login": "org"}}},
+		},
+		SchemaVersion: 1,
+		ReceivedAt:    now,
+	}
+}
+
+func TestCollectorSvc_NormalizedEventsInsertedOnce(t *testing.T) {
+	colSvc, sr, _, _ := makeCollectorSvc(t)
+	key := biz.DeriveKey("test-only-key")
+	sourceSvc, _ := biz.NewSourceSvc(sr, key, biz.NewAdapterRegistry())
+	sc := createTestSource(t, sourceSvc, sr)
+
+	normRepo := &fakeNormEventRepo{}
+	colSvc.WithNormalizer(biz.NewNormalizerSvc(normRepo))
+
+	fc := &fakeCollector{
+		sourceType: domain.SourceTypeGitHub,
+		result: &biz.CollectResult{
+			Events:         []*domain.RawSourceEvent{makeRawGitHubEvent("raw_norm_01", sc.ID)},
+			RateLimitState: domain.RateLimitStateOK,
+		},
+	}
+	colSvc.RegisterCollector(fc)
+
+	run, err := colSvc.Run(context.Background(), "run_norm_01", sc.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
+	assert.Len(t, normRepo.events, 1, "exactly one normalized event should be stored")
+}
+
+func TestCollectorSvc_DuplicateRawEvent_NoNormalized(t *testing.T) {
+	colSvc, sr, _, _ := makeCollectorSvc(t)
+	key := biz.DeriveKey("test-only-key")
+	sourceSvc, _ := biz.NewSourceSvc(sr, key, biz.NewAdapterRegistry())
+	sc := createTestSource(t, sourceSvc, sr)
+
+	normRepo := &fakeNormEventRepo{}
+	colSvc.WithNormalizer(biz.NewNormalizerSvc(normRepo))
+
+	ev := makeRawGitHubEvent("raw_dup_norm", sc.ID)
+	fc := &fakeCollector{
+		sourceType: domain.SourceTypeGitHub,
+		result: &biz.CollectResult{
+			Events:         []*domain.RawSourceEvent{ev, ev}, // same event twice
+			RateLimitState: domain.RateLimitStateOK,
+		},
+	}
+	colSvc.RegisterCollector(fc)
+
+	run, err := colSvc.Run(context.Background(), "run_dup_norm", sc.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), run.RawEventCount)
+	assert.Len(t, normRepo.events, 1, "duplicate raw event must not produce a second normalized event")
+}
+
+func TestCollectorSvc_NormalizerIgnoredEvent_RunSucceeds(t *testing.T) {
+	colSvc, sr, _, _ := makeCollectorSvc(t)
+	key := biz.DeriveKey("test-only-key")
+	sourceSvc, _ := biz.NewSourceSvc(sr, key, biz.NewAdapterRegistry())
+	sc := createTestSource(t, sourceSvc, sr)
+
+	normRepo := &fakeNormEventRepo{}
+	colSvc.WithNormalizer(biz.NewNormalizerSvc(normRepo))
+
+	// An event with an unsupported source type will trigger a NormalizerError
+	now := time.Now().UTC()
+	unsupportedEv := &domain.RawSourceEvent{
+		ID:                 "raw_unsup",
+		SourceConnectionID: sc.ID,
+		SourceType:         domain.SourceTypeGitHub, // source type ok for ingest
+		ExternalID:         "raw_unsup",
+		EventType:          "unknown_unsupported_event_type_zzz",
+		PayloadHash:        biz.BuildPayloadHash(map[string]any{"x": 1}),
+		DeduplicationKey:   biz.BuildDeduplicationKey(domain.SourceTypeGitHub, "raw_unsup", "unknown_unsupported_event_type_zzz", &now),
+		Payload:            map[string]any{"x": 1},
+		SchemaVersion:      1,
+		ReceivedAt:         now,
+	}
+	fc := &fakeCollector{
+		sourceType: domain.SourceTypeGitHub,
+		result: &biz.CollectResult{
+			Events:         []*domain.RawSourceEvent{unsupportedEv},
+			RateLimitState: domain.RateLimitStateOK,
+		},
+	}
+	colSvc.RegisterCollector(fc)
+
+	run, err := colSvc.Run(context.Background(), "run_ignored", sc.ID)
+	require.NoError(t, err, "ignored normalizer error must not fail the run")
+	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
 }

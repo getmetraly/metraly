@@ -9,11 +9,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 )
+
+// ErrNoCollectorRegistered is returned when no Collector is registered for the source's type.
+var ErrNoCollectorRegistered = errors.New("no collector registered")
 
 // CollectResult is the output of a single collector execution.
 type CollectResult struct {
@@ -46,7 +50,7 @@ type CollectorRunRepo interface {
 
 // RawEventIngestRepo handles persistence of raw source events.
 type RawEventIngestRepo interface {
-	InsertRawSourceEventsBatch(ctx context.Context, events []*domain.RawSourceEvent) (int, error)
+	InsertRawSourceEventsBatchWithOutcomes(ctx context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error)
 }
 
 // CollectorSvc orchestrates the collector run lifecycle:
@@ -61,6 +65,7 @@ type CollectorSvc struct {
 	runRepo    CollectorRunRepo
 	eventRepo  RawEventIngestRepo
 	collectors map[domain.SourceType]Collector
+	normalizer *NormalizerSvc // optional; nil means skip normalization
 }
 
 // NewCollectorSvc creates a CollectorSvc.
@@ -82,6 +87,11 @@ func (s *CollectorSvc) RegisterCollector(c Collector) {
 	s.collectors[c.SourceType()] = c
 }
 
+// WithNormalizer attaches a NormalizerSvc to the CollectorSvc pipeline.
+func (s *CollectorSvc) WithNormalizer(n *NormalizerSvc) {
+	s.normalizer = n
+}
+
 // Run executes a full collector lifecycle for the given source connection.
 // runID is caller-supplied for idempotency (safe to retry with the same ID after a crash).
 func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain.CollectorRun, error) {
@@ -94,7 +104,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 
 	collector, ok := s.collectors[sc.SourceType]
 	if !ok {
-		return nil, fmt.Errorf("no collector registered for source type %q", sc.SourceType)
+		return nil, fmt.Errorf("%w for source type %q", ErrNoCollectorRegistered, sc.SourceType)
 	}
 
 	run := &domain.CollectorRun{
@@ -150,9 +160,35 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 		}
 	}
 
-	inserted, err := s.eventRepo.InsertRawSourceEventsBatch(ctx, result.Events)
+	outcomes, err := s.eventRepo.InsertRawSourceEventsBatchWithOutcomes(ctx, result.Events)
 	if err != nil {
 		return s.failRun(ctx, run, "storage_error", "failed to persist raw events: "+err.Error())
+	}
+	inserted := 0
+	for _, o := range outcomes {
+		if o.Inserted {
+			inserted++
+		}
+	}
+
+	if s.normalizer != nil {
+		for _, outcome := range outcomes {
+			if !outcome.Inserted {
+				continue // skip duplicates
+			}
+			_, nerr := s.normalizer.NormalizeAndStore(ctx, outcome.Event)
+			if nerr != nil {
+				var normErr *NormalizerError
+				if errors.As(nerr, &normErr) && (normErr.Category == NormCategoryIgnoredKnown || normErr.Category == NormCategoryUnsupportedSrc) {
+					// Expected skip — event type not mapped for this source type.
+					continue
+				}
+				// Unexpected normalization error (DB error, schema error, etc.) — log but don't fail run.
+				// A single bad event doesn't abort the whole collection.
+				_ = nerr // TODO: slog.Warn or similar when slog is wired in
+				continue
+			}
+		}
 	}
 
 	finished := time.Now().UTC()
