@@ -137,7 +137,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	if len(cfg.SourceSecretKey) == 0 {
 		sourceSecretKey = biz.DeriveKey(cfg.JWTPrivateKey + "source-key-v1")
 	}
-	deps.sourceSvc, err = biz.NewSourceSvc(repo.NewSourceRepo(pool), sourceSecretKey)
+	deps.sourceSvc, err = biz.NewSourceSvc(repo.NewSourceRepo(pool), sourceSecretKey, biz.DefaultRegistry())
 	if err != nil {
 		if rdb != nil {
 			_ = rdb.Close()
