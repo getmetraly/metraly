@@ -64,9 +64,11 @@ type RouterDeps struct {
 	TemplateSvc  *biz.TemplateSvc
 	MetricsSvc   *biz.MetricsSvc
 	IngestionSvc *biz.IngestionSvc
-	SourceSvc    *biz.SourceSvc
-	ActivityRepo repo.ActivityRepo
-	InsightRepo  repo.AIInsightRepo
+	SourceSvc       *biz.SourceSvc
+	CollectorSvc    *biz.CollectorSvc
+	CollectorRunRepo handlers.CollectorRunFetcher
+	ActivityRepo    repo.ActivityRepo
+	InsightRepo     repo.AIInsightRepo
 }
 
 // NewRouter creates and returns a chi router with all API routes configured.
@@ -127,6 +129,12 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 				r.Get("/api/v1/sources/{id}", sourceHandler.Get)
 				r.Post("/api/v1/sources/{id}/test", sourceHandler.Test)
 			}
+			if deps.CollectorSvc != nil {
+				collectorHandler := handlers.NewCollectorHandler(deps.CollectorSvc, deps.CollectorRunRepo)
+				r.Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
+				r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
+				r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
+			}
 		})
 	} else if deps.DashboardSvc != nil {
 		r.Get("/api/v1/dashboards", dashboardHandler.List)
@@ -144,6 +152,12 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Post("/api/v1/sources", sourceHandler.Create)
 			r.Get("/api/v1/sources/{id}", sourceHandler.Get)
 			r.Post("/api/v1/sources/{id}/test", sourceHandler.Test)
+		}
+		if deps.CollectorSvc != nil {
+			collectorHandler := handlers.NewCollectorHandler(deps.CollectorSvc, deps.CollectorRunRepo)
+			r.Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
+			r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
+			r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
 		}
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
@@ -257,9 +271,11 @@ func main() {
 		TemplateSvc:  deps.templateSvc,
 		MetricsSvc:   deps.metricsSvc,
 		IngestionSvc: deps.ingestionSvc,
-		SourceSvc:    deps.sourceSvc,
-		ActivityRepo: deps.activityRepo,
-		InsightRepo:  deps.insightRepo,
+		SourceSvc:        deps.sourceSvc,
+		CollectorSvc:     deps.collectorSvc,
+		CollectorRunRepo: deps.sourceRepo,
+		ActivityRepo:     deps.activityRepo,
+		InsightRepo:      deps.insightRepo,
 	})
 
 	// Swagger documentation

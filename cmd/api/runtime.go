@@ -45,9 +45,12 @@ type runtimeDeps struct {
 	ingestionSvc *biz.IngestionSvc
 	templateSvc  *biz.TemplateSvc
 	sourceSvc    *biz.SourceSvc
+	sourceRepo   *repo.SourceRepo
 	authSvc      *auth.Service
 	activityRepo repo.ActivityRepo
 	insightRepo  repo.AIInsightRepo
+	collectorSvc  *biz.CollectorSvc
+	normalizerSvc *biz.NormalizerSvc
 	cleanup      func()
 }
 
@@ -137,7 +140,9 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	if len(cfg.SourceSecretKey) == 0 {
 		sourceSecretKey = biz.DeriveKey(cfg.JWTPrivateKey + "source-key-v1")
 	}
-	deps.sourceSvc, err = biz.NewSourceSvc(repo.NewSourceRepo(pool), sourceSecretKey, biz.DefaultRegistry())
+	sourceRepo := repo.NewSourceRepo(pool)
+	deps.sourceRepo = sourceRepo
+	deps.sourceSvc, err = biz.NewSourceSvc(sourceRepo, sourceSecretKey, biz.DefaultRegistry())
 	if err != nil {
 		if rdb != nil {
 			_ = rdb.Close()
@@ -145,6 +150,10 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		pool.Close()
 		return nil, fmt.Errorf("create source service: %w", err)
 	}
+
+	eventRepo := repo.NewEventRepo(pool)
+	deps.collectorSvc = biz.NewCollectorSvc(deps.sourceSvc, sourceRepo, sourceRepo, eventRepo)
+	deps.normalizerSvc = biz.NewNormalizerSvc(eventRepo)
 
 	if tokenStore != nil {
 		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)
