@@ -1,0 +1,20 @@
+{
+  "id": "raw_01",
+  "sourceConnectionId": "src_github_test_01",
+  "collectorRunId": "run_01",
+  "sourceType": "github",
+  "externalId": "pr_42",
+  "eventType": "pull_request.opened",
+  "payloadHash": "sha256:deadbeef",
+  "deduplicationKey": "github:pr_42:pull_request.opened:2026-01-01T10:00:00Z",
+  "payload": {
+    "number": 42,
+    "state": "open",
+    "author_login": "alice",
+    "base_ref": "main",
+    "head_ref": "feature/foo"
+  },
+  "schemaVersion": 1,
+  "receivedAt": "2026-01-01T12:00:00Z",
+  "sourceUpdatedAt": "2026-01-01T10:00:00Z"
+}

@@ -15,6 +15,7 @@ type AppConfig struct {
 	RedisHost          string
 	RedisPort          string
 	JWTPrivateKey      string
+	SourceSecretKey    string
 	AccessTokenTTL     string
 	RefreshTokenTTL    string
 	OIDCIssuerURL      string
@@ -53,6 +54,7 @@ func Load() AppConfig {
 		RedisHost:          getEnv("REDIS_HOST", "redis"),
 		RedisPort:          getEnv("REDIS_PORT", "6379"),
 		JWTPrivateKey:      getEnv("JWT_PRIVATE_KEY", ""),
+		SourceSecretKey:    getEnv("SOURCE_SECRET_KEY", ""),
 		AccessTokenTTL:     getEnv("ACCESS_TOKEN_TTL", "900"),
 		RefreshTokenTTL:    getEnv("REFRESH_TOKEN_TTL", "604800"),
 		OIDCIssuerURL:      getEnv("OIDC_ISSUER_URL", ""),
