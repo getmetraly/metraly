@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/getmetraly/metraly/cmd/api/cache"
 	"github.com/getmetraly/metraly/cmd/api/config"
 	"github.com/getmetraly/metraly/cmd/api/db"
+	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/getmetraly/metraly/cmd/api/migrations"
 	"github.com/getmetraly/metraly/cmd/api/repo"
 	"github.com/getmetraly/metraly/cmd/api/seed"
@@ -51,6 +53,9 @@ type runtimeDeps struct {
 	insightRepo  repo.AIInsightRepo
 	collectorSvc  *biz.CollectorSvc
 	normalizerSvc *biz.NormalizerSvc
+	metricCatalog *biz.MetricCatalog
+	formulaValidator *biz.FormulaValidator
+	metricQuerySvc   *biz.MetricQuerySvc
 	cleanup      func()
 }
 
@@ -154,7 +159,11 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	eventRepo := repo.NewEventRepo(pool)
 	deps.collectorSvc = biz.NewCollectorSvc(deps.sourceSvc, sourceRepo, sourceRepo, eventRepo)
 	deps.normalizerSvc = biz.NewNormalizerSvc(eventRepo)
+	deps.normalizerSvc.WithIdentityResolver(&identityResolverAdapter{repo: eventRepo})
 	deps.collectorSvc.WithNormalizer(deps.normalizerSvc)
+	deps.metricCatalog = biz.NewMetricCatalog()
+	deps.formulaValidator = biz.NewFormulaValidator(deps.metricCatalog)
+	deps.metricQuerySvc = biz.NewMetricQuerySvc(repo.NewMetricQueryRepo(pool), deps.metricCatalog)
 
 	if tokenStore != nil {
 		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)
@@ -196,4 +205,41 @@ func parseTTLSeconds(raw string, def int) (time.Duration, error) {
 		return 0, err
 	}
 	return time.Duration(secs) * time.Second, nil
+}
+
+// identityResolverAdapter bridges repo.EventRepo to biz.IdentityResolver.
+// Kept in runtime.go to maintain the dependency direction: biz never imports repo.
+type identityResolverAdapter struct {
+	repo *repo.EventRepo
+}
+
+func (a *identityResolverAdapter) ResolveIdentity(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID string) (biz.IdentityResolution, error) {
+	m, err := a.repo.ResolveIdentity(ctx, workspaceID, sourceType, externalID)
+	if errors.Is(err, repo.ErrNotFound) {
+		return biz.IdentityResolution{Resolved: false}, nil
+	}
+	if err != nil {
+		return biz.IdentityResolution{}, err
+	}
+	return biz.IdentityResolution{
+		UserID:   m.UserID,
+		TeamID:   m.TeamID,
+		Resolved: m.Status == repo.IdentityStatusMapped && m.UserID != "",
+	}, nil
+}
+
+func (a *identityResolverAdapter) UpsertUnresolved(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID, externalLogin string) error {
+	// Use UpsertUnresolvedIdentityMapping rather than UpsertIdentityMapping: the
+	// conditional DO UPDATE ensures we never overwrite a mapping that was already
+	// resolved by an operator (status='mapped', 'ignored', 'conflict').
+	return a.repo.UpsertUnresolvedIdentityMapping(ctx, &repo.IdentityMapping{
+		// Include workspaceID in the PK to avoid collisions across workspaces when
+		// two tenants share the same (sourceType, externalID) pair.
+		ID:            "idm_" + workspaceID + "_" + string(sourceType) + "_" + externalID,
+		WorkspaceID:   workspaceID,
+		SourceType:    sourceType,
+		ExternalID:    externalID,
+		ExternalLogin: externalLogin,
+		Status:        repo.IdentityStatusUnresolved,
+	})
 }

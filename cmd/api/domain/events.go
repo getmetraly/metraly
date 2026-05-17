@@ -51,12 +51,19 @@ type NormalizedEvent struct {
 	RepositoryID         string              `json:"repositoryId,omitempty"`
 	TeamID               string              `json:"teamId,omitempty"`
 	AuthorID             string              `json:"authorId,omitempty"`
+	AuthorUnresolved     bool                `json:"authorUnresolved,omitempty"`
 	ReviewerID           string              `json:"reviewerId,omitempty"`
+	ReviewerUnresolved   bool                `json:"reviewerUnresolved,omitempty"`
 	OccurredAt           time.Time           `json:"occurredAt"`
 	ReceivedAt           time.Time           `json:"receivedAt"`
 	CycleTimeSeconds     *int64              `json:"cycleTimeSeconds,omitempty"`
 	ReviewLatencySeconds *int64              `json:"reviewLatencySeconds,omitempty"`
 	DurationSeconds      *int64              `json:"durationSeconds,omitempty"`
+	// Conclusion is the outcome of a workflow/deployment run: success|failure|cancelled|unknown.
+	Conclusion           string              `json:"conclusion,omitempty"`
+	// PointsCompleted and PointsPlanned are set for sprint.closed events.
+	PointsCompleted      *int64              `json:"pointsCompleted,omitempty"`
+	PointsPlanned        *int64              `json:"pointsPlanned,omitempty"`
 	SchemaVersion        int                 `json:"schemaVersion"`
 }
 

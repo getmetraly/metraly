@@ -67,6 +67,9 @@ type RouterDeps struct {
 	SourceSvc       *biz.SourceSvc
 	CollectorSvc    *biz.CollectorSvc
 	CollectorRunRepo handlers.CollectorRunFetcher
+	MetricCatalog    *biz.MetricCatalog
+	FormulaValidator *biz.FormulaValidator
+	MetricQuerySvc   *biz.MetricQuerySvc
 	ActivityRepo    repo.ActivityRepo
 	InsightRepo     repo.AIInsightRepo
 }
@@ -135,6 +138,18 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 				r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
 				r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
 			}
+			if deps.MetricCatalog != nil {
+				catalogHandler := handlers.NewMetricCatalogHandler(deps.MetricCatalog, deps.FormulaValidator)
+				r.Get("/api/v1/metrics/catalog", catalogHandler.ListMetrics)
+				r.Get("/api/v1/metrics/catalog/{metricId}", catalogHandler.GetMetric)
+				r.Post("/api/v1/formulas/validate", catalogHandler.ValidateFormula)
+			}
+			if deps.MetricQuerySvc != nil {
+				queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
+				r.Post("/api/v1/metrics/query", queryHandler.Query)
+				widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc)
+				r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
+			}
 		})
 	} else if deps.DashboardSvc != nil {
 		r.Get("/api/v1/dashboards", dashboardHandler.List)
@@ -158,6 +173,18 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
 			r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
 			r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
+		}
+		if deps.MetricCatalog != nil {
+			catalogHandler := handlers.NewMetricCatalogHandler(deps.MetricCatalog, deps.FormulaValidator)
+			r.Get("/api/v1/metrics/catalog", catalogHandler.ListMetrics)
+			r.Get("/api/v1/metrics/catalog/{metricId}", catalogHandler.GetMetric)
+			r.Post("/api/v1/formulas/validate", catalogHandler.ValidateFormula)
+		}
+		if deps.MetricQuerySvc != nil {
+			queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
+			r.Post("/api/v1/metrics/query", queryHandler.Query)
+			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc)
+			r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
 		}
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
@@ -265,15 +292,18 @@ func main() {
 	}
 
 	r := NewRouter(RouterDeps{
-		KeyManager:   deps.keyManager,
-		AuthSvc:      deps.authSvc,
-		DashboardSvc: deps.dashboardSvc,
-		TemplateSvc:  deps.templateSvc,
-		MetricsSvc:   deps.metricsSvc,
-		IngestionSvc: deps.ingestionSvc,
+		KeyManager:       deps.keyManager,
+		AuthSvc:          deps.authSvc,
+		DashboardSvc:     deps.dashboardSvc,
+		TemplateSvc:      deps.templateSvc,
+		MetricsSvc:       deps.metricsSvc,
+		IngestionSvc:     deps.ingestionSvc,
 		SourceSvc:        deps.sourceSvc,
 		CollectorSvc:     deps.collectorSvc,
 		CollectorRunRepo: deps.sourceRepo,
+		MetricCatalog:    deps.metricCatalog,
+		FormulaValidator: deps.formulaValidator,
+		MetricQuerySvc:   deps.metricQuerySvc,
 		ActivityRepo:     deps.activityRepo,
 		InsightRepo:      deps.insightRepo,
 	})
