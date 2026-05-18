@@ -88,11 +88,14 @@ func (c *GitHubActionsCollector) Collect(
 
 	collectStart := time.Now().UTC()
 	var events []*domain.RawSourceEvent
+	var skippedRepos int
 
 	for _, repo := range repos {
 		runs, rl2, err := c.listWorkflowRuns(ctx, org, repo, secret, since)
 		if err != nil {
 			// Non-fatal per-repo error; skip and continue.
+			// Reflected in SkippedRepos so callers can surface partial results.
+			skippedRepos++
 			continue
 		}
 		if rl2 != nil {
@@ -100,6 +103,7 @@ func (c *GitHubActionsCollector) Collect(
 				Events:         events,
 				RateLimitState: domain.RateLimitStateThrottled,
 				RetryAfter:     rl2,
+				SkippedRepos:   skippedRepos,
 			}, nil
 		}
 		for _, run := range runs {
@@ -111,6 +115,7 @@ func (c *GitHubActionsCollector) Collect(
 		Events:         events,
 		NextCursor:     collectStart.UTC().Format(time.RFC3339),
 		RateLimitState: domain.RateLimitStateOK,
+		SkippedRepos:   skippedRepos,
 	}, nil
 }
 
@@ -120,7 +125,7 @@ func (c *GitHubActionsCollector) Collect(
 type ghWorkflowRun struct {
 	ID           int64   `json:"id"`
 	WorkflowID   int64   `json:"workflow_id"`
-	Status       string  `json:"status"`    // queued | in_progress | completed
+	Status       string  `json:"status"`     // queued | in_progress | completed
 	Conclusion   *string `json:"conclusion"` // success | failure | cancelled | skipped | timed_out | action_required | neutral | stale
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -188,11 +193,11 @@ func (c *GitHubActionsCollector) runToEvents(source domain.SourceConnection, run
 		conclusion := normalizeConclusion(*run.Conclusion)
 
 		completedPayload := map[string]any{
-			"repo_id":       repoID,
-			"workflow_id":   wfID,
-			"started_at":    startedStr,
-			"completed_at":  run.UpdatedAt,
-			"conclusion":    conclusion,
+			"repo_id":      repoID,
+			"workflow_id":  wfID,
+			"started_at":   startedStr,
+			"completed_at": run.UpdatedAt,
+			"conclusion":   conclusion,
 		}
 		if run.HeadBranch != "" {
 			completedPayload["head_branch"] = run.HeadBranch
@@ -238,8 +243,9 @@ func (c *GitHubActionsCollector) listWorkflowRuns(
 			url.PathEscape(repo),
 			githubActionsPerPage, page)
 		if since != nil {
-			// GitHub supports created=>=YYYY-MM-DD or created=YYYY-MM-DDTHH:MM:SSZ
-			u += "&created=>=" + url.QueryEscape(since.UTC().Format("2006-01-02"))
+			// Use full RFC3339 datetime for sub-day precision in the created filter.
+			// GitHub Actions API accepts created>=YYYY-MM-DDTHH:MM:SSZ.
+			u += "&created=>=" + url.QueryEscape(since.UTC().Format(time.RFC3339))
 		}
 
 		body, resp, err := gh.doRequest(ctx, secret, u)

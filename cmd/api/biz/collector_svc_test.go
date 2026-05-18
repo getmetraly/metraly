@@ -66,7 +66,6 @@ func newFakeRawEventRepo() *fakeRawEventRepo {
 	return &fakeRawEventRepo{events: make(map[string]*domain.RawSourceEvent)}
 }
 
-
 func (f *fakeRawEventRepo) InsertRawSourceEventsBatchWithOutcomes(_ context.Context, events []*domain.RawSourceEvent) ([]domain.RawEventInsertOutcome, error) {
 	outcomes := make([]domain.RawEventInsertOutcome, 0, len(events))
 	for _, ev := range events {

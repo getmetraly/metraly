@@ -9,9 +9,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/respond"
+	"github.com/go-chi/chi/v5"
 )
 
 // MetricCatalogHandler serves the metric definition catalog and formula validator.
@@ -56,7 +56,7 @@ type validateFormulaRequest struct {
 
 // validateFormulaResponse is the body for POST /api/v1/formulas/validate.
 type validateFormulaResponse struct {
-	Valid  bool                    `json:"valid"`
+	Valid  bool                     `json:"valid"`
 	Errors []formulaValidationError `json:"errors,omitempty"`
 }
 

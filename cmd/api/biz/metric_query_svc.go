@@ -49,12 +49,18 @@ func NewMetricQuerySvc(repo MetricQueryRepo, catalog *MetricCatalog) *MetricQuer
 // NEVER fakes results: returns quality=empty with notes when data is insufficient.
 //
 // Validation:
-//   - Unknown filter keys → ErrUnsupportedFilter (map to HTTP 400)
-//   - Non-empty groupBy   → ErrUnsupportedGroupBy (map to HTTP 400)
+//   - Empty workspaceId      → ErrMissingWorkspaceID (map to HTTP 400)
+//   - Unknown filter keys    → ErrUnsupportedFilter (map to HTTP 400)
+//   - Non-empty groupBy      → ErrUnsupportedGroupBy (map to HTTP 400)
 func (s *MetricQuerySvc) Execute(ctx context.Context, q domain.MetricQuery) (domain.MetricQueryResult, error) {
 	def, err := s.catalog.Get(q.MetricID)
 	if err != nil {
 		return domain.MetricQueryResult{}, fmt.Errorf("%w: %s", ErrMetricNotFound, q.MetricID)
+	}
+
+	// Require workspace isolation — callers must scope queries to a workspace.
+	if q.WorkspaceID == "" {
+		return domain.MetricQueryResult{}, ErrMissingWorkspaceID
 	}
 
 	// Validate groupBy — not yet implemented; reject rather than silently ignore.
@@ -97,22 +103,26 @@ func (s *MetricQuerySvc) Execute(ctx context.Context, q domain.MetricQuery) (dom
 }
 
 // buildLineage constructs a LineageContract from the metric definition and query.
-// SourceIDs are populated from filters when available; otherwise left empty with a note.
+// SourceIDs contains the explicit source_connection_id filter when provided;
+// otherwise it is an empty (non-null) slice. Phase 3 will populate it from the DB.
+//
+// FormulaVersion is hardcoded to 1 (MVP). The catalog currently has no formula
+// versioning scheme; this constant must be updated when formula evolution is introduced.
 func buildLineage(def *domain.MetricDefinition, q domain.MetricQuery) domain.LineageContract {
 	formulaID := def.FormulaID
 	if formulaID == "" {
 		formulaID = fmt.Sprintf("formula:%s:v1", def.ID)
 	}
-	var sourceIDs []string
+	// Initialize to empty (non-null) slice so JSON marshaling never emits "null".
+	sourceIDs := []string{}
 	if sid, ok := q.Filters["source_connection_id"]; ok && sid != "" {
 		sourceIDs = []string{sid}
 	}
-	// TODO Phase 3: query contributing source_connection_ids from the DB for the
-	// metric + time range when no explicit source filter is provided.
+	// Phase 3: derive sourceIDs from DB when no explicit filter is provided.
 	return domain.LineageContract{
 		MetricID:             def.ID,
 		FormulaID:            formulaID,
-		FormulaVersion:       1,
+		FormulaVersion:       1, // MVP: single formula version per metric.
 		SourceIDs:            sourceIDs,
 		NormalizedEventTypes: []string{def.EventBasis},
 	}
@@ -178,11 +188,11 @@ func (s *MetricQuerySvc) dispatchQuery(ctx context.Context, q domain.MetricQuery
 func (s *MetricQuerySvc) buildResult(q domain.MetricQuery, rows []domain.MetricRow) (domain.MetricDataFrame, domain.DataQualityLevel, []string) {
 	if len(rows) == 0 {
 		return domain.MetricDataFrame{
-			Columns: []string{"bucket", "value", "count"},
-			Rows:    [][]any{},
-		}, domain.DataQualityEmpty, []string{
-			fmt.Sprintf("no %s data in the requested time range (%s to %s)", q.MetricID, q.Start.Format("2006-01-02"), q.End.Format("2006-01-02")),
-		}
+				Columns: []string{"bucket", "value", "count"},
+				Rows:    [][]any{},
+			}, domain.DataQualityEmpty, []string{
+				fmt.Sprintf("no %s data in the requested time range (%s to %s)", q.MetricID, q.Start.Format("2006-01-02"), q.End.Format("2006-01-02")),
+			}
 	}
 
 	// Count rows with non-nil values to classify quality.

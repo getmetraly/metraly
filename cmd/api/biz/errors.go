@@ -21,4 +21,7 @@ var (
 	// ErrUnsupportedFilter is returned when a query contains an unknown filter key.
 	// Callers should map this to HTTP 400.
 	ErrUnsupportedFilter = errors.New("unsupported filter key")
+	// ErrMissingWorkspaceID is returned when a query omits the required workspaceId.
+	// Callers should map this to HTTP 400.
+	ErrMissingWorkspaceID = errors.New("workspaceId is required")
 )

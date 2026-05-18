@@ -38,26 +38,26 @@ var (
 )
 
 type runtimeDeps struct {
-	cfg          config.AppConfig
-	pool         *pgxpool.Pool
-	redis        *redis.Client
-	keyManager   *auth.KeyManager
-	dashboardSvc *biz.DashboardSvc
-	metricsSvc   *biz.MetricsSvc
-	ingestionSvc *biz.IngestionSvc
-	templateSvc  *biz.TemplateSvc
-	sourceSvc    *biz.SourceSvc
-	sourceRepo   *repo.SourceRepo
-	authSvc      *auth.Service
-	activityRepo repo.ActivityRepo
-	insightRepo  repo.AIInsightRepo
-	collectorSvc  *biz.CollectorSvc
-	normalizerSvc *biz.NormalizerSvc
-	metricCatalog *biz.MetricCatalog
+	cfg              config.AppConfig
+	pool             *pgxpool.Pool
+	redis            *redis.Client
+	keyManager       *auth.KeyManager
+	dashboardSvc     *biz.DashboardSvc
+	metricsSvc       *biz.MetricsSvc
+	ingestionSvc     *biz.IngestionSvc
+	templateSvc      *biz.TemplateSvc
+	sourceSvc        *biz.SourceSvc
+	sourceRepo       *repo.SourceRepo
+	authSvc          *auth.Service
+	activityRepo     repo.ActivityRepo
+	insightRepo      repo.AIInsightRepo
+	collectorSvc     *biz.CollectorSvc
+	normalizerSvc    *biz.NormalizerSvc
+	metricCatalog    *biz.MetricCatalog
 	formulaValidator *biz.FormulaValidator
 	metricQuerySvc   *biz.MetricQuerySvc
 	activityFeedSvc  *biz.ActivityFeedSvc
-	cleanup      func()
+	cleanup          func()
 }
 
 func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error) {

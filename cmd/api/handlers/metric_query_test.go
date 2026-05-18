@@ -39,6 +39,7 @@ func doQueryRequest(t *testing.T, executor handlers.MetricQueryExecutor, body *b
 func validQueryBody() map[string]any {
 	return map[string]any{
 		"metricId":    "pr_count",
+		"workspaceId": "ws_test",
 		"granularity": "day",
 		"start":       "2026-01-01T00:00:00Z",
 		"end":         "2026-02-01T00:00:00Z",
@@ -97,6 +98,14 @@ func TestMetricQueryHandler_MissingMetricID(t *testing.T) {
 	w := doQueryRequest(t, okQueryExecutor(), buildQueryRequest(body))
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assertErrorCode(t, w, "MISSING_METRIC_ID")
+}
+
+func TestMetricQueryHandler_MissingWorkspaceID(t *testing.T) {
+	body := validQueryBody()
+	delete(body, "workspaceId")
+	w := doQueryRequest(t, okQueryExecutor(), buildQueryRequest(body))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assertErrorCode(t, w, "MISSING_WORKSPACE_ID")
 }
 
 func TestMetricQueryHandler_MissingStart(t *testing.T) {

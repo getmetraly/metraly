@@ -30,6 +30,9 @@ type CollectResult struct {
 	RateLimitState domain.RateLimitState
 	// RetryAfter is non-nil when the source is rate-limited.
 	RetryAfter *time.Time
+	// SkippedRepos is the count of per-repo errors encountered during collection.
+	// Non-zero means the result is partial: some repos were skipped due to transient errors.
+	SkippedRepos int
 }
 
 // Collector is the interface all source collectors must implement.
@@ -214,6 +217,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 		"events_fetched", len(result.Events),
 		"events_inserted", inserted,
 		"events_duplicated", len(result.Events)-inserted,
+		"repos_skipped", result.SkippedRepos,
 	)
 	run.RawEventCount = int64(inserted) // count of newly inserted events only (duplicates excluded)
 	if err := s.runRepo.UpdateCollectorRun(ctx, run); err != nil {

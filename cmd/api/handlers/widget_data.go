@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
@@ -30,7 +31,17 @@ func NewWidgetDataHandler(svc MetricQueryExecutor) *WidgetDataHandler {
 }
 
 // WithActivityFeed attaches an ActivityFeedExecutor to support the activity_feed widget type.
+// Both untyped nil and typed-nil (*T)(nil) values are treated as not-wired to prevent
+// panic on method call through a nil concrete pointer.
 func (h *WidgetDataHandler) WithActivityFeed(svc biz.ActivityFeedExecutor) *WidgetDataHandler {
+	if svc == nil {
+		return h
+	}
+	// Reject typed-nil: (*ActivityFeedSvc)(nil) satisfies the interface but panics on call.
+	v := reflect.ValueOf(svc)
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		return h
+	}
 	h.activitySvc = svc
 	return h
 }
@@ -185,8 +196,14 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 // handleActivityFeed processes the activity_feed widget type.
 func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Request, req metricWidgetRequest) {
 	if h.activitySvc == nil {
-		respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_WIDGET_TYPE",
+		respond.Error(w, http.StatusNotImplemented, "ACTIVITY_FEED_NOT_ENABLED",
 			"activity_feed widget type is not enabled in this deployment")
+		return
+	}
+
+	// Workspace isolation: empty workspaceId would produce an unscoped cross-tenant read.
+	if req.Query.WorkspaceID == "" {
+		respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", "query.workspaceId is required")
 		return
 	}
 

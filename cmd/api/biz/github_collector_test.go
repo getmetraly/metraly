@@ -375,6 +375,53 @@ func TestGitHubCollector_MissingOrg_ReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "'org'")
 }
 
+func TestGitHubCollector_MalformedCursor_FallsBackToFullCollect(t *testing.T) {
+	// A malformed cursor must not crash; the collector falls back to full collection.
+	srv := newGHTestServer(t, "myorg", []map[string]any{
+		{"id": 1, "number": 7, "state": "open", "merged": false,
+			"user":       map[string]any{"login": "bob"},
+			"created_at": "2026-01-10T00:00:00Z",
+			"updated_at": "2026-01-10T00:00:00Z"},
+	}, nil)
+	defer srv.Close()
+	col := collectorWithServer(srv)
+
+	result, err := col.Collect(context.Background(), ghTestSource("myorg"), "tok", "NOT-A-TIMESTAMP")
+	require.NoError(t, err, "malformed cursor must not cause an error")
+	require.NotNil(t, result)
+	// Full collection must have occurred (at least the one open PR).
+	assert.NotEmpty(t, result.Events, "malformed cursor must trigger full collection")
+	assert.Equal(t, 0, result.SkippedRepos, "no repos should be skipped when server is healthy")
+}
+
+func TestGitHubCollector_SkippedRepos_OnPerRepoError(t *testing.T) {
+	// When a per-repo request returns an error the collector must:
+	//  1. not return a top-level error,
+	//  2. increment SkippedRepos,
+	//  3. still return events from healthy repos (none here since server returns 500).
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		// Repo listing returns one repo.
+		if r.URL.Path == "/orgs/errorg/repos" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`[{"id":1,"name":"repo1","full_name":"errorg/repo1"}]`))
+			return
+		}
+		// All PR requests fail with a server error.
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	col := collectorWithServer(srv)
+	result, err := col.Collect(context.Background(), ghTestSource("errorg"), "tok", "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, 1, result.SkippedRepos, "the single failing repo must be counted")
+	assert.Empty(t, result.Events, "no events from a fully failing repo")
+}
+
 // — GitHub Actions Collector tests —
 
 func TestGitHubActionsCollector_CollectsStartedAndCompletedEvents(t *testing.T) {
@@ -450,7 +497,7 @@ func TestGitHubActionsCollector_ConclusionMapping(t *testing.T) {
 		{"success", "success"},
 		{"failure", "failure"},
 		{"cancelled", "cancelled"},
-		{"timed_out", "failure"},    // mapped to failure by normalizeConclusion
+		{"timed_out", "failure"}, // mapped to failure by normalizeConclusion
 		{"action_required", "failure"},
 		{"neutral", "failure"},
 		{"skipped", "unknown"},
@@ -535,15 +582,15 @@ func TestGitHubActionsCollector_NoForbiddenFields(t *testing.T) {
 	conclusion := "success"
 	runs := []map[string]any{
 		{
-			"id":           9001,
-			"workflow_id":  500,
-			"status":       "completed",
-			"conclusion":   conclusion,
+			"id":            9001,
+			"workflow_id":   500,
+			"status":        "completed",
+			"conclusion":    conclusion,
 			"display_title": "Sensitive commit message that must not be stored",
-			"head_commit":  map[string]any{"message": "this is a commit message"},
-			"created_at":   "2026-01-01T00:00:00Z",
-			"updated_at":   "2026-01-01T01:00:00Z",
-			"repository":   map[string]any{"id": 222},
+			"head_commit":   map[string]any{"message": "this is a commit message"},
+			"created_at":    "2026-01-01T00:00:00Z",
+			"updated_at":    "2026-01-01T01:00:00Z",
+			"repository":    map[string]any{"id": 222},
 		},
 	}
 

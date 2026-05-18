@@ -58,21 +58,21 @@ func serviceUnavailableHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type RouterDeps struct {
-	KeyManager   *auth.KeyManager
-	AuthSvc      *auth.Service
-	DashboardSvc *biz.DashboardSvc
-	TemplateSvc  *biz.TemplateSvc
-	MetricsSvc   *biz.MetricsSvc
-	IngestionSvc *biz.IngestionSvc
-	SourceSvc       *biz.SourceSvc
-	CollectorSvc    *biz.CollectorSvc
+	KeyManager       *auth.KeyManager
+	AuthSvc          *auth.Service
+	DashboardSvc     *biz.DashboardSvc
+	TemplateSvc      *biz.TemplateSvc
+	MetricsSvc       *biz.MetricsSvc
+	IngestionSvc     *biz.IngestionSvc
+	SourceSvc        *biz.SourceSvc
+	CollectorSvc     *biz.CollectorSvc
 	CollectorRunRepo handlers.CollectorRunFetcher
 	MetricCatalog    *biz.MetricCatalog
 	FormulaValidator *biz.FormulaValidator
 	MetricQuerySvc   *biz.MetricQuerySvc
 	ActivityFeedSvc  *biz.ActivityFeedSvc
-	ActivityRepo    repo.ActivityRepo
-	InsightRepo     repo.AIInsightRepo
+	ActivityRepo     repo.ActivityRepo
+	InsightRepo      repo.AIInsightRepo
 }
 
 // NewRouter creates and returns a chi router with all API routes configured.
@@ -148,8 +148,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			if deps.MetricQuerySvc != nil {
 				queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
 				r.Post("/api/v1/metrics/query", queryHandler.Query)
-			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc).WithActivityFeed(deps.ActivityFeedSvc)
-			r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
+				widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc).WithActivityFeed(deps.ActivityFeedSvc)
+				r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
 			}
 		})
 	} else if deps.DashboardSvc != nil {

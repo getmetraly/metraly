@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/getmetraly/metraly/cmd/api/handlers"
 	"github.com/stretchr/testify/assert"
@@ -143,8 +144,48 @@ func TestWidgetDataHandler_Table(t *testing.T) {
 func TestWidgetDataHandler_UnsupportedWidgetType(t *testing.T) {
 	executor := &stubMetricQueryExecutor{result: sampleResult("pr_count", [][]any{})}
 
-	w := doWidgetRequest(t, executor, buildWidgetRequest("activity_feed", "pr_count"))
+	w := doWidgetRequest(t, executor, buildWidgetRequest("unsupported_type", "pr_count"))
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestWidgetDataHandler_ActivityFeed_NotWired_Returns501(t *testing.T) {
+	// activity_feed without an attached ActivityFeedSvc must return 501.
+	executor := &stubMetricQueryExecutor{result: sampleResult("pr_count", [][]any{})}
+	w := doWidgetRequest(t, executor, buildWidgetRequest("activity_feed", ""))
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
+	assertWidgetErrorCode(t, w, "ACTIVITY_FEED_NOT_ENABLED")
+}
+
+func TestWidgetDataHandler_ActivityFeed_TypedNil_Returns501(t *testing.T) {
+	// A typed-nil (*ActivityFeedSvc)(nil) must not panic and must return 501.
+	executor := &stubMetricQueryExecutor{result: sampleResult("pr_count", [][]any{})}
+	h := handlers.NewWidgetDataHandler(executor)
+	h.WithActivityFeed((*stubActivityFeedExecutor)(nil))
+
+	body := buildActivityFeedRequest("ws_01")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Query(w, req)
+
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
+	assertWidgetErrorCode(t, w, "ACTIVITY_FEED_NOT_ENABLED")
+}
+
+func TestWidgetDataHandler_ActivityFeed_EmptyWorkspaceID_Returns400(t *testing.T) {
+	executor := &stubMetricQueryExecutor{result: sampleResult("pr_count", [][]any{})}
+	h := handlers.NewWidgetDataHandler(executor)
+	h.WithActivityFeed(&stubActivityFeedExecutor{})
+
+	// workspaceId is absent — must be rejected.
+	body := buildActivityFeedRequest("") // empty workspaceId
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Query(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assertWidgetErrorCode(t, w, "MISSING_WORKSPACE_ID")
 }
 
 func TestWidgetDataHandler_MissingWidgetType(t *testing.T) {
@@ -154,4 +195,42 @@ func TestWidgetDataHandler_MissingWidgetType(t *testing.T) {
 	executor := &stubMetricQueryExecutor{}
 	w := doWidgetRequest(t, executor, bytes.NewBuffer(body))
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// — helpers for activity_feed tests —
+
+// stubActivityFeedExecutor satisfies biz.ActivityFeedExecutor for handler tests.
+type stubActivityFeedExecutor struct {
+	result biz.ActivityFeedResult
+	err    error
+}
+
+func (s *stubActivityFeedExecutor) Execute(_ context.Context, _ domain.ActivityFeedQuery) (biz.ActivityFeedResult, error) {
+	return s.result, s.err
+}
+
+// buildActivityFeedRequest builds a widget-data request for the activity_feed widget type.
+func buildActivityFeedRequest(workspaceID string) *bytes.Buffer {
+	body := map[string]any{
+		"widgetType": "activity_feed",
+		"query": map[string]any{
+			"workspaceId": workspaceID,
+			"start":       "2026-01-01T00:00:00Z",
+			"end":         "2026-02-01T00:00:00Z",
+		},
+	}
+	b, _ := json.Marshal(body)
+	return bytes.NewBuffer(b)
+}
+
+// assertWidgetErrorCode decodes the response and asserts the error code field.
+func assertWidgetErrorCode(t *testing.T, w *httptest.ResponseRecorder, code string) {
+	t.Helper()
+	var resp struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.Equal(t, code, resp.Error.Code)
 }

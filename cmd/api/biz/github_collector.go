@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	githubAPIBase       = "https://api.github.com"
-	githubUserAgent     = "metraly-collector/1.0"
-	githubBodyLimit     = 4 * 1024 * 1024 // 4 MB per response
-	githubReqTimeout    = 10 * time.Second
-	githubMaxPRPages    = 10 // max pages of PRs per repo per run
-	githubMaxRepoPages  = 10 // max pages of repos per org per run
-	githubPerPage       = 100
+	githubAPIBase      = "https://api.github.com"
+	githubUserAgent    = "metraly-collector/1.0"
+	githubBodyLimit    = 4 * 1024 * 1024 // 4 MB per response
+	githubReqTimeout   = 10 * time.Second
+	githubMaxPRPages   = 10 // max pages of PRs per repo per run
+	githubMaxRepoPages = 10 // max pages of repos per org per run
+	githubPerPage      = 100
 )
 
 // GitHubCollector collects GitHub pull-request lifecycle events.
@@ -99,11 +99,14 @@ func (c *GitHubCollector) Collect(
 
 	collectStart := time.Now().UTC()
 	var events []*domain.RawSourceEvent
+	var skippedRepos int
 
 	for _, repo := range repos {
 		prs, rl2, err := c.listPRs(ctx, org, repo, secret, since)
 		if err != nil {
 			// Non-fatal per-repo error; skip this repo and continue.
+			// Reflected in SkippedRepos so callers can surface partial results.
+			skippedRepos++
 			continue
 		}
 		if rl2 != nil {
@@ -111,6 +114,7 @@ func (c *GitHubCollector) Collect(
 				Events:         events,
 				RateLimitState: domain.RateLimitStateThrottled,
 				RetryAfter:     rl2,
+				SkippedRepos:   skippedRepos,
 			}, nil
 		}
 		for _, pr := range prs {
@@ -122,6 +126,7 @@ func (c *GitHubCollector) Collect(
 		Events:         events,
 		NextCursor:     collectStart.UTC().Format(time.RFC3339),
 		RateLimitState: domain.RateLimitStateOK,
+		SkippedRepos:   skippedRepos,
 	}, nil
 }
 
@@ -450,10 +455,6 @@ func newRawID() string {
 	_, _ = rand.Read(b)
 	return "raw_" + hex.EncodeToString(b)
 }
-
-// buildGitHubBaseURL is the GitHub API base URL, overridable in tests.
-// Using a package-level var allows tests to inject a httptest.Server URL.
-var buildGitHubBaseURL = func() string { return githubAPIBase }
 
 // sanitizeSecret ensures the secret never appears in log output or error messages.
 // Used internally as a reminder comment rather than a runtime redaction.

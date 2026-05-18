@@ -28,7 +28,7 @@ func NewMetricQueryRepo(pool *pgxpool.Pool) *MetricQueryRepo {
 func (r *MetricQueryRepo) QueryPRCount(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	sql := fmt.Sprintf(`
 		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
@@ -50,7 +50,7 @@ func (r *MetricQueryRepo) QueryPRCount(ctx context.Context, q domain.MetricQuery
 func (r *MetricQueryRepo) QueryPRCycleTimeMedian(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	sql := fmt.Sprintf(`
 		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
@@ -73,7 +73,7 @@ func (r *MetricQueryRepo) QueryPRCycleTimeMedian(ctx context.Context, q domain.M
 func (r *MetricQueryRepo) QueryReviewLatencyMedian(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	sql := fmt.Sprintf(`
 		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
@@ -96,7 +96,7 @@ func (r *MetricQueryRepo) QueryReviewLatencyMedian(ctx context.Context, q domain
 func (r *MetricQueryRepo) QueryBuildFailureRate(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	// Cast to float8 so pgx decodes as float64, not pgtype.Numeric.
 	// Exclude NULL-conclusion rows: they are pre-migration data and must not
@@ -124,7 +124,7 @@ func (r *MetricQueryRepo) QueryBuildFailureRate(ctx context.Context, q domain.Me
 func (r *MetricQueryRepo) QueryBuildDurationP95(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	sql := fmt.Sprintf(`
 		SELECT DATE_TRUNC('%s', occurred_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS bucket,
@@ -147,7 +147,7 @@ func (r *MetricQueryRepo) QueryBuildDurationP95(ctx context.Context, q domain.Me
 func (r *MetricQueryRepo) QuerySprintPredictability(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error) {
 	dateTrunc := granularityTrunc(q.Granularity)
 	args := []any{q.Start, q.End}
-	filter, args := buildFilter(q.Filters, args)
+	filter, args := buildFilter(q.Filters, q.WorkspaceID, args)
 
 	// Require both measures to be non-NULL; sprints ingested before migration 011
 	// or via a normalizer path that omits points must not dilute the ratio.
@@ -192,12 +192,15 @@ var allowedFilterColumns = map[string]bool{
 	"source_connection_id": true,
 }
 
-// buildFilter converts a Filters map into a safe SQL fragment + updated args slice.
-// Unknown columns are silently dropped.
-func buildFilter(filters map[string]string, args []any) (string, []any) {
-	if len(filters) == 0 {
-		return "", args
-	}
+// buildFilter converts a Filters map and optional workspaceID into a safe SQL fragment
+// + updated args slice. Unknown column names are silently dropped (defence-in-depth;
+// the biz layer has already validated them).
+//
+// When workspaceID is non-empty a subquery is appended to restrict
+// normalized_events to the caller's workspace:
+//
+//	AND source_connection_id IN (SELECT id FROM source_connections WHERE workspace_id = $N)
+func buildFilter(filters map[string]string, workspaceID string, args []any) (string, []any) {
 	var clauses []string
 	for col, val := range filters {
 		if !allowedFilterColumns[col] {
@@ -205,6 +208,11 @@ func buildFilter(filters map[string]string, args []any) (string, []any) {
 		}
 		args = append(args, val)
 		clauses = append(clauses, fmt.Sprintf("AND %s = $%d", col, len(args)))
+	}
+	if workspaceID != "" {
+		args = append(args, workspaceID)
+		clauses = append(clauses,
+			fmt.Sprintf("AND source_connection_id IN (SELECT id FROM source_connections WHERE workspace_id = $%d)", len(args)))
 	}
 	return strings.Join(clauses, " "), args
 }

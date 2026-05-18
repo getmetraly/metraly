@@ -85,16 +85,16 @@ func (a *GitHubAdapter) TestConnection(_ context.Context, cfg domain.SourceConne
 		!strings.HasPrefix(secret, "gho_") &&
 		!strings.HasPrefix(secret, "ghs_") {
 		return &domain.ConnectionTestResult{
-			Status:  domain.TestResultInvalidCreds,
-			Message: "GitHub PAT does not match expected format (ghp_*, github_pat_*, gho_*, ghs_*)",
+			Status:   domain.TestResultInvalidCreds,
+			Message:  "GitHub PAT does not match expected format (ghp_*, github_pat_*, gho_*, ghs_*)",
 			TestedAt: now,
 		}, nil
 	}
 
 	if cfg.Config["org"] == "" && cfg.Config["installation_id"] == "" {
 		return &domain.ConnectionTestResult{
-			Status:  domain.TestResultInvalidCreds,
-			Message: "GitHub source requires 'org' or 'installation_id' in config",
+			Status:   domain.TestResultInvalidCreds,
+			Message:  "GitHub source requires 'org' or 'installation_id' in config",
 			TestedAt: now,
 		}, nil
 	}

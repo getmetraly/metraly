@@ -180,6 +180,7 @@ func (r *EventRepo) ListNormalizedEventsByRawID(ctx context.Context, rawID strin
 		        conclusion, points_completed, points_planned, schema_version
 		 FROM normalized_events WHERE raw_source_event_id=$1`, rawID)
 }
+
 // ListNormalizedEventsByEntity returns normalized events for a specific entity.
 func (r *EventRepo) ListNormalizedEventsByEntity(ctx context.Context, entityKind, entityID string) ([]*domain.NormalizedEvent, error) {
 	return r.queryNormalizedEvents(ctx,

@@ -56,6 +56,10 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "MISSING_METRIC_ID", "metricId is required")
 		return
 	}
+	if req.WorkspaceID == "" {
+		respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", "workspaceId is required")
+		return
+	}
 	if req.Start == "" || req.End == "" {
 		respond.Error(w, http.StatusBadRequest, "MISSING_TIME_RANGE", "start and end are required")
 		return
@@ -100,6 +104,8 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, biz.ErrMetricNotFound):
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", err.Error())
+		case errors.Is(err, biz.ErrMissingWorkspaceID):
+			respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", err.Error())
 		case errors.Is(err, biz.ErrUnsupportedGroupBy):
 			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_GROUP_BY", err.Error())
 		case errors.Is(err, biz.ErrUnsupportedFilter):

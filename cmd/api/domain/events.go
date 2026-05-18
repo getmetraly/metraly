@@ -60,11 +60,11 @@ type NormalizedEvent struct {
 	ReviewLatencySeconds *int64              `json:"reviewLatencySeconds,omitempty"`
 	DurationSeconds      *int64              `json:"durationSeconds,omitempty"`
 	// Conclusion is the outcome of a workflow/deployment run: success|failure|cancelled|unknown.
-	Conclusion           string              `json:"conclusion,omitempty"`
+	Conclusion string `json:"conclusion,omitempty"`
 	// PointsCompleted and PointsPlanned are set for sprint.closed events.
-	PointsCompleted      *int64              `json:"pointsCompleted,omitempty"`
-	PointsPlanned        *int64              `json:"pointsPlanned,omitempty"`
-	SchemaVersion        int                 `json:"schemaVersion"`
+	PointsCompleted *int64 `json:"pointsCompleted,omitempty"`
+	PointsPlanned   *int64 `json:"pointsPlanned,omitempty"`
+	SchemaVersion   int    `json:"schemaVersion"`
 }
 
 // RawEventInsertOutcome records the result of inserting one raw source event.

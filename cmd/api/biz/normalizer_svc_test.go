@@ -86,8 +86,8 @@ func TestNormalizerSvc_GitHubPRMerged_WithCycleTime(t *testing.T) {
 	svc := biz.NewNormalizerSvc(repo)
 
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_42", "pull_request.merged", map[string]any{
-		"author_login":         "alice",
-		"cycle_time_seconds":   float64(3600),
+		"author_login":           "alice",
+		"cycle_time_seconds":     float64(3600),
 		"review_latency_seconds": float64(900),
 	})
 
@@ -181,10 +181,10 @@ func TestNormalizerSvc_Normalize_DoesNotPersist(t *testing.T) {
 
 // fakeIdentityResolver implements biz.IdentityResolver for tests.
 type fakeIdentityResolver struct {
-	mappings    map[string]biz.IdentityResolution // key: externalID
-	upserted    []string                           // externalIDs passed to UpsertUnresolved
-	resolveErr  error
-	upsertErr   error
+	mappings   map[string]biz.IdentityResolution // key: externalID
+	upserted   []string                          // externalIDs passed to UpsertUnresolved
+	resolveErr error
+	upsertErr  error
 }
 
 func (f *fakeIdentityResolver) ResolveIdentity(_ context.Context, _ string, _ domain.SourceType, externalID string) (biz.IdentityResolution, error) {
@@ -351,8 +351,8 @@ func TestNormalizerSvc_ResolveIdentityError_PropagatesError(t *testing.T) {
 	ev, err := svc.NormalizeAndStore(context.Background(), raw)
 	require.Error(t, err)
 	assert.Nil(t, ev)
-	assert.Empty(t, eventRepo.events)   // must not persist
-	assert.Empty(t, resolver.upserted)  // must not call UpsertUnresolved on transient error
+	assert.Empty(t, eventRepo.events)  // must not persist
+	assert.Empty(t, resolver.upserted) // must not call UpsertUnresolved on transient error
 }
 
 func TestNormalizerSvc_JiraSprintClosed_ZeroPointsCompleted(t *testing.T) {

@@ -9,6 +9,7 @@ package biz_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -73,9 +74,45 @@ func TestMetricQuerySvc_LineageSourceIDs_Empty_WhenNoFilter(t *testing.T) {
 	result, err := svc.Execute(context.Background(), testQuery("pr_count"))
 	require.NoError(t, err)
 
-	// Without an explicit source filter, SourceIDs may be empty (Phase 3 will fill it from DB).
-	// The field must exist and be a slice (nil is acceptable as empty).
-	assert.IsType(t, []string(nil), result.Lineage.SourceIDs)
+	// Without an explicit source filter, SourceIDs must be a non-null empty slice
+	// so JSON marshaling emits [] rather than null (stable API contract).
+	assert.NotNil(t, result.Lineage.SourceIDs)
+	assert.Empty(t, result.Lineage.SourceIDs)
+}
+
+func TestMetricQuerySvc_LineageJSON_NeverNullArrays(t *testing.T) {
+	// JSON serialization of LineageContract must emit [] not null for slice fields
+	// so API consumers can iterate without nil checks.
+	svc := newQuerySvc(map[string][]domain.MetricRow{
+		"pr_count": {{BucketStart: time.Now(), Value: flt(1), Count: 1}},
+	})
+
+	result, err := svc.Execute(context.Background(), testQuery("pr_count"))
+	require.NoError(t, err)
+
+	b, err := json.Marshal(result.Lineage)
+	require.NoError(t, err)
+	got := string(b)
+
+	assert.NotContains(t, got, `"sourceIds":null`,
+		"sourceIds must serialize as [] not null")
+	assert.NotContains(t, got, `"normalizedEventTypes":null`,
+		"normalizedEventTypes must serialize as [] not null")
+	assert.Contains(t, got, `"sourceIds":[]`,
+		"sourceIds must be a non-null empty array when no filter provided")
+}
+
+func TestMetricQuerySvc_MissingWorkspaceID_ReturnsError(t *testing.T) {
+	svc := newQuerySvc(map[string][]domain.MetricRow{
+		"pr_count": {{BucketStart: time.Now(), Value: flt(1), Count: 1}},
+	})
+
+	q := testQuery("pr_count")
+	q.WorkspaceID = ""
+
+	_, err := svc.Execute(context.Background(), q)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, biz.ErrMissingWorkspaceID)
 }
 
 // — QualityContract tests —
