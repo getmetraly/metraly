@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/jackc/pgx/v5"
@@ -204,6 +206,69 @@ func (r *EventRepo) queryNormalizedEvents(ctx context.Context, q string, args ..
 		result = append(result, ev)
 	}
 	return result, rows.Err()
+}
+
+// QueryActivityFeed returns normalized events for the activity feed widget.
+// Items are ordered by occurred_at DESC and capped at q.Limit.
+// Workspace isolation is enforced via a subquery on source_connections.
+// Free-form text fields are never stored in normalized_events, so this query
+// cannot leak PR titles, commit messages, or issue summaries.
+func (r *EventRepo) QueryActivityFeed(ctx context.Context, q domain.ActivityFeedQuery) ([]domain.ActivityFeedItem, error) {
+	args := []any{q.Start, q.End, q.Limit}
+	clauses := []string{}
+
+	if q.WorkspaceID != "" {
+		args = append(args, q.WorkspaceID)
+		clauses = append(clauses, fmt.Sprintf(
+			"AND ne.source_connection_id IN (SELECT id FROM source_connections WHERE workspace_id = $%d)", len(args)))
+	}
+	for col, val := range q.Filters {
+		// Only allowed columns reach this point (validated in biz layer),
+		// but guard here as defence-in-depth.
+		switch col {
+		case "source_connection_id", "repository_id", "team_id", "author_id", "reviewer_id":
+			args = append(args, val)
+			clauses = append(clauses, fmt.Sprintf("AND ne.%s = $%d", col, len(args)))
+		}
+	}
+
+	sql := fmt.Sprintf(`
+		SELECT ne.id, ne.event_type, ne.entity_kind, ne.entity_id,
+		       ne.occurred_at,
+		       ne.repository_id, ne.team_id,
+		       ne.author_id, ne.author_unresolved,
+		       ne.reviewer_id, ne.reviewer_unresolved
+		FROM normalized_events ne
+		WHERE ne.occurred_at >= $1 AND ne.occurred_at < $2
+		  %s
+		ORDER BY ne.occurred_at DESC
+		LIMIT $3
+	`, strings.Join(clauses, " "))
+
+	rows, err := r.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("activity feed query: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ActivityFeedItem
+	for rows.Next() {
+		var item domain.ActivityFeedItem
+		var eventType string
+		err := rows.Scan(
+			&item.ID, &eventType, &item.EntityKind, &item.EntityID,
+			&item.OccurredAt,
+			&item.RepositoryID, &item.TeamID,
+			&item.AuthorID, &item.AuthorUnresolved,
+			&item.ReviewerID, &item.ReviewerUnresolved,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan activity feed item: %w", err)
+		}
+		item.EventType = eventType
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 func scanNormalizedEvent(row rowScanner) (*domain.NormalizedEvent, error) {

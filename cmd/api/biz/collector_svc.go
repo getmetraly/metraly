@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
@@ -96,6 +97,10 @@ func (s *CollectorSvc) WithNormalizer(n *NormalizerSvc) {
 // runID is caller-supplied for idempotency (safe to retry with the same ID after a crash).
 func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain.CollectorRun, error) {
 	now := time.Now().UTC()
+	slog.InfoContext(ctx, "collector_run.started",
+		"run_id", runID,
+		"source_id", sourceID,
+	)
 
 	sc, err := s.sourceSvc.GetSource(ctx, sourceID)
 	if err != nil {
@@ -138,9 +143,14 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 	}
 
 	result, collectErr := collector.Collect(ctx, *sc, secret, run.Cursor)
-	secret = "" // zero immediately after collector call
+	secret = "" // zero immediately after collector call — NEVER log secret
 
 	if collectErr != nil {
+		slog.WarnContext(ctx, "collector_run.collect_failed",
+			"run_id", runID,
+			"source_id", sourceID,
+			"error_category", categorizeCollectorError(collectErr),
+		)
 		return s.failRun(ctx, run, categorizeCollectorError(collectErr), collectErr.Error())
 	}
 	if result == nil {
@@ -183,9 +193,12 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 					// Expected skip — event type not mapped for this source type.
 					continue
 				}
-				// Unexpected normalization error (DB error, schema error, etc.) — log but don't fail run.
-				// A single bad event doesn't abort the whole collection.
-				_ = nerr // TODO: slog.Warn or similar when slog is wired in
+				// Unexpected normalization error: log but don't fail run.
+				slog.WarnContext(ctx, "collector_run.normalization_error",
+					"run_id", runID,
+					"source_id", sourceID,
+					"raw_event_id", outcome.Event.ID,
+				)
 				continue
 			}
 		}
@@ -195,6 +208,13 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, sourceID string) (*domain
 	run.Status = domain.CollectorRunStatusSucceeded
 	run.FinishedAt = &finished
 	run.Cursor = result.NextCursor
+	slog.InfoContext(ctx, "collector_run.succeeded",
+		"run_id", runID,
+		"source_id", sourceID,
+		"events_fetched", len(result.Events),
+		"events_inserted", inserted,
+		"events_duplicated", len(result.Events)-inserted,
+	)
 	run.RawEventCount = int64(inserted) // count of newly inserted events only (duplicates excluded)
 	if err := s.runRepo.UpdateCollectorRun(ctx, run); err != nil {
 		run.ErrorMessage = "run succeeded but final update failed: " + err.Error()
@@ -210,6 +230,13 @@ func (s *CollectorSvc) failRun(ctx context.Context, run *domain.CollectorRun, er
 	run.ErrorCategory = errorCategory
 	run.ErrorMessage = errorMessage
 	_ = s.runRepo.UpdateCollectorRun(ctx, run)
+	// Log the failure without including secrets or the full error message
+	// (errorMessage may contain API response text; errorCategory is safe to log).
+	slog.WarnContext(ctx, "collector_run.failed",
+		"run_id", run.ID,
+		"source_id", run.SourceConnectionID,
+		"error_category", errorCategory,
+	)
 	return run, fmt.Errorf("%s: %s", errorCategory, errorMessage)
 }
 

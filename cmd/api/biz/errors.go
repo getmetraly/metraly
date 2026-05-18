@@ -13,3 +13,12 @@ var (
 	ErrValidation   = errors.New("validation error")
 	ErrUnauthorized = errors.New("unauthorized")
 )
+
+var (
+	// ErrUnsupportedGroupBy is returned when a query requests groupBy dimensions
+	// that are not yet implemented. Callers should map this to HTTP 400.
+	ErrUnsupportedGroupBy = errors.New("unsupported groupBy dimensions")
+	// ErrUnsupportedFilter is returned when a query contains an unknown filter key.
+	// Callers should map this to HTTP 400.
+	ErrUnsupportedFilter = errors.New("unsupported filter key")
+)

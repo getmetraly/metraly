@@ -7,6 +7,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
@@ -22,6 +23,17 @@ type MetricQueryRepo interface {
 	QuerySprintPredictability(ctx context.Context, q domain.MetricQuery) ([]domain.MetricRow, error)
 }
 
+// AllowedFilterKeys is the whitelist of filter dimensions callers may apply.
+// Validated in MetricQuerySvc before dispatching to the repo.
+// Also enforced (silently) in the repo layer as defence-in-depth.
+var AllowedFilterKeys = map[string]bool{
+	"repository_id":        true,
+	"team_id":              true,
+	"author_id":            true,
+	"reviewer_id":          true,
+	"source_connection_id": true,
+}
+
 // MetricQuerySvc executes metric queries using the normalized event store.
 type MetricQuerySvc struct {
 	repo    MetricQueryRepo
@@ -35,9 +47,28 @@ func NewMetricQuerySvc(repo MetricQueryRepo, catalog *MetricCatalog) *MetricQuer
 
 // Execute runs a metric query and returns a typed result with quality metadata.
 // NEVER fakes results: returns quality=empty with notes when data is insufficient.
+//
+// Validation:
+//   - Unknown filter keys → ErrUnsupportedFilter (map to HTTP 400)
+//   - Non-empty groupBy   → ErrUnsupportedGroupBy (map to HTTP 400)
 func (s *MetricQuerySvc) Execute(ctx context.Context, q domain.MetricQuery) (domain.MetricQueryResult, error) {
-	if _, err := s.catalog.Get(q.MetricID); err != nil {
+	def, err := s.catalog.Get(q.MetricID)
+	if err != nil {
 		return domain.MetricQueryResult{}, fmt.Errorf("%w: %s", ErrMetricNotFound, q.MetricID)
+	}
+
+	// Validate groupBy — not yet implemented; reject rather than silently ignore.
+	if len(q.GroupBy) > 0 {
+		return domain.MetricQueryResult{}, fmt.Errorf("%w: %s (no groupBy dimensions are currently supported; planned for Phase 3)",
+			ErrUnsupportedGroupBy, strings.Join(q.GroupBy, ", "))
+	}
+
+	// Validate filter keys — unknown keys are rejected rather than silently dropped.
+	for k := range q.Filters {
+		if !AllowedFilterKeys[k] {
+			return domain.MetricQueryResult{}, fmt.Errorf("%w: %q (allowed: repository_id, team_id, author_id, reviewer_id, source_connection_id)",
+				ErrUnsupportedFilter, k)
+		}
 	}
 
 	rows, err := s.dispatchQuery(ctx, q)
@@ -46,14 +77,81 @@ func (s *MetricQuerySvc) Execute(ctx context.Context, q domain.MetricQuery) (dom
 	}
 
 	frame, quality, notes := s.buildResult(q, rows)
+
+	// Build lineage.
+	lineage := buildLineage(def, q)
+
+	// Build quality contract (richer form; backward-compat fields also set below).
+	qc := buildQualityContract(quality, notes, rows)
+
 	return domain.MetricQueryResult{
-		MetricID:     q.MetricID,
-		Query:        q,
-		Data:         frame,
-		Quality:      quality,
-		QualityNotes: notes,
-		ComputedAt:   time.Now().UTC(),
+		MetricID:        q.MetricID,
+		Query:           q,
+		Data:            frame,
+		Quality:         quality,
+		QualityNotes:    notes,
+		QualityContract: qc,
+		Lineage:         lineage,
+		ComputedAt:      time.Now().UTC(),
 	}, nil
+}
+
+// buildLineage constructs a LineageContract from the metric definition and query.
+// SourceIDs are populated from filters when available; otherwise left empty with a note.
+func buildLineage(def *domain.MetricDefinition, q domain.MetricQuery) domain.LineageContract {
+	formulaID := def.FormulaID
+	if formulaID == "" {
+		formulaID = fmt.Sprintf("formula:%s:v1", def.ID)
+	}
+	var sourceIDs []string
+	if sid, ok := q.Filters["source_connection_id"]; ok && sid != "" {
+		sourceIDs = []string{sid}
+	}
+	// TODO Phase 3: query contributing source_connection_ids from the DB for the
+	// metric + time range when no explicit source filter is provided.
+	return domain.LineageContract{
+		MetricID:             def.ID,
+		FormulaID:            formulaID,
+		FormulaVersion:       1,
+		SourceIDs:            sourceIDs,
+		NormalizedEventTypes: []string{def.EventBasis},
+	}
+}
+
+// buildQualityContract converts quality level and notes into a DataQualityContract.
+func buildQualityContract(level domain.DataQualityLevel, notes []string, rows []domain.MetricRow) domain.DataQualityContract {
+	qc := domain.DataQualityContract{
+		Level: level,
+		Notes: notes,
+	}
+
+	// Compute coverage: fraction of rows that have a non-nil value.
+	if len(rows) > 0 {
+		nonNull := 0
+		var earliest, latest *time.Time
+		for i := range rows {
+			if rows[i].Value != nil {
+				nonNull++
+			}
+			t := rows[i].BucketStart
+			if !t.IsZero() {
+				if earliest == nil || t.Before(*earliest) {
+					tc := t
+					earliest = &tc
+				}
+				if latest == nil || t.After(*latest) {
+					tc := t
+					latest = &tc
+				}
+			}
+		}
+		qc.CoveragePercent = float64(nonNull) / float64(len(rows)) * 100.0
+		qc.EarliestDataAt = earliest
+		qc.LatestDataAt = latest
+	}
+	// Empty result: coverage = 0, timestamps nil.
+
+	return qc
 }
 
 // dispatchQuery routes to the appropriate repo method based on metric ID.

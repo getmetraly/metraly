@@ -89,6 +89,11 @@ type MetricQueryResult struct {
 	Quality     DataQualityLevel `json:"quality"`
 	// QualityNotes describes gaps, partial data, or caveats.
 	QualityNotes []string        `json:"qualityNotes,omitempty"`
+	// QualityContract is the structured quality metadata; supersedes Quality + QualityNotes.
+	// Both forms are populated for backward compatibility.
+	QualityContract DataQualityContract `json:"qualityContract"`
+	// Lineage describes how this result was derived.
+	Lineage LineageContract `json:"lineage"`
 	// ComputedAt is when the result was computed (for cache staleness).
 	ComputedAt  time.Time        `json:"computedAt"`
 }

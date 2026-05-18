@@ -97,11 +97,16 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.Execute(r.Context(), q)
 	if err != nil {
-		if errors.Is(err, biz.ErrMetricNotFound) {
+		switch {
+		case errors.Is(err, biz.ErrMetricNotFound):
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", err.Error())
-			return
+		case errors.Is(err, biz.ErrUnsupportedGroupBy):
+			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_GROUP_BY", err.Error())
+		case errors.Is(err, biz.ErrUnsupportedFilter):
+			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
+		default:
+			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
 		}
-		respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
 		return
 	}
 

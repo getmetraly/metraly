@@ -70,6 +70,7 @@ type RouterDeps struct {
 	MetricCatalog    *biz.MetricCatalog
 	FormulaValidator *biz.FormulaValidator
 	MetricQuerySvc   *biz.MetricQuerySvc
+	ActivityFeedSvc  *biz.ActivityFeedSvc
 	ActivityRepo    repo.ActivityRepo
 	InsightRepo     repo.AIInsightRepo
 }
@@ -147,8 +148,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			if deps.MetricQuerySvc != nil {
 				queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
 				r.Post("/api/v1/metrics/query", queryHandler.Query)
-				widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc)
-				r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
+			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc).WithActivityFeed(deps.ActivityFeedSvc)
+			r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
 			}
 		})
 	} else if deps.DashboardSvc != nil {
@@ -183,7 +184,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 		if deps.MetricQuerySvc != nil {
 			queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
 			r.Post("/api/v1/metrics/query", queryHandler.Query)
-			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc)
+			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc).WithActivityFeed(deps.ActivityFeedSvc)
 			r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
 		}
 	} else {
@@ -304,6 +305,7 @@ func main() {
 		MetricCatalog:    deps.metricCatalog,
 		FormulaValidator: deps.formulaValidator,
 		MetricQuerySvc:   deps.metricQuerySvc,
+		ActivityFeedSvc:  deps.activityFeedSvc,
 		ActivityRepo:     deps.activityRepo,
 		InsightRepo:      deps.insightRepo,
 	})

@@ -17,10 +17,11 @@ import (
 )
 
 // WidgetDataHandler serves POST /api/v1/metrics/widget-data.
-// It accepts a metricWidgetSpec, executes the underlying metric query, and
-// adapts the MetricQueryResult into the requested widget shape.
+// It accepts a metricWidgetSpec, executes the underlying metric query or activity feed
+// query, and adapts the result into the requested widget shape.
 type WidgetDataHandler struct {
-	svc MetricQueryExecutor
+	svc         MetricQueryExecutor
+	activitySvc biz.ActivityFeedExecutor // optional; enables activity_feed widget type
 }
 
 // NewWidgetDataHandler creates a WidgetDataHandler.
@@ -28,10 +29,16 @@ func NewWidgetDataHandler(svc MetricQueryExecutor) *WidgetDataHandler {
 	return &WidgetDataHandler{svc: svc}
 }
 
+// WithActivityFeed attaches an ActivityFeedExecutor to support the activity_feed widget type.
+func (h *WidgetDataHandler) WithActivityFeed(svc biz.ActivityFeedExecutor) *WidgetDataHandler {
+	h.activitySvc = svc
+	return h
+}
+
 // metricWidgetRequest is the body for POST /api/v1/metrics/widget-data.
 type metricWidgetRequest struct {
-	WidgetType string              `json:"widgetType"` // kpi_card | line_chart | bar_chart | table
-	Query      metricWidgetQuery   `json:"query"`
+	WidgetType string            `json:"widgetType"` // kpi_card | line_chart | bar_chart | table | activity_feed
+	Query      metricWidgetQuery `json:"query"`
 }
 
 // metricWidgetQuery carries the metric execution parameters.
@@ -43,6 +50,7 @@ type metricWidgetQuery struct {
 	End         string            `json:"end"`   // RFC3339
 	Filters     map[string]string `json:"filters,omitempty"`
 	GroupBy     []string          `json:"groupBy,omitempty"`
+	Limit       int               `json:"limit,omitempty"` // used by activity_feed
 }
 
 // metricWidgetResponse wraps a MetricQueryResult with the adapted widget payload.
@@ -61,14 +69,19 @@ type kpiCardData struct {
 
 // timeSeriesData is the shape for line_chart and bar_chart.
 type timeSeriesData struct {
-	Labels []string    `json:"labels"` // ISO-8601 bucket timestamps
-	Series []*float64  `json:"series"` // primary metric values; nil where data is absent
+	Labels []string   `json:"labels"` // ISO-8601 bucket timestamps
+	Series []*float64 `json:"series"` // primary metric values; nil where data is absent
 }
 
 // tableWidgetData is the data shape for widgetType=table.
 type tableWidgetData struct {
 	Columns []string `json:"columns"`
 	Rows    [][]any  `json:"rows"`
+}
+
+// activityFeedWidgetData is the data shape for widgetType=activity_feed.
+type activityFeedWidgetData struct {
+	Items []domain.ActivityFeedItem `json:"items"`
 }
 
 // Query handles POST /api/v1/metrics/widget-data.
@@ -82,6 +95,13 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "MISSING_WIDGET_TYPE", "widgetType is required")
 		return
 	}
+
+	// activity_feed is handled separately and does not require a metricId.
+	if req.WidgetType == "activity_feed" {
+		h.handleActivityFeed(w, r, req)
+		return
+	}
+
 	// Validate widgetType before executing the query so unsupported types are
 	// rejected without a wasted DB round-trip.
 	switch req.WidgetType {
@@ -89,7 +109,7 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		// valid
 	default:
 		respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_WIDGET_TYPE",
-			fmt.Sprintf("unsupported widgetType %q; supported: kpi_card, line_chart, bar_chart, table", req.WidgetType))
+			fmt.Sprintf("unsupported widgetType %q; supported: kpi_card, line_chart, bar_chart, table, activity_feed", req.WidgetType))
 		return
 	}
 	if req.Query.MetricID == "" {
@@ -134,11 +154,16 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.Execute(r.Context(), q)
 	if err != nil {
-		if errors.Is(err, biz.ErrMetricNotFound) {
+		switch {
+		case errors.Is(err, biz.ErrMetricNotFound):
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", err.Error())
-			return
+		case errors.Is(err, biz.ErrUnsupportedGroupBy):
+			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_GROUP_BY", err.Error())
+		case errors.Is(err, biz.ErrUnsupportedFilter):
+			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
+		default:
+			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
 		}
-		respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
 		return
 	}
 
@@ -154,6 +179,55 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		Quality:      result.Quality,
 		QualityNotes: result.QualityNotes,
 		Data:         data,
+	})
+}
+
+// handleActivityFeed processes the activity_feed widget type.
+func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Request, req metricWidgetRequest) {
+	if h.activitySvc == nil {
+		respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_WIDGET_TYPE",
+			"activity_feed widget type is not enabled in this deployment")
+		return
+	}
+
+	start, err := time.Parse(time.RFC3339, req.Query.Start)
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "INVALID_START", "start must be RFC3339: "+err.Error())
+		return
+	}
+	end, err := time.Parse(time.RFC3339, req.Query.End)
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "INVALID_END", "end must be RFC3339: "+err.Error())
+		return
+	}
+	if !end.After(start) {
+		respond.Error(w, http.StatusBadRequest, "INVALID_TIME_RANGE", "end must be after start")
+		return
+	}
+
+	q := domain.ActivityFeedQuery{
+		WorkspaceID: req.Query.WorkspaceID,
+		Start:       start,
+		End:         end,
+		Filters:     req.Query.Filters,
+		Limit:       req.Query.Limit,
+	}
+
+	feedResult, err := h.activitySvc.Execute(r.Context(), q)
+	if err != nil {
+		if errors.Is(err, biz.ErrUnsupportedFilter) {
+			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
+			return
+		}
+		respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
+		return
+	}
+
+	respond.JSON(w, http.StatusOK, metricWidgetResponse{
+		WidgetType:   "activity_feed",
+		Quality:      feedResult.Quality,
+		QualityNotes: feedResult.QualityNotes,
+		Data:         activityFeedWidgetData{Items: feedResult.Items},
 	})
 }
 

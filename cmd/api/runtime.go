@@ -56,6 +56,7 @@ type runtimeDeps struct {
 	metricCatalog *biz.MetricCatalog
 	formulaValidator *biz.FormulaValidator
 	metricQuerySvc   *biz.MetricQuerySvc
+	activityFeedSvc  *biz.ActivityFeedSvc
 	cleanup      func()
 }
 
@@ -161,9 +162,13 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	deps.normalizerSvc = biz.NewNormalizerSvc(eventRepo)
 	deps.normalizerSvc.WithIdentityResolver(&identityResolverAdapter{repo: eventRepo})
 	deps.collectorSvc.WithNormalizer(deps.normalizerSvc)
+	// Register concrete collectors — each handles its own source type.
+	deps.collectorSvc.RegisterCollector(biz.NewGitHubCollector(nil))
+	deps.collectorSvc.RegisterCollector(biz.NewGitHubActionsCollector(nil))
 	deps.metricCatalog = biz.NewMetricCatalog()
 	deps.formulaValidator = biz.NewFormulaValidator(deps.metricCatalog)
 	deps.metricQuerySvc = biz.NewMetricQuerySvc(repo.NewMetricQueryRepo(pool), deps.metricCatalog)
+	deps.activityFeedSvc = biz.NewActivityFeedSvc(eventRepo)
 
 	if tokenStore != nil {
 		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)
