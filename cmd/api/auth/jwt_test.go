@@ -13,7 +13,7 @@ import (
 )
 
 func TestJWTRoundTrip(t *testing.T) {
-	km, err := NewKeyManager("")
+	km, err := NewKeyManager("", true)
 	require.NoError(t, err)
 
 	claims := Claims{
@@ -34,7 +34,7 @@ func TestJWTRoundTrip(t *testing.T) {
 }
 
 func TestJWT_InvalidToken(t *testing.T) {
-	km, err := NewKeyManager("")
+	km, err := NewKeyManager("", true)
 	require.NoError(t, err)
 
 	_, err = km.Validate("invalid-token")
@@ -42,7 +42,7 @@ func TestJWT_InvalidToken(t *testing.T) {
 }
 
 func TestJWT_ExpiredToken(t *testing.T) {
-	km, err := NewKeyManager("")
+	km, err := NewKeyManager("", true)
 	require.NoError(t, err)
 
 	claims := Claims{

@@ -151,7 +151,7 @@ func TestSourceSvc_TestConnection_UnsupportedSource_ReturnsCategory(t *testing.T
 	})
 	require.NoError(t, err)
 
-	result, err := svc.TestConnection(context.Background(), sc.ID)
+	result, err := svc.TestConnection(context.Background(), "ws_01", sc.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, domain.TestResultUnsupportedSource, result.Status)
 }

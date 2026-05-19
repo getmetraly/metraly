@@ -214,23 +214,39 @@ func (r *EventRepo) queryNormalizedEvents(ctx context.Context, q string, args ..
 // Workspace isolation is enforced via a subquery on source_connections.
 // Free-form text fields are never stored in normalized_events, so this query
 // cannot leak PR titles, commit messages, or issue summaries.
+//
+// WorkspaceID is REQUIRED; an empty value returns an error immediately —
+// no unscoped cross-tenant reads are possible by construction.
 func (r *EventRepo) QueryActivityFeed(ctx context.Context, q domain.ActivityFeedQuery) ([]domain.ActivityFeedItem, error) {
-	args := []any{q.Start, q.End, q.Limit}
-	clauses := []string{}
-
-	if q.WorkspaceID != "" {
-		args = append(args, q.WorkspaceID)
-		clauses = append(clauses, fmt.Sprintf(
-			"AND ne.source_connection_id IN (SELECT id FROM source_connections WHERE workspace_id = $%d)", len(args)))
+	if q.WorkspaceID == "" {
+		return nil, fmt.Errorf("QueryActivityFeed: WorkspaceID is required")
 	}
+
+	// P1-14: static column map prevents SQL injection via caller-supplied filter keys.
+	// Only columns in this map can appear in generated SQL; unknown keys are rejected.
+	var filterColSQL = map[string]string{
+		"source_connection_id": "AND ne.source_connection_id = $%d",
+		"repository_id":        "AND ne.repository_id = $%d",
+		"team_id":              "AND ne.team_id = $%d",
+		"author_id":            "AND ne.author_id = $%d",
+		"reviewer_id":          "AND ne.reviewer_id = $%d",
+	}
+
+	// Workspace filter is unconditional after the guard above.
+	args := []any{q.Start, q.End, q.Limit, q.WorkspaceID}
+	clauses := []string{
+		fmt.Sprintf(
+			"AND ne.source_connection_id IN (SELECT id FROM source_connections WHERE workspace_id = $%d)", len(args)),
+	}
+
 	for col, val := range q.Filters {
-		// Only allowed columns reach this point (validated in biz layer),
-		// but guard here as defence-in-depth.
-		switch col {
-		case "source_connection_id", "repository_id", "team_id", "author_id", "reviewer_id":
-			args = append(args, val)
-			clauses = append(clauses, fmt.Sprintf("AND ne.%s = $%d", col, len(args)))
+		tpl, ok := filterColSQL[col]
+		if !ok {
+			// Unknown key rejected — biz layer should have caught this already.
+			return nil, fmt.Errorf("QueryActivityFeed: unknown filter key %q", col)
 		}
+		args = append(args, val)
+		clauses = append(clauses, fmt.Sprintf(tpl, len(args)))
 	}
 
 	sql := fmt.Sprintf(`

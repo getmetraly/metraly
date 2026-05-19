@@ -15,7 +15,7 @@ import (
 )
 
 func TestRequireAuth_MissingToken(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	handler := RequireAuth(km)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -28,7 +28,7 @@ func TestRequireAuth_MissingToken(t *testing.T) {
 }
 
 func TestRequireAuth_InvalidToken(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	handler := RequireAuth(km)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -42,7 +42,7 @@ func TestRequireAuth_InvalidToken(t *testing.T) {
 }
 
 func TestRequireAuth_ValidToken(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	claims := auth.Claims{Sub: "user1", Email: "test@example.com", Role: "viewer"}
 	token, _ := km.Sign(claims, time.Minute*15)
 
@@ -63,7 +63,7 @@ func TestRequireAuth_ValidToken(t *testing.T) {
 }
 
 func TestRequireRole_Allowed(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	claims := auth.Claims{Sub: "user1", Email: "admin@example.com", Role: "admin"}
 	token, _ := km.Sign(claims, time.Minute*15)
 
@@ -80,7 +80,7 @@ func TestRequireRole_Allowed(t *testing.T) {
 }
 
 func TestRequireRole_Forbidden(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	claims := auth.Claims{Sub: "user1", Email: "viewer@example.com", Role: "viewer"}
 	token, _ := km.Sign(claims, time.Minute*15)
 

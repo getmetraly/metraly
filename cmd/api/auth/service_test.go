@@ -86,7 +86,7 @@ func (m *mockOIDCProvider) VerifyIDToken(ctx context.Context, rawIDToken string)
 
 func TestLogin_Success(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
@@ -99,7 +99,7 @@ func TestLogin_Success(t *testing.T) {
 	}, nil)
 	tokenStore.On("Issue", ctx, "user-123").Return("refresh-token-123", nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	pair, err := svc.Login(ctx, "test@example.com", "password123")
 
@@ -114,7 +114,7 @@ func TestLogin_Success(t *testing.T) {
 
 func TestLogin_WrongPassword(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
@@ -123,7 +123,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 
 	userRepo.On("GetPasswordHash", ctx, "test@example.com").Return("user-123", hashedPassword, nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	_, err := svc.Login(ctx, "test@example.com", "wrong-password")
 
@@ -133,14 +133,14 @@ func TestLogin_WrongPassword(t *testing.T) {
 
 func TestLogin_UserNotFound(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
 
 	userRepo.On("GetPasswordHash", ctx, "nonexistent@example.com").Return("", "", errors.New("not found"))
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	_, err := svc.Login(ctx, "nonexistent@example.com", "password")
 
@@ -150,7 +150,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 
 func TestRefresh_Success(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
@@ -160,7 +160,7 @@ func TestRefresh_Success(t *testing.T) {
 	}, nil)
 	tokenStore.On("Consume", ctx, "valid-refresh-token").Return("user-123", nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	accessToken, expiresIn, err := svc.Refresh(ctx, "valid-refresh-token")
 
@@ -173,14 +173,14 @@ func TestRefresh_Success(t *testing.T) {
 
 func TestRefresh_InvalidToken(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
 
 	tokenStore.On("Consume", ctx, "invalid-token").Return("", redis.Nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	_, _, err := svc.Refresh(ctx, "invalid-token")
 
@@ -190,14 +190,14 @@ func TestRefresh_InvalidToken(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
 
 	tokenStore.On("Consume", ctx, "refresh-token-123").Return("", nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	err := svc.Logout(ctx, "refresh-token-123")
 
@@ -207,7 +207,7 @@ func TestLogout(t *testing.T) {
 
 func TestLoginOIDC_Flow_ExistingUser(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
@@ -217,7 +217,7 @@ func TestLoginOIDC_Flow_ExistingUser(t *testing.T) {
 	}, nil)
 	tokenStore.On("Issue", ctx, "user-456").Return("refresh-token-456", nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	pair, err := svc.LoginOIDC(ctx, "oidc@example.com")
 
@@ -230,7 +230,7 @@ func TestLoginOIDC_Flow_ExistingUser(t *testing.T) {
 
 func TestLoginOIDC_Flow_NewUser(t *testing.T) {
 	ctx := context.Background()
-	km, _ := NewKeyManager("")
+	km, _ := NewKeyManager("", true)
 	userRepo := new(mockUserRepo)
 	tokenStore := new(mockTokenStore)
 	oidc := new(mockOIDCProvider)
@@ -239,7 +239,7 @@ func TestLoginOIDC_Flow_NewUser(t *testing.T) {
 	userRepo.On("Create", ctx, mock.AnythingOfType("*domain.User"), "").Return(nil)
 	tokenStore.On("Issue", ctx, mock.AnythingOfType("string")).Return("refresh-token-789", nil)
 
-	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc)
+	svc := NewService(km, tokenStore, userRepo, time.Hour, oidc, "ws-test")
 
 	pair, err := svc.LoginOIDC(ctx, "new@example.com")
 

@@ -136,22 +136,24 @@ func buildQualityContract(level domain.DataQualityLevel, notes []string, rows []
 	}
 
 	// Compute coverage: fraction of rows that have a non-nil value.
+	// P1-12: EarliestDataAt and LatestDataAt only include buckets with a non-nil value.
+	// Null-value buckets represent time ranges with no data and must not extend the apparent coverage window.
 	if len(rows) > 0 {
 		nonNull := 0
 		var earliest, latest *time.Time
 		for i := range rows {
 			if rows[i].Value != nil {
 				nonNull++
-			}
-			t := rows[i].BucketStart
-			if !t.IsZero() {
-				if earliest == nil || t.Before(*earliest) {
-					tc := t
-					earliest = &tc
-				}
-				if latest == nil || t.After(*latest) {
-					tc := t
-					latest = &tc
+				t := rows[i].BucketStart
+				if !t.IsZero() {
+					if earliest == nil || t.Before(*earliest) {
+						tc := t
+						earliest = &tc
+					}
+					if latest == nil || t.After(*latest) {
+						tc := t
+						latest = &tc
+					}
 				}
 			}
 		}

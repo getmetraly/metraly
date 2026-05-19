@@ -499,7 +499,7 @@ func TestGitHubActionsCollector_ConclusionMapping(t *testing.T) {
 		{"cancelled", "cancelled"},
 		{"timed_out", "failure"}, // mapped to failure by normalizeConclusion
 		{"action_required", "failure"},
-		{"neutral", "failure"},
+		{"neutral", "unknown"}, // P1-9: neutral is informational, not a failure
 		{"skipped", "unknown"},
 	}
 

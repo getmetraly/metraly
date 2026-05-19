@@ -1,4 +1,10 @@
-CREATE TYPE activity_type AS ENUM ('deploy', 'alert', 'review', 'merge');
+-- P1-19: Wrap CREATE TYPE in an idempotent DO block so re-runs after a partial
+-- failure do not error with "type already exists".
+DO $$ BEGIN
+    CREATE TYPE activity_type AS ENUM ('deploy', 'alert', 'review', 'merge');
+EXCEPTION WHEN duplicate_object THEN
+    NULL; -- type already exists; no action needed
+END $$;
 
 CREATE TABLE IF NOT EXISTS activity_events (
     id          TEXT PRIMARY KEY,

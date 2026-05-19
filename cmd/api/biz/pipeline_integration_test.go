@@ -157,7 +157,7 @@ func TestPipeline_CollectThenQuery_PRCount(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_pipe_01", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_pipe_01", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
 	assert.Equal(t, int64(1), run.RawEventCount, "exactly 1 raw event inserted")
@@ -232,7 +232,7 @@ func TestPipeline_DuplicateRawEvents_DoNotInflateCount(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_dup_pipe", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_dup_pipe", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), run.RawEventCount, "duplicate raw event must not be counted twice")
 
@@ -308,7 +308,7 @@ func TestPipeline_BuildFailureRate_ActionsCollector(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_wf_pipe", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_wf_pipe", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), run.RawEventCount)
 	// 2 normalized events (one per completed run).

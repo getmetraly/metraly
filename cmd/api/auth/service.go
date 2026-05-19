@@ -26,15 +26,19 @@ type TokenPair struct {
 }
 
 type Service struct {
-	km        *KeyManager
-	store     TokenStore
-	users     repo.UserRepo
-	accessTTL time.Duration
-	oidc      OIDCProvider
+	km               *KeyManager
+	store            TokenStore
+	users            repo.UserRepo
+	accessTTL        time.Duration
+	oidc             OIDCProvider
+	defaultWorkspace string
 }
 
-func NewService(km *KeyManager, store TokenStore, users repo.UserRepo, accessTTL time.Duration, oidc OIDCProvider) *Service {
-	return &Service{km: km, store: store, users: users, accessTTL: accessTTL, oidc: oidc}
+// NewService creates an auth Service.
+// defaultWorkspace is embedded in every issued access token.
+// For the MVP all users belong to one workspace; future phases will look it up from the user record.
+func NewService(km *KeyManager, store TokenStore, users repo.UserRepo, accessTTL time.Duration, oidc OIDCProvider, defaultWorkspace string) *Service {
+	return &Service{km: km, store: store, users: users, accessTTL: accessTTL, oidc: oidc, defaultWorkspace: defaultWorkspace}
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (*TokenPair, error) {
@@ -75,7 +79,7 @@ func (s *Service) Refresh(ctx context.Context, rawToken string) (string, int, er
 	if err != nil {
 		return "", 0, biz.ErrUnauthorized
 	}
-	access, err := s.km.Sign(Claims{Sub: user.ID, Email: user.Email, Role: user.Role}, s.accessTTL)
+	access, err := s.km.Sign(Claims{Sub: user.ID, Email: user.Email, Role: user.Role, Workspace: s.defaultWorkspace}, s.accessTTL)
 	if err != nil {
 		return "", 0, fmt.Errorf("sign: %w", err)
 	}
@@ -91,7 +95,7 @@ func (s *Service) Logout(ctx context.Context, rawToken string) error {
 }
 
 func (s *Service) issuePair(ctx context.Context, user *domain.User) (*TokenPair, error) {
-	access, err := s.km.Sign(Claims{Sub: user.ID, Email: user.Email, Role: user.Role}, s.accessTTL)
+	access, err := s.km.Sign(Claims{Sub: user.ID, Email: user.Email, Role: user.Role, Workspace: s.defaultWorkspace}, s.accessTTL)
 	if err != nil {
 		return nil, fmt.Errorf("sign: %w", err)
 	}

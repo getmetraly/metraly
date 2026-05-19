@@ -299,6 +299,10 @@ func (c *GitHubCollector) listRepos(ctx context.Context, org, secret string) ([]
 
 // listPRs fetches PRs for the given repo updated since the cursor (paginated).
 // Returns (nil, retryAfter, nil) on rate-limit detection.
+//
+// The GitHub Pulls API does not support a "since" query parameter (unlike Issues API).
+// To implement incremental sync we use sort=updated&direction=desc and stop pagination
+// locally when UpdatedAt < cursor. This avoids relying on an unsupported parameter.
 func (c *GitHubCollector) listPRs(
 	ctx context.Context,
 	org, repo, secret string,
@@ -306,14 +310,13 @@ func (c *GitHubCollector) listPRs(
 ) ([]ghPR, *time.Time, error) {
 	var prs []ghPR
 	for page := 1; page <= githubMaxPRPages; page++ {
+		// Note: no &since= param — it is not supported on the /pulls endpoint.
+		// Incremental filtering is done locally below via UpdatedAt comparison.
 		u := fmt.Sprintf("%s/repos/%s/%s/pulls?state=all&sort=updated&direction=desc&per_page=%d&page=%d",
 			githubAPIBase,
 			url.PathEscape(org),
 			url.PathEscape(repo),
 			githubPerPage, page)
-		if since != nil {
-			u += "&since=" + url.QueryEscape(since.UTC().Format(time.RFC3339))
-		}
 		body, resp, err := c.doRequest(ctx, secret, u)
 		if err != nil {
 			return nil, nil, err
@@ -337,7 +340,8 @@ func (c *GitHubCollector) listPRs(
 		}
 		prs = append(prs, page_prs...)
 
-		// If a since cursor is provided, stop when we see PRs updated before it.
+		// Local stop condition: when all PRs on this page were updated before the cursor,
+		// earlier pages will only have older PRs — stop pagination.
 		if since != nil && len(page_prs) > 0 {
 			last := page_prs[len(page_prs)-1]
 			if lastUpdated := parseGHTime(last.UpdatedAt); !lastUpdated.IsZero() && lastUpdated.Before(*since) {
@@ -381,17 +385,31 @@ func (c *GitHubCollector) doRequest(ctx context.Context, secret, rawURL string) 
 	if err != nil {
 		return nil, resp, fmt.Errorf("github read response: %w", err)
 	}
+	// P2-12: detect 4 MB body truncation so callers receive a descriptive error
+	// rather than an opaque JSON decode failure.
+	if int64(len(body)) == githubBodyLimit {
+		return nil, resp, fmt.Errorf("github response body truncated at %d bytes — response too large to process", githubBodyLimit)
+	}
 	return body, resp, nil
 }
 
 // detectRateLimit inspects a GitHub API response for rate-limit signals.
 // Returns a non-nil retryAfter time when the client must back off.
+//
+// P1-7: Secondary rate-limit 403s carry a Retry-After header but no X-RateLimit-Remaining=0.
+// These are now detected before the generic permission-error handler.
 func detectRateLimit(resp *http.Response) *time.Time {
 	if resp.StatusCode == http.StatusTooManyRequests {
 		t := parseRetryAfter(resp)
 		return &t
 	}
-	// GitHub rate-limited 403: X-RateLimit-Remaining = 0
+	// P1-7: GitHub secondary rate-limit 403: has Retry-After but no X-RateLimit-Remaining=0.
+	// Must be checked before the generic 403 → permission error path.
+	if resp.StatusCode == http.StatusForbidden && resp.Header.Get("Retry-After") != "" {
+		t := parseRetryAfter(resp)
+		return &t
+	}
+	// GitHub primary rate-limit 403: X-RateLimit-Remaining = 0.
 	if resp.StatusCode == http.StatusForbidden &&
 		resp.Header.Get("X-RateLimit-Remaining") == "0" {
 		t := parseRateLimitReset(resp)
@@ -405,10 +423,29 @@ func detectRateLimit(resp *http.Response) *time.Time {
 	return nil
 }
 
+// parseRetryAfter parses the Retry-After header (integer seconds or HTTP-date).
+// P2-11: caps the delay at maxRetryAfterSeconds (1 hour) and handles RFC 7231 HTTP-date.
+const maxRetryAfterSeconds = 3600 // 1 hour cap
+
 func parseRetryAfter(resp *http.Response) time.Time {
 	if h := resp.Header.Get("Retry-After"); h != "" {
+		// Integer seconds form.
 		if secs, err := strconv.Atoi(h); err == nil {
+			if secs > maxRetryAfterSeconds {
+				secs = maxRetryAfterSeconds
+			}
 			return time.Now().UTC().Add(time.Duration(secs) * time.Second)
+		}
+		// HTTP-date form (RFC 7231 §7.1.3).
+		if t, err := http.ParseTime(h); err == nil {
+			delay := time.Until(t)
+			if delay > maxRetryAfterSeconds*time.Second {
+				delay = maxRetryAfterSeconds * time.Second
+			}
+			if delay < 0 {
+				delay = 0
+			}
+			return time.Now().UTC().Add(delay)
 		}
 	}
 	return time.Now().UTC().Add(60 * time.Second)

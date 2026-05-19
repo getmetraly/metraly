@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -61,9 +62,20 @@ type runtimeDeps struct {
 }
 
 func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error) {
-	keyManager, err := auth.NewKeyManager(cfg.JWTPrivateKey)
+	// P2-18: In production, refuse to start with an ephemeral JWT key.
+	// In dev/test, allow ephemeral key with a loud warning.
+	allowEphemeralKey := !cfg.IsProduction()
+	keyManager, err := auth.NewKeyManager(cfg.JWTPrivateKey, allowEphemeralKey)
 	if err != nil {
 		return nil, fmt.Errorf("init jwt key manager: %w", err)
+	}
+
+	// P2-19: In production, refuse to start if neither secret key is set.
+	// A static literal fallback ("source-key-v1") would make all credentials
+	// decryptable by anyone who can read the source code.
+	sourceSecretKey, err := deriveSourceKey(cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	pool, err := newPostgresPool(ctx, cfg.PostgresDSN)
@@ -114,7 +126,9 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	templateCache := cache.NewNoopTemplateCache()
 	var tokenStore auth.TokenStore
 
+	// P2-26: use defer cancel() immediately after WithTimeout.
 	redisCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
 	if err := pingRedis(redisCtx, rdb); err != nil {
 		log.Printf("redis unavailable; using degraded cache mode: %v", err)
 		if rdb != nil {
@@ -127,7 +141,6 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		templateCache = cache.NewTemplateCache(rdb, time.Duration(cfg.TemplatesCacheTTL)*time.Second)
 		tokenStore = auth.NewTokenStore(rdb, refreshTTL)
 	}
-	cancel()
 
 	deps := &runtimeDeps{
 		cfg:          cfg,
@@ -142,10 +155,6 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		insightRepo:  insightRepo,
 	}
 
-	sourceSecretKey := biz.DeriveKey(cfg.SourceSecretKey)
-	if len(cfg.SourceSecretKey) == 0 {
-		sourceSecretKey = biz.DeriveKey(cfg.JWTPrivateKey + "source-key-v1")
-	}
 	sourceRepo := repo.NewSourceRepo(pool)
 	deps.sourceRepo = sourceRepo
 	deps.sourceSvc, err = biz.NewSourceSvc(sourceRepo, sourceSecretKey, biz.DefaultRegistry())
@@ -171,7 +180,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	deps.activityFeedSvc = biz.NewActivityFeedSvc(eventRepo)
 
 	if tokenStore != nil {
-		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil)
+		deps.authSvc = auth.NewService(keyManager, tokenStore, userRepo, accessTTL, nil, cfg.DefaultWorkspaceID)
 	}
 
 	deps.cleanup = func() {
@@ -192,6 +201,33 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	}
 
 	return deps, nil
+}
+
+// deriveSourceKey determines the AES-256 key for credential encryption.
+//
+// Priority:
+//  1. SOURCE_SECRET_KEY env var (preferred: externally managed, not derived)
+//  2. JWT_PRIVATE_KEY + suffix (dev fallback: key changes if JWT key rotates)
+//  3. Error in production mode (prevents codebase-known static literal)
+//
+// In development/test, the fallback is allowed with a warning.
+// In production (APP_ENV=production), both keys must be explicitly set.
+func deriveSourceKey(cfg config.AppConfig) ([]byte, error) {
+	if cfg.SourceSecretKey != "" {
+		return biz.DeriveKey(cfg.SourceSecretKey), nil
+	}
+	if cfg.JWTPrivateKey != "" {
+		slog.Warn("SOURCE_SECRET_KEY not set; deriving from JWT_PRIVATE_KEY — set SOURCE_SECRET_KEY explicitly in production")
+		return biz.DeriveKey(cfg.JWTPrivateKey + ":source-key-v1"), nil
+	}
+	if cfg.IsProduction() {
+		return nil, fmt.Errorf(
+			"SOURCE_SECRET_KEY (or JWT_PRIVATE_KEY as fallback) must be set in production (APP_ENV=production); " +
+				"refusing to use a static literal key that would make all credentials readable from source code")
+	}
+	// Development/test only: use a predictable but non-empty key.
+	slog.Warn("SOURCE_SECRET_KEY and JWT_PRIVATE_KEY are both unset; using dev-only derived key — NOT for production")
+	return biz.DeriveKey("dev-only-source-key-do-not-use-in-production"), nil
 }
 
 func (d *runtimeDeps) Close() {
@@ -234,12 +270,7 @@ func (a *identityResolverAdapter) ResolveIdentity(ctx context.Context, workspace
 }
 
 func (a *identityResolverAdapter) UpsertUnresolved(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID, externalLogin string) error {
-	// Use UpsertUnresolvedIdentityMapping rather than UpsertIdentityMapping: the
-	// conditional DO UPDATE ensures we never overwrite a mapping that was already
-	// resolved by an operator (status='mapped', 'ignored', 'conflict').
 	return a.repo.UpsertUnresolvedIdentityMapping(ctx, &repo.IdentityMapping{
-		// Include workspaceID in the PK to avoid collisions across workspaces when
-		// two tenants share the same (sourceType, externalID) pair.
 		ID:            "idm_" + workspaceID + "_" + string(sourceType) + "_" + externalID,
 		WorkspaceID:   workspaceID,
 		SourceType:    sourceType,

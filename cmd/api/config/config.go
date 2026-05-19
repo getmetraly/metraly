@@ -7,6 +7,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type AppConfig struct {
@@ -29,6 +30,21 @@ type AppConfig struct {
 	MetricsCacheTTL    int
 	DashboardsCacheTTL int
 	TemplatesCacheTTL  int
+
+	// CORSAllowedOrigins is a comma-separated list of allowed origins.
+	// Empty means no cross-origin requests are allowed (safe default for production).
+	// Example: "https://metraly.io,https://app.metraly.io,http://localhost:3000"
+	CORSAllowedOrigins []string
+
+	// DefaultWorkspaceID is the workspace assigned to all users at token-mint time.
+	// For the MVP all users share one workspace; a future phase will add a workspace table.
+	// Must be set in production; defaults to "ws-default" for dev convenience.
+	DefaultWorkspaceID string
+
+	// AppEnv controls environment-specific behaviours.
+	// Allowed values: "production" | "development" | "test"
+	// Affects: ephemeral key allowance, startup-fail behaviour on missing secrets.
+	AppEnv string
 }
 
 func getEnv(key, def string) string {
@@ -47,7 +63,19 @@ func getEnvInt(key string, def int) int {
 	return def
 }
 
+// IsProduction returns true when AppEnv is "production".
+func (c AppConfig) IsProduction() bool { return c.AppEnv == "production" }
+
 func Load() AppConfig {
+	rawOrigins := getEnv("CORS_ALLOWED_ORIGINS", "")
+	var origins []string
+	for _, o := range strings.Split(rawOrigins, ",") {
+		o = strings.TrimSpace(o)
+		if o != "" {
+			origins = append(origins, o)
+		}
+	}
+
 	return AppConfig{
 		Port:               getEnv("PORT", "8000"),
 		PostgresDSN:        getEnv("POSTGRES_DSN", "postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable"),
@@ -68,5 +96,8 @@ func Load() AppConfig {
 		MetricsCacheTTL:    getEnvInt("METRICS_CACHE_TTL", 300),
 		DashboardsCacheTTL: getEnvInt("DASHBOARDS_CACHE_TTL", 30),
 		TemplatesCacheTTL:  getEnvInt("TEMPLATES_CACHE_TTL", 3600),
+		CORSAllowedOrigins: origins,
+		DefaultWorkspaceID: getEnv("DEFAULT_WORKSPACE_ID", "ws-default"),
+		AppEnv:             getEnv("APP_ENV", "development"),
 	}
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
+	"github.com/getmetraly/metraly/cmd/api/repo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,6 +57,16 @@ func (f *fakeCollectorRunRepo) ListCollectorRuns(_ context.Context, sourceConnec
 		}
 	}
 	return result, nil
+}
+
+func (f *fakeCollectorRunRepo) GetActiveRunForSource(_ context.Context, sourceConnectionID string) (string, error) {
+	for _, r := range f.runs {
+		if r.SourceConnectionID == sourceConnectionID &&
+			(r.Status == domain.CollectorRunStatusStarted || r.Status == domain.CollectorRunStatusRunning) {
+			return r.ID, nil
+		}
+	}
+	return "", repo.ErrNotFound
 }
 
 type fakeRawEventRepo struct {
@@ -152,7 +163,7 @@ func TestCollectorSvc_Run_HappyPath(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_01", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_01", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
 	assert.Equal(t, "cursor_v1", run.Cursor)
@@ -180,7 +191,7 @@ func TestCollectorSvc_Run_CollectorError(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_fail", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_fail", "ws_01", sc.ID)
 	require.Error(t, err)
 	assert.Equal(t, domain.CollectorRunStatusFailed, run.Status)
 	assert.Equal(t, "auth_error", run.ErrorCategory)
@@ -218,7 +229,7 @@ func TestCollectorSvc_Run_Duplicate_Events_NotCounted(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_dup", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_dup", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), run.RawEventCount) // only 1 inserted
 	assert.Len(t, evRepo.events, 1)
@@ -238,7 +249,7 @@ func TestCollectorSvc_Run_NoCollectorRegistered(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = colSvc.Run(context.Background(), "run_no_col", sc.ID)
+	_, err = colSvc.Run(context.Background(), "run_no_col", "ws_01", sc.ID)
 	assert.Error(t, err)
 }
 
@@ -254,7 +265,7 @@ func TestCollectorSvc_Run_ContextCancellation(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_cancel", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_cancel", "ws_01", sc.ID)
 	require.Error(t, err)
 	assert.Equal(t, "cancelled", run.ErrorCategory)
 
@@ -341,7 +352,7 @@ func TestCollectorSvc_NormalizedEventsInsertedOnce(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_norm_01", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_norm_01", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
 	assert.Len(t, normRepo.events, 1, "exactly one normalized event should be stored")
@@ -366,7 +377,7 @@ func TestCollectorSvc_DuplicateRawEvent_NoNormalized(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_dup_norm", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_dup_norm", "ws_01", sc.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), run.RawEventCount)
 	assert.Len(t, normRepo.events, 1, "duplicate raw event must not produce a second normalized event")
@@ -404,7 +415,7 @@ func TestCollectorSvc_NormalizerIgnoredEvent_RunSucceeds(t *testing.T) {
 	}
 	colSvc.RegisterCollector(fc)
 
-	run, err := colSvc.Run(context.Background(), "run_ignored", sc.ID)
+	run, err := colSvc.Run(context.Background(), "run_ignored", "ws_01", sc.ID)
 	require.NoError(t, err, "ignored normalizer error must not fail the run")
 	assert.Equal(t, domain.CollectorRunStatusSucceeded, run.Status)
 }

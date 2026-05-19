@@ -17,24 +17,33 @@ import (
 )
 
 type Claims struct {
-	Sub   string
-	Email string
-	Role  string
+	Sub       string
+	Email     string
+	Role      string
+	Workspace string // workspace ID the token is scoped to
 }
 
 type jwtClaims struct {
 	jwt.RegisteredClaims
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	Workspace string `json:"workspace"`
 }
 
 type KeyManager struct {
 	private *rsa.PrivateKey
 }
 
-func NewKeyManager(pemKey string) (*KeyManager, error) {
+// NewKeyManager parses pemKey into a KeyManager.
+// If pemKey is empty and allowEphemeral is true, a temporary RSA key is generated
+// (only for development/test; tokens are invalidated on restart).
+// If pemKey is empty and allowEphemeral is false, an error is returned (production safe-fail).
+func NewKeyManager(pemKey string, allowEphemeral bool) (*KeyManager, error) {
 	if pemKey == "" {
-		log.Warn().Msg("JWT_PRIVATE_KEY not set — generating RSA-2048 key, tokens invalidated on restart")
+		if !allowEphemeral {
+			return nil, fmt.Errorf("JWT_PRIVATE_KEY must be set in production (APP_ENV=production)")
+		}
+		log.Warn().Msg("JWT_PRIVATE_KEY not set — generating ephemeral RSA-2048 key; tokens invalidated on restart (set APP_ENV=production to fail-fast)")
 		key, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
 			return nil, fmt.Errorf("generate rsa key: %w", err)
@@ -61,8 +70,9 @@ func (km *KeyManager) Sign(c Claims, ttl time.Duration) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
-		Email: c.Email,
-		Role:  c.Role,
+		Email:     c.Email,
+		Role:      c.Role,
+		Workspace: c.Workspace,
 	})
 	return token.SignedString(km.private)
 }
@@ -81,5 +91,10 @@ func (km *KeyManager) Validate(tokenStr string) (*Claims, error) {
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
-	return &Claims{Sub: claims.Subject, Email: claims.Email, Role: claims.Role}, nil
+	return &Claims{
+		Sub:       claims.Subject,
+		Email:     claims.Email,
+		Role:      claims.Role,
+		Workspace: claims.Workspace,
+	}, nil
 }

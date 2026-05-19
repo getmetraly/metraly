@@ -73,13 +73,33 @@ type RouterDeps struct {
 	ActivityFeedSvc  *biz.ActivityFeedSvc
 	ActivityRepo     repo.ActivityRepo
 	InsightRepo      repo.AIInsightRepo
+	// CORSAllowedOrigins is the explicit list of allowed CORS origins.
+	// Empty slice means no cross-origin requests are allowed (safe default).
+	CORSAllowedOrigins []string
 }
 
 // NewRouter creates and returns a chi router with all API routes configured.
+//
+// Invariant: if any of DashboardSvc/SourceSvc/CollectorSvc/MetricQuerySvc is non-nil,
+// KeyManager must also be non-nil. This function panics if that invariant is violated
+// so that misconfigured binaries fail loudly at startup rather than silently running
+// unauthenticated (P1-15).
 func NewRouter(deps RouterDeps) *chi.Mux {
+	// P1-15: panic if protected services are wired without authentication.
+	if deps.KeyManager == nil {
+		if deps.DashboardSvc != nil || deps.SourceSvc != nil || deps.CollectorSvc != nil ||
+			deps.MetricQuerySvc != nil || deps.MetricCatalog != nil || deps.ActivityFeedSvc != nil {
+			panic("NewRouter: KeyManager is nil but protected services are non-nil — " +
+				"all protected services require authentication; pass a KeyManager or set protected deps to nil")
+		}
+	}
+
 	r := chi.NewRouter()
+
+	// P0-5: CORS uses an explicit allowlist. Wildcard + AllowCredentials is forbidden.
+	// An empty allowlist means no cross-origin requests are permitted.
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   deps.CORSAllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
@@ -87,9 +107,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 
-	// Public routes
+	// Public routes.
 	r.Get("/api/v1/health", healthHandler)
-	r.Get("/api/v1/role/{role}", roleHandler)
 
 	authHandler := handlers.NewAuthHandler(deps.AuthSvc)
 	r.Post("/api/v1/auth/login", authHandler.Login)
@@ -102,10 +121,22 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 	previewHandler := handlers.NewPreviewHandler(deps.DashboardSvc, deps.TemplateSvc, deps.MetricsSvc, deps.ActivityRepo, deps.InsightRepo)
 	ingestionHandler := handlers.NewIngestionHandler(deps.IngestionSvc)
 
-	// Protected routes
+	// Protected routes — all require authentication.
 	if deps.KeyManager != nil {
 		r.Group(func(r chi.Router) {
 			r.Use(localMiddleware.RequireAuth(deps.KeyManager))
+
+			// P1-16: /api/v1/role/{role} is now behind RequireAuth.
+			// @Summary Get role-specific dashboard
+			// @Description Returns dashboard data for a specific role (engineer, lead, manager)
+			// @Tags role
+			// @Accept json
+			// @Produce json
+			// @Param role path string true "Role name"
+			// @Success 200 {object} map[string]interface{}
+			// @Router /api/v1/role/{role} [get]
+			r.Get("/api/v1/role/{role}", roleHandler)
+
 			r.Get("/api/v1/dashboards", dashboardHandler.List)
 			r.Post("/api/v1/dashboards", dashboardHandler.Create)
 			r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
@@ -126,6 +157,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Get("/api/v1/activity", previewHandler.Activity)
 			r.Get("/api/v1/me", meHandler)
 			r.With(localMiddleware.RequireRole("admin")).Get("/api/v1/admin/summary", adminSummaryHandler)
+
 			if deps.SourceSvc != nil {
 				sourceHandler := handlers.NewSourceHandler(deps.SourceSvc)
 				r.Get("/api/v1/sources", sourceHandler.List)
@@ -135,7 +167,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			}
 			if deps.CollectorSvc != nil {
 				collectorHandler := handlers.NewCollectorHandler(deps.CollectorSvc, deps.CollectorRunRepo)
-				r.Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
+				// P2-20: collector mutation is restricted to admin role.
+				r.With(localMiddleware.RequireRole("admin")).Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
 				r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
 				r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
 			}
@@ -152,47 +185,12 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 				r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
 			}
 		})
-	} else if deps.DashboardSvc != nil {
-		r.Get("/api/v1/dashboards", dashboardHandler.List)
-		r.Post("/api/v1/dashboards", dashboardHandler.Create)
-		r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
-		r.Put("/api/v1/dashboards/{id}", dashboardHandler.Update)
-		r.Post("/api/v1/dashboards/{id}/fork", dashboardHandler.Fork)
-		r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
-		r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
-		r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
-		r.Post("/api/v1/ingest/pm", ingestionHandler.PM)
-		if deps.SourceSvc != nil {
-			sourceHandler := handlers.NewSourceHandler(deps.SourceSvc)
-			r.Get("/api/v1/sources", sourceHandler.List)
-			r.Post("/api/v1/sources", sourceHandler.Create)
-			r.Get("/api/v1/sources/{id}", sourceHandler.Get)
-			r.Post("/api/v1/sources/{id}/test", sourceHandler.Test)
-		}
-		if deps.CollectorSvc != nil {
-			collectorHandler := handlers.NewCollectorHandler(deps.CollectorSvc, deps.CollectorRunRepo)
-			r.Post("/api/v1/sources/{id}/collect", collectorHandler.Trigger)
-			r.Get("/api/v1/sources/{id}/collector-runs", collectorHandler.ListRuns)
-			r.Get("/api/v1/collector-runs/{id}", collectorHandler.GetRun)
-		}
-		if deps.MetricCatalog != nil {
-			catalogHandler := handlers.NewMetricCatalogHandler(deps.MetricCatalog, deps.FormulaValidator)
-			r.Get("/api/v1/metrics/catalog", catalogHandler.ListMetrics)
-			r.Get("/api/v1/metrics/catalog/{metricId}", catalogHandler.GetMetric)
-			r.Post("/api/v1/formulas/validate", catalogHandler.ValidateFormula)
-		}
-		if deps.MetricQuerySvc != nil {
-			queryHandler := handlers.NewMetricQueryHandler(deps.MetricQuerySvc)
-			r.Post("/api/v1/metrics/query", queryHandler.Query)
-			widgetHandler := handlers.NewWidgetDataHandler(deps.MetricQuerySvc).WithActivityFeed(deps.ActivityFeedSvc)
-			r.Post("/api/v1/metrics/widget-data", widgetHandler.Query)
-		}
 	} else {
 		r.Get("/api/v1/dashboards", serviceUnavailableHandler)
 		r.Post("/api/v1/dashboards", serviceUnavailableHandler)
 	}
 
-	// Legacy endpoints for existing UI (public)
+	// Legacy endpoints for existing UI (public, no sensitive data).
 	r.Get("/api/v1/teams", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`[{"id":1,"name":"Platform"},{"id":2,"name":"Mobile"},{"id":3,"name":"Backend"}]`))
@@ -233,28 +231,6 @@ func adminSummaryHandler(w http.ResponseWriter, r *http.Request) {
 	respond.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// @Summary Get DORA metrics
-// @Description Returns DORA metrics (deployment frequency, lead time, MTTR, change failure rate)
-// @Tags dora
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/dora [get]
-func doraHandler(w http.ResponseWriter, r *http.Request) {
-	handlers.DORAHandler(w, r)
-}
-
-// @Summary Get engineering metrics
-// @Description Returns engineering metrics (PRs, tasks, CI/CD)
-// @Tags metrics
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/metrics [get]
-func metricsHandler(w http.ResponseWriter, r *http.Request) {
-	handlers.MetricsHandler(w, r)
-}
-
 // @Summary Get role-specific dashboard
 // @Description Returns dashboard data for a specific role (engineer, lead, manager)
 // @Tags role
@@ -265,17 +241,6 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/role/{role} [get]
 func roleHandler(w http.ResponseWriter, r *http.Request) {
 	handlers.RoleHandler(w, r)
-}
-
-// @Summary Get insights
-// @Description Returns AI-generated insights for the team
-// @Tags insights
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /api/v1/insights [get]
-func insightsHandler(w http.ResponseWriter, r *http.Request) {
-	handlers.InsightsHandler(w, r)
 }
 
 func main() {
@@ -293,21 +258,22 @@ func main() {
 	}
 
 	r := NewRouter(RouterDeps{
-		KeyManager:       deps.keyManager,
-		AuthSvc:          deps.authSvc,
-		DashboardSvc:     deps.dashboardSvc,
-		TemplateSvc:      deps.templateSvc,
-		MetricsSvc:       deps.metricsSvc,
-		IngestionSvc:     deps.ingestionSvc,
-		SourceSvc:        deps.sourceSvc,
-		CollectorSvc:     deps.collectorSvc,
-		CollectorRunRepo: deps.sourceRepo,
-		MetricCatalog:    deps.metricCatalog,
-		FormulaValidator: deps.formulaValidator,
-		MetricQuerySvc:   deps.metricQuerySvc,
-		ActivityFeedSvc:  deps.activityFeedSvc,
-		ActivityRepo:     deps.activityRepo,
-		InsightRepo:      deps.insightRepo,
+		KeyManager:         deps.keyManager,
+		AuthSvc:            deps.authSvc,
+		DashboardSvc:       deps.dashboardSvc,
+		TemplateSvc:        deps.templateSvc,
+		MetricsSvc:         deps.metricsSvc,
+		IngestionSvc:       deps.ingestionSvc,
+		SourceSvc:          deps.sourceSvc,
+		CollectorSvc:       deps.collectorSvc,
+		CollectorRunRepo:   deps.sourceRepo,
+		MetricCatalog:      deps.metricCatalog,
+		FormulaValidator:   deps.formulaValidator,
+		MetricQuerySvc:     deps.metricQuerySvc,
+		ActivityFeedSvc:    deps.activityFeedSvc,
+		ActivityRepo:       deps.activityRepo,
+		InsightRepo:        deps.insightRepo,
+		CORSAllowedOrigins: cfg.CORSAllowedOrigins,
 	})
 
 	// Swagger documentation
@@ -323,12 +289,15 @@ func main() {
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(quit)
 
 	go func() {
 		<-quit
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		srv.Shutdown(ctx)
+		if err := srv.Shutdown(shutCtx); err != nil {
+			fmt.Fprintf(os.Stderr, "graceful shutdown error: %v\n", err)
+		}
 	}()
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

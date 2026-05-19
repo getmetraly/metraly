@@ -32,8 +32,15 @@ func (r *SourceRepo) CreateSource(ctx context.Context, sc *domain.SourceConnecti
 	return err
 }
 
-func (r *SourceRepo) GetSource(ctx context.Context, id string) (*domain.SourceConnection, error) {
-	row := r.pool.QueryRow(ctx, `SELECT id, workspace_id, source_type, display_name, status, config, COALESCE(credential_id,''), last_tested_at, last_synced_at, created_at, updated_at FROM source_connections WHERE id=$1`, id)
+// GetSource retrieves a source connection by ID, scoped to workspaceID.
+// Returns ErrNotFound when no row matches, preventing cross-workspace reads.
+func (r *SourceRepo) GetSource(ctx context.Context, workspaceID, id string) (*domain.SourceConnection, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, workspace_id, source_type, display_name, status, config,
+		       COALESCE(credential_id,''), last_tested_at, last_synced_at, created_at, updated_at
+		FROM source_connections
+		WHERE id=$1 AND workspace_id=$2`,
+		id, workspaceID)
 	sc, err := scanSourceConnection(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -89,9 +96,16 @@ func (r *SourceRepo) GetCredential(ctx context.Context, id string) (*domain.Cred
 	return &cr, nil
 }
 
-func (r *SourceRepo) GetEncryptedSecret(ctx context.Context, credentialID string) (string, error) {
+// GetEncryptedSecret returns the encrypted secret for the given credential,
+// scoped to workspaceID. Returns ErrNotFound when no row matches, preventing
+// cross-workspace credential reads.
+func (r *SourceRepo) GetEncryptedSecret(ctx context.Context, workspaceID, credentialID string) (string, error) {
 	var encrypted string
-	err := r.pool.QueryRow(ctx, `SELECT encrypted_secret FROM credential_refs WHERE id=$1`, credentialID).Scan(&encrypted)
+	err := r.pool.QueryRow(ctx, `
+		SELECT encrypted_secret
+		FROM credential_refs
+		WHERE id=$1 AND workspace_id=$2`,
+		credentialID, workspaceID).Scan(&encrypted)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound
 	}
@@ -130,14 +144,39 @@ func (r *SourceRepo) CreateSourceWithCredential(
 	})
 }
 
+// CreateCollectorRun inserts a new collector run record.
+// Uses ON CONFLICT (id) DO NOTHING so the same runID can be safely retried after a crash.
 func (r *SourceRepo) CreateCollectorRun(ctx context.Context, run *domain.CollectorRun) error {
-	_, err := r.pool.Exec(ctx, `INSERT INTO collector_runs (id, source_connection_id, collector_type, status, started_at, cursor, raw_event_count, error_category, error_message, rate_limit_state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, run.ID, run.SourceConnectionID, run.CollectorType, string(run.Status), run.StartedAt, run.Cursor, run.RawEventCount, run.ErrorCategory, run.ErrorMessage, string(run.RateLimitState))
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO collector_runs
+		(id, source_connection_id, collector_type, status, started_at, cursor,
+		 raw_event_count, error_category, error_message, rate_limit_state)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		ON CONFLICT (id) DO NOTHING`,
+		run.ID, run.SourceConnectionID, run.CollectorType, string(run.Status),
+		run.StartedAt, run.Cursor, run.RawEventCount,
+		run.ErrorCategory, run.ErrorMessage, string(run.RateLimitState))
 	return err
 }
 
 func (r *SourceRepo) UpdateCollectorRun(ctx context.Context, run *domain.CollectorRun) error {
 	_, err := r.pool.Exec(ctx, `UPDATE collector_runs SET status=$2, finished_at=$3, cursor=$4, raw_event_count=$5, error_category=$6, error_message=$7, rate_limit_state=$8, retry_after=$9, updated_at=NOW() WHERE id=$1`, run.ID, string(run.Status), run.FinishedAt, run.Cursor, run.RawEventCount, run.ErrorCategory, run.ErrorMessage, string(run.RateLimitState), run.RetryAfter)
 	return err
+}
+
+// GetActiveRunForSource returns the run ID of any in-flight run (started or running) for the source.
+// Returns ErrNotFound when no active run exists.
+func (r *SourceRepo) GetActiveRunForSource(ctx context.Context, sourceConnectionID string) (string, error) {
+	var runID string
+	err := r.pool.QueryRow(ctx, `
+		SELECT id FROM collector_runs
+		WHERE source_connection_id=$1 AND status IN ('started','running')
+		ORDER BY started_at DESC LIMIT 1`,
+		sourceConnectionID).Scan(&runID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return runID, err
 }
 
 func (r *SourceRepo) ListCollectorRuns(ctx context.Context, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error) {

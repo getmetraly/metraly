@@ -71,7 +71,7 @@ func TestNormalizerSvc_GitHubPROpened(t *testing.T) {
 		"repo_id":      "repo_001",
 	})
 
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, domain.NormEventPROpened, ev.EventType)
 	assert.Equal(t, "pull_request", ev.EntityKind)
@@ -91,7 +91,7 @@ func TestNormalizerSvc_GitHubPRMerged_WithCycleTime(t *testing.T) {
 		"review_latency_seconds": float64(900),
 	})
 
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, domain.NormEventPRMerged, ev.EventType)
 	require.NotNil(t, ev.CycleTimeSeconds)
@@ -109,7 +109,7 @@ func TestNormalizerSvc_WorkflowRunCompleted_WithDuration(t *testing.T) {
 		"repo_id":          "repo_001",
 	})
 
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, domain.NormEventWorkflowRunCompleted, ev.EventType)
 	require.NotNil(t, ev.DurationSeconds)
@@ -124,7 +124,7 @@ func TestNormalizerSvc_JiraIssueClosed(t *testing.T) {
 		"reporter_account_id": "uid_123",
 	})
 
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, domain.NormEventIssueClosed, ev.EventType)
 	assert.Equal(t, "issue", ev.EntityKind)
@@ -135,7 +135,7 @@ func TestNormalizerSvc_JiraSprintClosed(t *testing.T) {
 	svc := biz.NewNormalizerSvc(repo)
 
 	raw := rawEvent(domain.SourceTypeJira, "sprint_7", "sprint.closed", map[string]any{})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, domain.NormEventSprintClosed, ev.EventType)
 	assert.Equal(t, "sprint", ev.EntityKind)
@@ -146,7 +146,7 @@ func TestNormalizerSvc_UnsupportedSource(t *testing.T) {
 	svc := biz.NewNormalizerSvc(repo)
 
 	raw := rawEvent(domain.SourceTypePrometheus, "metric_1", "metric.recorded", map[string]any{})
-	_, err := svc.NormalizeAndStore(context.Background(), raw)
+	_, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.Error(t, err)
 	var normErr *biz.NormalizerError
 	assert.ErrorAs(t, err, &normErr)
@@ -158,7 +158,7 @@ func TestNormalizerSvc_UnknownEventType_ReturnsIgnored(t *testing.T) {
 	svc := biz.NewNormalizerSvc(repo)
 
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_1", "pull_request.locked", map[string]any{})
-	_, err := svc.NormalizeAndStore(context.Background(), raw)
+	_, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.Error(t, err)
 	var normErr *biz.NormalizerError
 	assert.ErrorAs(t, err, &normErr)
@@ -216,7 +216,7 @@ func TestNormalizerSvc_AuthorResolved_SetsUserID(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_1", "pull_request.opened", map[string]any{
 		"author_login": "octocat",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, "usr_abc", ev.AuthorID)
 	assert.Equal(t, "team_xyz", ev.TeamID)
@@ -232,7 +232,7 @@ func TestNormalizerSvc_AuthorUnresolved_SetsFlag(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_2", "pull_request.opened", map[string]any{
 		"author_login": "unknown-dev",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.True(t, ev.AuthorUnresolved)
 	assert.Equal(t, "unknown-dev", ev.AuthorID) // original login preserved
@@ -251,7 +251,7 @@ func TestNormalizerSvc_ReviewerResolved(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_3", "pull_request.review_requested", map[string]any{
 		"reviewer_login": "reviewer99",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, "usr_rev", ev.ReviewerID)
 	assert.False(t, ev.ReviewerUnresolved)
@@ -266,7 +266,7 @@ func TestNormalizerSvc_ReviewerUnresolved_UpsertsCalled(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_4", "pull_request.review_requested", map[string]any{
 		"reviewer_login": "new-reviewer",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.True(t, ev.ReviewerUnresolved)
 	assert.Contains(t, resolver.upserted, "new-reviewer")
@@ -285,7 +285,7 @@ func TestNormalizerSvc_JiraAuthorResolved(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeJira, "PROJ-10", "issue.created", map[string]any{
 		"reporter_account_id": "5b10a2844c20165700ede21g",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, "usr_jira1", ev.AuthorID)
 	assert.False(t, ev.AuthorUnresolved)
@@ -298,7 +298,7 @@ func TestNormalizerSvc_NoResolver_NoResolution(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_5", "pull_request.opened", map[string]any{
 		"author_login": "somebody",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	// Without resolver the raw login is kept, no unresolved flag
 	assert.Equal(t, "somebody", ev.AuthorID)
@@ -313,7 +313,7 @@ func TestNormalizerSvc_WorkflowRunCompleted_Conclusion(t *testing.T) {
 		"conclusion":       "failure",
 		"duration_seconds": float64(45),
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	assert.Equal(t, "failure", ev.Conclusion)
 }
@@ -326,7 +326,7 @@ func TestNormalizerSvc_JiraSprintClosed_WithPoints(t *testing.T) {
 		"completed_points": float64(34),
 		"planned_points":   float64(40),
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	require.NotNil(t, ev.PointsCompleted)
 	require.NotNil(t, ev.PointsPlanned)
@@ -348,7 +348,7 @@ func TestNormalizerSvc_ResolveIdentityError_PropagatesError(t *testing.T) {
 	raw := rawEvent(domain.SourceTypeGitHub, "pr_10", "pull_request.opened", map[string]any{
 		"author_login": "alice",
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.Error(t, err)
 	assert.Nil(t, ev)
 	assert.Empty(t, eventRepo.events)  // must not persist
@@ -365,7 +365,7 @@ func TestNormalizerSvc_JiraSprintClosed_ZeroPointsCompleted(t *testing.T) {
 		"completed_points": float64(0),
 		"planned_points":   float64(20),
 	})
-	ev, err := svc.NormalizeAndStore(context.Background(), raw)
+	ev, err := svc.NormalizeAndStore(context.Background(), raw, "ws-test")
 	require.NoError(t, err)
 	require.NotNil(t, ev.PointsCompleted, "completed_points=0 must be stored, not dropped")
 	assert.Equal(t, int64(0), *ev.PointsCompleted)

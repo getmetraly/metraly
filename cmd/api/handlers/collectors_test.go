@@ -64,8 +64,19 @@ func (f *fakeCollectorRunRepo) ListCollectorRuns(_ context.Context, sourceConnec
 	return result, nil
 }
 
+// GetActiveRunForSource returns ErrNotFound (no active run guard needed in most handler tests).
+func (f *fakeCollectorRunRepo) GetActiveRunForSource(_ context.Context, sourceConnectionID string) (string, error) {
+	for _, r := range f.runs {
+		if r.SourceConnectionID == sourceConnectionID &&
+			(r.Status == domain.CollectorRunStatusStarted || r.Status == domain.CollectorRunStatusRunning) {
+			return r.ID, nil
+		}
+	}
+	return "", repo.ErrNotFound
+}
+
 // buildCollectorSvc builds a real CollectorSvc backed by fake repos.
-// sourceID: if non-empty, that source is pre-seeded in the fake source repo.
+// sourceID: if non-empty, that source is pre-seeded in the fake source repo under testWorkspace.
 // withCollector: if true, a no-op collector is registered for the source type.
 func buildCollectorSvc(
 	sourceID string, sourceType domain.SourceType, withCollector bool,
@@ -79,7 +90,7 @@ func buildCollectorSvc(
 	if sourceID != "" {
 		srcRepo.sources[sourceID] = &domain.SourceConnection{
 			ID:          sourceID,
-			WorkspaceID: "default",
+			WorkspaceID: testWorkspace,
 			SourceType:  sourceType,
 			DisplayName: "Test Source",
 			Status:      domain.SourceStatusReady,
@@ -124,12 +135,25 @@ func chiRouterWithCollector(h *handlers.CollectorHandler) http.Handler {
 
 // — tests —
 
+func TestCollectorHandler_NoWorkspace_Returns401(t *testing.T) {
+	svc, runRepo, _ := buildCollectorSvc("src-1", domain.SourceTypeGitHub, true)
+	h := handlers.NewCollectorHandler(svc, runRepo)
+	router := chiRouterWithCollector(h)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/src-1/collect", nil)
+	// No workspace in context → must return 401.
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
 func TestCollectorHandler_Trigger_HappyPath(t *testing.T) {
 	svc, runRepo, _ := buildCollectorSvc("src-1", domain.SourceTypeGitHub, true)
 	h := handlers.NewCollectorHandler(svc, runRepo)
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/src-1/collect", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -146,6 +170,7 @@ func TestCollectorHandler_Trigger_SourceNotFound(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/does-not-exist/collect", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -158,6 +183,7 @@ func TestCollectorHandler_Trigger_NoCollectorRegistered(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/src-2/collect", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -166,6 +192,27 @@ func TestCollectorHandler_Trigger_NoCollectorRegistered(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body))
 	errObj, _ := body["error"].(map[string]any)
 	assert.Equal(t, "NO_COLLECTOR_REGISTERED", errObj["code"])
+}
+
+func TestCollectorHandler_Trigger_RunInFlight_Returns409(t *testing.T) {
+	svc, runRepo, _ := buildCollectorSvc("src-inf", domain.SourceTypeGitHub, true)
+	h := handlers.NewCollectorHandler(svc, runRepo)
+	router := chiRouterWithCollector(h)
+
+	// Seed an in-flight run for the source.
+	runRepo.runs["run-existing"] = &domain.CollectorRun{
+		ID:                 "run-existing",
+		SourceConnectionID: "src-inf",
+		Status:             domain.CollectorRunStatusRunning,
+		StartedAt:          time.Now().UTC(),
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/src-inf/collect", nil)
+	req = withTestWorkspace(req, testWorkspace)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusConflict, rec.Code)
 }
 
 func TestCollectorHandler_ListRuns_Default(t *testing.T) {
@@ -268,6 +315,7 @@ func TestCollectorHandler_Trigger_ResponseNeverContainsSecret(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/sources/src-6/collect", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 

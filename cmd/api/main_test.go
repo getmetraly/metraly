@@ -17,7 +17,7 @@ import (
 )
 
 func TestGracefulShutdown(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})
 	srv := &http.Server{Addr: "localhost:18000", Handler: r}
 
@@ -60,7 +60,7 @@ func TestNewRouter(t *testing.T) {
 }
 
 func TestNewRouterWithAuth(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})
 
 	// Test that protected routes require auth
@@ -79,7 +79,7 @@ func TestNewRouterWithAuth(t *testing.T) {
 }
 
 func TestNewRouterIngestionRouteRequiresAuth(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})
 
 	w := httptest.NewRecorder()
@@ -104,7 +104,7 @@ func TestNewRouter_DashboardServiceUnavailable(t *testing.T) {
 }
 
 func TestNewRouter_AuthRoutesRegistered(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})
 
 	w := httptest.NewRecorder()
@@ -117,7 +117,7 @@ func TestNewRouter_AuthRoutesRegistered(t *testing.T) {
 }
 
 func TestNewRouter_AdminRoleGate(t *testing.T) {
-	km, _ := auth.NewKeyManager("")
+	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})
 
 	viewerClaims := auth.Claims{Sub: "user-1", Email: "viewer@example.com", Role: "viewer"}

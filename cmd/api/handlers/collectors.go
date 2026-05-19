@@ -11,6 +11,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
@@ -38,13 +39,24 @@ func NewCollectorHandler(svc *biz.CollectorSvc, runRepo CollectorRunFetcher) *Co
 
 // Trigger handles POST /api/v1/sources/{id}/collect.
 // It starts a collector run synchronously and returns 202 with the run.
+// The run executes using context.WithoutCancel internally so client disconnect
+// cannot leave a run stuck in status='running'.
 func (h *CollectorHandler) Trigger(w http.ResponseWriter, r *http.Request) {
+	wsID, ok := workspaceID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", "workspace not resolved from token")
+		return
+	}
+
 	sourceID := chi.URLParam(r, "id")
 	runID := newRunID()
 
-	run, err := h.svc.Run(r.Context(), runID, sourceID)
+	run, err := h.svc.Run(r.Context(), runID, wsID, sourceID)
 	if run != nil {
-		// Run record exists (even if failed); the run itself captures the outcome.
+		// Run record exists (even if failed); return it with 202 so callers can poll.
+		if run.RetryAfter != nil {
+			w.Header().Set("Retry-After", strconv.FormatInt(int64(time.Until(*run.RetryAfter).Seconds()), 10))
+		}
 		respond.JSON(w, http.StatusAccepted, run)
 		return
 	}
@@ -57,10 +69,14 @@ func (h *CollectorHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, biz.ErrNoCollectorRegistered) {
-		respond.Error(w, http.StatusUnprocessableEntity, "NO_COLLECTOR_REGISTERED", err.Error())
+		respond.Error(w, http.StatusUnprocessableEntity, "NO_COLLECTOR_REGISTERED", "no collector registered for this source type")
 		return
 	}
-	respond.Error(w, http.StatusInternalServerError, "COLLECTOR_ERROR", err.Error())
+	if errors.Is(err, biz.ErrRunInFlight) {
+		respond.Error(w, http.StatusConflict, "RUN_IN_FLIGHT", "a collector run is already active for this source")
+		return
+	}
+	respond.Error(w, http.StatusInternalServerError, "COLLECTOR_ERROR", "collector error")
 }
 
 // ListRuns handles GET /api/v1/sources/{id}/collector-runs.

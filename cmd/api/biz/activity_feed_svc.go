@@ -35,8 +35,14 @@ func NewActivityFeedSvc(repo ActivityFeedRepo) *ActivityFeedSvc {
 }
 
 // Execute runs an activity feed query and returns quality-annotated results.
-// Never returns fake data — returns quality=empty when no normalized events exist.
+// WorkspaceID is required; Execute returns ErrMissingWorkspaceID immediately
+// when it is empty — the repo is never called for unscoped reads.
 func (s *ActivityFeedSvc) Execute(ctx context.Context, q domain.ActivityFeedQuery) (ActivityFeedResult, error) {
+	// P1-13: workspace guard at the biz layer, independent of handler validation.
+	if q.WorkspaceID == "" {
+		return ActivityFeedResult{}, fmt.Errorf("%w: activity feed requires a workspace", ErrMissingWorkspaceID)
+	}
+
 	// Validate filter keys.
 	for k := range q.Filters {
 		if !AllowedFilterKeys[k] {
@@ -81,7 +87,7 @@ type ActivityFeedExecutor interface {
 	Execute(ctx context.Context, q domain.ActivityFeedQuery) (ActivityFeedResult, error)
 }
 
-// activityFeedQueryFromRequest converts an ActivityFeedQuery from handler parameters.
+// ActivityFeedQueryFrom converts handler parameters into an ActivityFeedQuery.
 // Exported for use in tests.
 func ActivityFeedQueryFrom(workspaceID, start, end string, filters map[string]string, limit int) (domain.ActivityFeedQuery, error) {
 	s, err := time.Parse(time.RFC3339, start)

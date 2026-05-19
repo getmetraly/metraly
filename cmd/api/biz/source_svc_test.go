@@ -43,10 +43,14 @@ func (f *fakeSourceRepo) CreateSourceWithCredential(_ context.Context, sc *domai
 	return nil
 }
 
-func (f *fakeSourceRepo) GetSource(_ context.Context, id string) (*domain.SourceConnection, error) {
+func (f *fakeSourceRepo) GetSource(_ context.Context, workspaceID, id string) (*domain.SourceConnection, error) {
 	sc, ok := f.sources[id]
 	if !ok {
-		return nil, repo.ErrNotFound // repo layer sentinel; biz maps this to ErrSourceNotFound
+		return nil, repo.ErrNotFound
+	}
+	// Enforce workspace isolation — mirrors the SQL WHERE id=$1 AND workspace_id=$2 predicate.
+	if sc.WorkspaceID != workspaceID {
+		return nil, repo.ErrNotFound
 	}
 	return sc, nil
 }
@@ -92,7 +96,7 @@ func (f *fakeSourceRepo) GetCredential(_ context.Context, id string) (*domain.Cr
 	return cr, nil
 }
 
-func (f *fakeSourceRepo) GetEncryptedSecret(_ context.Context, credentialID string) (string, error) {
+func (f *fakeSourceRepo) GetEncryptedSecret(_ context.Context, workspaceID, credentialID string) (string, error) {
 	enc, ok := f.secrets[credentialID]
 	if !ok {
 		return "", repo.ErrNotFound
@@ -170,7 +174,7 @@ func TestSourceSvc_CreateSource_SecretNotInSource(t *testing.T) {
 
 func TestSourceSvc_GetSource_NotFound(t *testing.T) {
 	svc, _ := newTestSvc(t)
-	_, err := svc.GetSource(context.Background(), "nonexistent")
+	_, err := svc.GetSource(context.Background(), "ws_01", "nonexistent")
 	assert.ErrorIs(t, err, biz.ErrSourceNotFound)
 }
 
@@ -186,7 +190,7 @@ func TestSourceSvc_TestConnection_UnsupportedSource(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	result, err := svc.TestConnection(context.Background(), sc.ID)
+	result, err := svc.TestConnection(context.Background(), "ws_01", sc.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, domain.TestResultUnsupportedSource, result.Status)
 }
@@ -209,7 +213,7 @@ func TestSourceSvc_TestConnection_WithGitHubAdapter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	result, err := svc.TestConnection(context.Background(), sc.ID)
+	result, err := svc.TestConnection(context.Background(), "ws_01", sc.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, domain.TestResultOK, result.Status)
 	assert.NotEmpty(t, result.ScopesFound)
@@ -217,7 +221,7 @@ func TestSourceSvc_TestConnection_WithGitHubAdapter(t *testing.T) {
 
 func TestSourceSvc_TestConnection_NotFound(t *testing.T) {
 	svc, _ := newTestSvc(t)
-	_, err := svc.TestConnection(context.Background(), "nonexistent")
+	_, err := svc.TestConnection(context.Background(), "ws_01", "nonexistent")
 	assert.ErrorIs(t, err, biz.ErrSourceNotFound)
 }
 

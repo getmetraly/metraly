@@ -6,7 +6,7 @@ package biz
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -47,16 +47,12 @@ type IdentityResolution struct {
 // IdentityResolver resolves source logins / account IDs to internal identities.
 // Implementations must be safe for concurrent use.
 type IdentityResolver interface {
-	// ResolveIdentity returns a resolution for the given external id.
+	// ResolveIdentity returns a resolution for the given external id in the given workspace.
 	// Returns Resolved=false (not an error) when no mapping exists.
 	ResolveIdentity(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID string) (IdentityResolution, error)
 	// UpsertUnresolved records an unresolved identity so operators can map it later.
 	UpsertUnresolved(ctx context.Context, workspaceID string, sourceType domain.SourceType, externalID, externalLogin string) error
 }
-
-// defaultWorkspaceID is the workspace used for identity resolution in the MVP.
-// Multi-tenant support will thread workspace through the pipeline in a later phase.
-const defaultWorkspaceID = "default"
 
 // NormalizerSvc converts raw source events into canonical normalized events.
 type NormalizerSvc struct {
@@ -76,14 +72,16 @@ func (s *NormalizerSvc) WithIdentityResolver(r IdentityResolver) {
 }
 
 // NormalizeAndStore normalizes a raw event, runs identity resolution, and persists.
+// workspaceID must be the workspace that owns the source; it is used for all identity
+// resolution calls — no hardcoded workspace is ever used.
 // Returns a NormalizerError for unknown/unmapped events — callers should log and skip, not fail the run.
-func (s *NormalizerSvc) NormalizeAndStore(ctx context.Context, raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) {
+func (s *NormalizerSvc) NormalizeAndStore(ctx context.Context, raw *domain.RawSourceEvent, workspaceID string) (*domain.NormalizedEvent, error) {
 	ev, err := s.Normalize(raw)
 	if err != nil {
 		return nil, err
 	}
 	if s.resolver != nil {
-		if err := s.resolveIdentities(ctx, raw.SourceType, ev); err != nil {
+		if err := s.resolveIdentities(ctx, workspaceID, raw.SourceType, ev); err != nil {
 			return nil, fmt.Errorf("resolve identities: %w", err)
 		}
 	}
@@ -94,14 +92,10 @@ func (s *NormalizerSvc) NormalizeAndStore(ctx context.Context, raw *domain.RawSo
 }
 
 // resolveIdentities mutates ev by replacing external logins with internal user IDs.
-// Returns an error only on transient resolver failures (e.g. DB unavailable); in that
-// case the event must NOT be marked as unresolved — the caller should surface the error
-// so it can be retried.
-// When no mapping exists (Resolved=false, nil error), AuthorUnresolved/ReviewerUnresolved
-// is set and the identity is recorded for later manual mapping.
-func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain.SourceType, ev *domain.NormalizedEvent) error {
+// workspaceID is required; cross-workspace identity pollution is impossible by construction.
+func (s *NormalizerSvc) resolveIdentities(ctx context.Context, workspaceID string, sourceType domain.SourceType, ev *domain.NormalizedEvent) error {
 	if ev.AuthorID != "" {
-		res, err := s.resolver.ResolveIdentity(ctx, defaultWorkspaceID, sourceType, ev.AuthorID)
+		res, err := s.resolver.ResolveIdentity(ctx, workspaceID, sourceType, ev.AuthorID)
 		if err != nil {
 			return fmt.Errorf("resolve author %q: %w", ev.AuthorID, err)
 		}
@@ -113,12 +107,11 @@ func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain
 		} else {
 			login := ev.AuthorID // preserve original login before marking unresolved
 			ev.AuthorUnresolved = true
-			// fire-and-forget upsert; failure is non-fatal
-			_ = s.resolver.UpsertUnresolved(ctx, defaultWorkspaceID, sourceType, login, login)
+			_ = s.resolver.UpsertUnresolved(ctx, workspaceID, sourceType, login, login)
 		}
 	}
 	if ev.ReviewerID != "" {
-		res, err := s.resolver.ResolveIdentity(ctx, defaultWorkspaceID, sourceType, ev.ReviewerID)
+		res, err := s.resolver.ResolveIdentity(ctx, workspaceID, sourceType, ev.ReviewerID)
 		if err != nil {
 			return fmt.Errorf("resolve reviewer %q: %w", ev.ReviewerID, err)
 		}
@@ -127,7 +120,7 @@ func (s *NormalizerSvc) resolveIdentities(ctx context.Context, sourceType domain
 		} else {
 			login := ev.ReviewerID
 			ev.ReviewerUnresolved = true
-			_ = s.resolver.UpsertUnresolved(ctx, defaultWorkspaceID, sourceType, login, login)
+			_ = s.resolver.UpsertUnresolved(ctx, workspaceID, sourceType, login, login)
 		}
 	}
 	return nil
@@ -157,14 +150,14 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 	switch raw.EventType {
 	case "pull_request.opened":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventPROpened), "pull_request", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventPROpened,
 			EntityKind:         "pull_request",
 			EntityID:           raw.ExternalID,
 			RepositoryID:       strField(p, "repo_id"),
-			AuthorID:           strField(p, "author_login"), // pre-resolution: set to login, resolved later
+			AuthorID:           strField(p, "author_login"),
 			OccurredAt:         timeField(p, "created_at", raw.SourceUpdatedAt, now),
 			ReceivedAt:         raw.ReceivedAt,
 			SchemaVersion:      1,
@@ -172,7 +165,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	case "pull_request.review_requested":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventPRReviewRequested), "pull_request", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventPRReviewRequested,
@@ -188,7 +181,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	case "pull_request.review_submitted":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventPRReviewSubmitted), "pull_request", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventPRReviewSubmitted,
@@ -203,7 +196,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	case "pull_request.merged":
 		ev := &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventPRMerged), "pull_request", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventPRMerged,
@@ -215,17 +208,18 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 			ReceivedAt:         raw.ReceivedAt,
 			SchemaVersion:      1,
 		}
-		if ct := int64Field(p, "cycle_time_seconds"); ct > 0 {
+		// P1-8: use int64FieldOpt so explicit zero is preserved (zero means same-second merge).
+		if ct, ok := int64FieldOpt(p, "cycle_time_seconds"); ok {
 			ev.CycleTimeSeconds = &ct
 		}
-		if rl := int64Field(p, "review_latency_seconds"); rl > 0 {
+		if rl, ok := int64FieldOpt(p, "review_latency_seconds"); ok {
 			ev.ReviewLatencySeconds = &rl
 		}
 		return ev, nil
 
 	case "pull_request.closed":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventPRClosed), "pull_request", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventPRClosed,
@@ -239,7 +233,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	case "workflow_run.started":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventWorkflowRunStarted), "workflow_run", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventWorkflowRunStarted,
@@ -253,7 +247,7 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 
 	case "workflow_run.completed":
 		ev := &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventWorkflowRunCompleted), "workflow_run", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventWorkflowRunCompleted,
@@ -265,10 +259,56 @@ func normalizeGitHub(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error
 			ReceivedAt:         raw.ReceivedAt,
 			SchemaVersion:      1,
 		}
-		if d := int64Field(p, "duration_seconds"); d > 0 {
+		// P1-8: use int64FieldOpt so explicit zero duration is preserved.
+		if d, ok := int64FieldOpt(p, "duration_seconds"); ok {
 			ev.DurationSeconds = &d
 		}
 		return ev, nil
+
+	// P1-10: deployment events previously fell through to IgnoredKnown; now mapped.
+	case "deployment.created":
+		return &domain.NormalizedEvent{
+			ID:                 normID(raw.ID, string(domain.NormEventDeploymentCreated), "deployment", raw.ExternalID),
+			RawSourceEventID:   raw.ID,
+			SourceConnectionID: raw.SourceConnectionID,
+			EventType:          domain.NormEventDeploymentCreated,
+			EntityKind:         "deployment",
+			EntityID:           raw.ExternalID,
+			RepositoryID:       strField(p, "repo_id"),
+			OccurredAt:         timeField(p, "created_at", raw.SourceUpdatedAt, now),
+			ReceivedAt:         raw.ReceivedAt,
+			SchemaVersion:      1,
+		}, nil
+
+	case "deployment.succeeded":
+		return &domain.NormalizedEvent{
+			ID:                 normID(raw.ID, string(domain.NormEventDeploymentSucceeded), "deployment", raw.ExternalID),
+			RawSourceEventID:   raw.ID,
+			SourceConnectionID: raw.SourceConnectionID,
+			EventType:          domain.NormEventDeploymentSucceeded,
+			EntityKind:         "deployment",
+			EntityID:           raw.ExternalID,
+			RepositoryID:       strField(p, "repo_id"),
+			Conclusion:         "success",
+			OccurredAt:         timeField(p, "deployed_at", raw.SourceUpdatedAt, now),
+			ReceivedAt:         raw.ReceivedAt,
+			SchemaVersion:      1,
+		}, nil
+
+	case "deployment.failed":
+		return &domain.NormalizedEvent{
+			ID:                 normID(raw.ID, string(domain.NormEventDeploymentFailed), "deployment", raw.ExternalID),
+			RawSourceEventID:   raw.ID,
+			SourceConnectionID: raw.SourceConnectionID,
+			EventType:          domain.NormEventDeploymentFailed,
+			EntityKind:         "deployment",
+			EntityID:           raw.ExternalID,
+			RepositoryID:       strField(p, "repo_id"),
+			Conclusion:         "failure",
+			OccurredAt:         timeField(p, "failed_at", raw.SourceUpdatedAt, now),
+			ReceivedAt:         raw.ReceivedAt,
+			SchemaVersion:      1,
+		}, nil
 
 	default:
 		return nil, &NormalizerError{
@@ -287,7 +327,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 	switch raw.EventType {
 	case "issue.created":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventIssueCreated), "issue", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventIssueCreated,
@@ -301,7 +341,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 
 	case "issue.status_changed":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventIssueStatusChanged), "issue", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventIssueStatusChanged,
@@ -314,7 +354,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 
 	case "issue.closed":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventIssueClosed), "issue", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventIssueClosed,
@@ -327,7 +367,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 
 	case "sprint.started":
 		return &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventSprintStarted), "sprint", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventSprintStarted,
@@ -340,7 +380,7 @@ func normalizeJira(raw *domain.RawSourceEvent) (*domain.NormalizedEvent, error) 
 
 	case "sprint.closed":
 		ev := &domain.NormalizedEvent{
-			ID:                 newNormID(),
+			ID:                 normID(raw.ID, string(domain.NormEventSprintClosed), "sprint", raw.ExternalID),
 			RawSourceEventID:   raw.ID,
 			SourceConnectionID: raw.SourceConnectionID,
 			EventType:          domain.NormEventSprintClosed,
@@ -425,20 +465,29 @@ func timeField(p map[string]any, key string, fallback *time.Time, def time.Time)
 	return def
 }
 
-func newNormID() string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return "nev_" + hex.EncodeToString(b)
+// normID generates a deterministic normalized event ID from the raw event ID and
+// event characterization fields. Stable across retries: the same raw event always
+// produces the same normID, so ON CONFLICT (id) DO NOTHING correctly deduplicates.
+//
+// Format: "nev_" + hex(sha256(rawID:normEventType:entityKind:entityID))[:24]
+func normID(rawID, normEventType, entityKind, entityID string) string {
+	h := sha256.Sum256([]byte(rawID + ":" + normEventType + ":" + entityKind + ":" + entityID))
+	return "nev_" + hex.EncodeToString(h[:12]) // 24 hex chars; collision probability negligible
 }
 
 // normalizeConclusion maps raw source conclusion strings to the canonical set.
 // Returns "" if the input is empty or unrecognized (stored as NULL in the DB).
+// P1-9: "neutral" is informational — it is mapped to "unknown", not "failure".
 func normalizeConclusion(raw string) string {
 	switch raw {
 	case "success", "failure", "cancelled":
 		return raw
-	case "timed_out", "action_required", "neutral":
+	case "timed_out", "action_required":
 		return "failure"
+	case "neutral":
+		// neutral means the check did not make a pass/fail determination.
+		// Mapping it to "failure" would inflate build_failure_rate.
+		return "unknown"
 	default:
 		if raw != "" {
 			return "unknown"
@@ -446,3 +495,6 @@ func normalizeConclusion(raw string) string {
 		return ""
 	}
 }
+
+// int64Field is kept for backward compatibility with callers that use non-optional semantics.
+var _ = int64Field

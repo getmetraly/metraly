@@ -28,16 +28,21 @@ var ErrSourceNotFound = fmt.Errorf("source connection not found: %w", repo.ErrNo
 var ErrCredentialNotFound = fmt.Errorf("credential not found: %w", repo.ErrNotFound)
 
 // SourceRepo is the persistence interface for source connections.
+// All reads that could expose cross-tenant data require an explicit workspaceID.
 type SourceRepo interface {
 	CreateSource(ctx context.Context, sc *domain.SourceConnection) error
 	CreateSourceWithCredential(ctx context.Context, sc *domain.SourceConnection, cr *domain.CredentialRef, encryptedSecret string) error
-	GetSource(ctx context.Context, id string) (*domain.SourceConnection, error)
+	// GetSource retrieves a source by ID within the given workspace.
+	// Returns repo.ErrNotFound when id or workspaceID does not match.
+	GetSource(ctx context.Context, workspaceID, id string) (*domain.SourceConnection, error)
 	ListSources(ctx context.Context, workspaceID string) ([]*domain.SourceConnection, error)
 	UpdateSourceStatus(ctx context.Context, id string, status domain.SourceStatus, testedAt, syncedAt *time.Time) error
 	AttachCredential(ctx context.Context, sourceID, credentialID string) error
 	CreateCredential(ctx context.Context, cr *domain.CredentialRef, encryptedSecret string) error
 	GetCredential(ctx context.Context, id string) (*domain.CredentialRef, error)
-	GetEncryptedSecret(ctx context.Context, credentialID string) (string, error)
+	// GetEncryptedSecret retrieves the encrypted secret for a credential within the given workspace.
+	// Returns repo.ErrNotFound when credentialID or workspaceID does not match.
+	GetEncryptedSecret(ctx context.Context, workspaceID, credentialID string) (string, error)
 }
 
 // SourceSvc implements business logic for source registry and credential management.
@@ -101,9 +106,9 @@ func (s *SourceSvc) CreateSource(ctx context.Context, workspaceID string, input 
 	return sc, cred, nil
 }
 
-// GetSource retrieves a source connection without any secret material.
-func (s *SourceSvc) GetSource(ctx context.Context, id string) (*domain.SourceConnection, error) {
-	sc, err := s.repo.GetSource(ctx, id)
+// GetSource retrieves a source connection scoped to workspaceID without any secret material.
+func (s *SourceSvc) GetSource(ctx context.Context, workspaceID, id string) (*domain.SourceConnection, error) {
+	sc, err := s.repo.GetSource(ctx, workspaceID, id)
 	if errors.Is(err, repo.ErrNotFound) {
 		return nil, ErrSourceNotFound
 	}
@@ -116,10 +121,9 @@ func (s *SourceSvc) ListSources(ctx context.Context, workspaceID string) ([]*dom
 }
 
 // TestConnection performs a connection test via the registered source adapter.
-// If no adapter is registered for the source type, TestResultUnsupportedSource is returned.
-// Status persistence errors are surfaced as warnings in the result message (non-fatal).
-func (s *SourceSvc) TestConnection(ctx context.Context, sourceID string) (*domain.ConnectionTestResult, error) {
-	sc, err := s.repo.GetSource(ctx, sourceID)
+// Both source and credential lookup are workspace-scoped.
+func (s *SourceSvc) TestConnection(ctx context.Context, workspaceID, sourceID string) (*domain.ConnectionTestResult, error) {
+	sc, err := s.repo.GetSource(ctx, workspaceID, sourceID)
 	if errors.Is(err, repo.ErrNotFound) {
 		return &domain.ConnectionTestResult{
 			Status:   domain.TestResultUnknown,
@@ -147,10 +151,10 @@ func (s *SourceSvc) TestConnection(ctx context.Context, sourceID string) (*domai
 		}, nil
 	}
 
-	// Decrypt secret for adapter — secret is used only in this scope and not stored.
+	// Decrypt secret for adapter — both source and credential are scoped to workspaceID.
 	var secret string
 	if sc.CredentialID != "" {
-		enc, err := s.repo.GetEncryptedSecret(ctx, sc.CredentialID)
+		enc, err := s.repo.GetEncryptedSecret(ctx, sc.WorkspaceID, sc.CredentialID)
 		if errors.Is(err, repo.ErrNotFound) || enc == "" {
 			return &domain.ConnectionTestResult{
 				Status:    domain.TestResultInvalidCreds,
@@ -201,6 +205,20 @@ func (s *SourceSvc) TestConnection(ctx context.Context, sourceID string) (*domai
 	}
 
 	return result, adapterErr
+}
+
+// DecryptSecretForSource decrypts the credential for the given source.
+// The source must have already been loaded from the correct workspace.
+// Exposed for use by CollectorSvc, which owns the workspace-scoped source.
+func (s *SourceSvc) DecryptSecretForSource(ctx context.Context, sc *domain.SourceConnection) (string, error) {
+	if sc.CredentialID == "" {
+		return "", nil
+	}
+	enc, err := s.repo.GetEncryptedSecret(ctx, sc.WorkspaceID, sc.CredentialID)
+	if err != nil {
+		return "", fmt.Errorf("get encrypted secret: %w", err)
+	}
+	return s.decryptSecret(enc)
 }
 
 // — Credential encryption helpers —
@@ -276,7 +294,10 @@ func newID() string {
 }
 
 // DeriveKey derives a 32-byte AES key from a passphrase using SHA-256.
-// Only for dev-mode key derivation; production must use a proper KMS or secret manager.
+//
+// WARNING: This is a weak KDF suitable ONLY for development/test environments.
+// In production, SOURCE_SECRET_KEY must be a securely generated 32-byte value
+// provided via environment variable; never derived from a static passphrase.
 func DeriveKey(passphrase string) []byte {
 	h := sha256.Sum256([]byte(passphrase))
 	return h[:]
