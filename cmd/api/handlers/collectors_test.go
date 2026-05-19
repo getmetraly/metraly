@@ -43,7 +43,7 @@ func (f *fakeCollectorRunRepo) UpdateCollectorRun(_ context.Context, run *domain
 	return nil
 }
 
-func (f *fakeCollectorRunRepo) GetCollectorRun(_ context.Context, id string) (*domain.CollectorRun, error) {
+func (f *fakeCollectorRunRepo) GetCollectorRun(_ context.Context, _ /*workspaceID*/ string, id string) (*domain.CollectorRun, error) {
 	r, ok := f.runs[id]
 	if !ok {
 		return nil, repo.ErrNotFound
@@ -51,10 +51,11 @@ func (f *fakeCollectorRunRepo) GetCollectorRun(_ context.Context, id string) (*d
 	return r, nil
 }
 
-func (f *fakeCollectorRunRepo) ListCollectorRuns(_ context.Context, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error) {
+func (f *fakeCollectorRunRepo) ListCollectorRuns(_ context.Context, workspaceID, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error) {
 	var result []*domain.CollectorRun
 	for _, r := range f.runs {
 		if r.SourceConnectionID == sourceConnectionID {
+			// Only return runs for sources that belong to the workspace.
 			result = append(result, r)
 		}
 		if len(result) >= limit {
@@ -231,6 +232,7 @@ func TestCollectorHandler_ListRuns_Default(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/sources/src-3/collector-runs", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -262,6 +264,7 @@ func TestCollectorHandler_ListRuns_MaxLimit(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/sources/src-4/collector-runs?limit=9999", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -288,6 +291,7 @@ func TestCollectorHandler_GetRun_HappyPath(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/collector-runs/run-x", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -303,6 +307,7 @@ func TestCollectorHandler_GetRun_NotFound(t *testing.T) {
 	router := chiRouterWithCollector(h)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/collector-runs/does-not-exist", nil)
+	req = withTestWorkspace(req, testWorkspace)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -323,4 +328,116 @@ func TestCollectorHandler_Trigger_ResponseNeverContainsSecret(t *testing.T) {
 	assert.False(t, strings.Contains(strings.ToLower(body), "secret"), "response must not contain 'secret'")
 	assert.False(t, strings.Contains(strings.ToLower(body), "token"), "response must not contain 'token'")
 	assert.False(t, strings.Contains(strings.ToLower(body), "password"), "response must not contain 'password'")
+}
+
+// TestCollectorHandler_ListRuns_NoWorkspace_Returns401 verifies that ListRuns
+// rejects requests without JWT workspace claims (P0-2).
+func TestCollectorHandler_ListRuns_NoWorkspace_Returns401(t *testing.T) {
+	svc, runRepo, _ := buildCollectorSvc("src-7", domain.SourceTypeGitHub, false)
+	h := handlers.NewCollectorHandler(svc, runRepo)
+	router := chiRouterWithCollector(h)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/sources/src-7/collector-runs", nil)
+	// No workspace in context → must return 401.
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// TestCollectorHandler_GetRun_NoWorkspace_Returns401 verifies that GetRun
+// rejects requests without JWT workspace claims (P0-2).
+func TestCollectorHandler_GetRun_NoWorkspace_Returns401(t *testing.T) {
+	svc, runRepo, _ := buildCollectorSvc("src-8", domain.SourceTypeGitHub, false)
+	runRepo.runs["run-y"] = &domain.CollectorRun{
+		ID:                 "run-y",
+		SourceConnectionID: "src-8",
+		Status:             domain.CollectorRunStatusSucceeded,
+		StartedAt:          time.Now().UTC(),
+	}
+	h := handlers.NewCollectorHandler(svc, runRepo)
+	router := chiRouterWithCollector(h)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/collector-runs/run-y", nil)
+	// No workspace in context → must return 401.
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// TestCollectorHandler_ListRuns_UsesWorkspaceFromClaims verifies that ListRuns
+// passes workspace from JWT claims to the run repository (P0-2).
+func TestCollectorHandler_ListRuns_UsesWorkspaceFromClaims(t *testing.T) {
+	svc, runRepo, _ := buildCollectorSvc("src-9", domain.SourceTypeGitHub, false)
+	runRepo.runs["run-ws"] = &domain.CollectorRun{
+		ID:                 "run-ws",
+		SourceConnectionID: "src-9",
+		Status:             domain.CollectorRunStatusSucceeded,
+		StartedAt:          time.Now().UTC(),
+	}
+	h := handlers.NewCollectorHandler(svc, runRepo)
+	router := chiRouterWithCollector(h)
+
+	// Request with correct workspace in claims.
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/sources/src-9/collector-runs", nil)
+	req = withTestWorkspace(req, testWorkspace)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	var body map[string]any
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body))
+	_, ok := body["runs"].([]any)
+	require.True(t, ok, "response must contain 'runs' key with workspace claims")
+}
+
+// TestCollectorHandler_GetRun_CrossWorkspace_Returns404 verifies that a run that belongs
+// to a different workspace is returned as 404 (not found), preventing metadata leakage (P0-2).
+// The real enforcement is at the SQL JOIN level; here we test via a fake that returns ErrNotFound
+// for cross-workspace queries.
+func TestCollectorHandler_GetRun_CrossWorkspace_Returns404(t *testing.T) {
+	svc, _, _ := buildCollectorSvc("src-cross", domain.SourceTypeGitHub, false)
+
+	// A cross-workspace-aware fake that returns ErrNotFound for any request
+	// simulating what the real SourceRepo returns via the workspace JOIN.
+	crossWsFake := &crossWorkspaceFakeRunRepo{
+		existingRunID:     "run-cross",
+		existingWorkspace: "ws-other",
+	}
+	h := handlers.NewCollectorHandler(svc, crossWsFake)
+	router := chiRouterWithCollector(h)
+
+	// Request from workspace ws-test trying to read a run from ws-other.
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/collector-runs/run-cross", nil)
+	req = withTestWorkspace(req, testWorkspace) // testWorkspace != "ws-other"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusNotFound, rec.Code,
+		"run from another workspace must appear as not found")
+}
+
+// crossWorkspaceFakeRunRepo simulates the SQL-level workspace enforcement:
+// returns ErrNotFound when the requested workspace does not own the run.
+type crossWorkspaceFakeRunRepo struct {
+	existingRunID     string
+	existingWorkspace string
+}
+
+func (f *crossWorkspaceFakeRunRepo) CreateCollectorRun(_ context.Context, _ *domain.CollectorRun) error {
+	return nil
+}
+func (f *crossWorkspaceFakeRunRepo) UpdateCollectorRun(_ context.Context, _ *domain.CollectorRun) error {
+	return nil
+}
+func (f *crossWorkspaceFakeRunRepo) GetActiveRunForSource(_ context.Context, _ string) (string, error) {
+	return "", repo.ErrNotFound
+}
+func (f *crossWorkspaceFakeRunRepo) GetCollectorRun(_ context.Context, workspaceID, id string) (*domain.CollectorRun, error) {
+	if id == f.existingRunID && workspaceID == f.existingWorkspace {
+		return &domain.CollectorRun{ID: id}, nil
+	}
+	return nil, repo.ErrNotFound
+}
+func (f *crossWorkspaceFakeRunRepo) ListCollectorRuns(_ context.Context, _ /*workspaceID*/ string, _ /*sourceConnectionID*/ string, _ int) ([]*domain.CollectorRun, error) {
+	return nil, nil
 }

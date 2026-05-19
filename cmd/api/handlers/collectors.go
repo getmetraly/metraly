@@ -21,9 +21,11 @@ import (
 )
 
 // CollectorRunFetcher is the read-only view of collector run persistence used by this handler.
+// Methods are workspace-scoped: calls return ErrNotFound when the run/source belongs to a
+// different workspace, preventing cross-tenant metadata leakage (P0-2).
 type CollectorRunFetcher interface {
-	GetCollectorRun(ctx context.Context, id string) (*domain.CollectorRun, error)
-	ListCollectorRuns(ctx context.Context, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error)
+	GetCollectorRun(ctx context.Context, workspaceID, id string) (*domain.CollectorRun, error)
+	ListCollectorRuns(ctx context.Context, workspaceID, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error)
 }
 
 // CollectorHandler handles HTTP requests for the collector API.
@@ -80,7 +82,13 @@ func (h *CollectorHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListRuns handles GET /api/v1/sources/{id}/collector-runs.
+// Workspace is scoped to JWT claims; runs for sources in other workspaces are hidden.
 func (h *CollectorHandler) ListRuns(w http.ResponseWriter, r *http.Request) {
+	wsID, ok := workspaceID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", "workspace not resolved from token")
+		return
+	}
 	sourceID := chi.URLParam(r, "id")
 	limit := 20
 	if raw := r.URL.Query().Get("limit"); raw != "" {
@@ -92,7 +100,7 @@ func (h *CollectorHandler) ListRuns(w http.ResponseWriter, r *http.Request) {
 		limit = 100
 	}
 
-	runs, err := h.runRepo.ListCollectorRuns(r.Context(), sourceID, limit)
+	runs, err := h.runRepo.ListCollectorRuns(r.Context(), wsID, sourceID, limit)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to list runs")
 		return
@@ -104,9 +112,15 @@ func (h *CollectorHandler) ListRuns(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRun handles GET /api/v1/collector-runs/{id}.
+// Returns 404 when the run exists but belongs to a different workspace (P0-2).
 func (h *CollectorHandler) GetRun(w http.ResponseWriter, r *http.Request) {
+	wsID, ok := workspaceID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", "workspace not resolved from token")
+		return
+	}
 	id := chi.URLParam(r, "id")
-	run, err := h.runRepo.GetCollectorRun(r.Context(), id)
+	run, err := h.runRepo.GetCollectorRun(r.Context(), wsID, id)
 	if errors.Is(err, repo.ErrNotFound) {
 		respond.Error(w, http.StatusNotFound, "RUN_NOT_FOUND", "collector run not found")
 		return

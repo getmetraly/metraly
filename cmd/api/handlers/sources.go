@@ -5,6 +5,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -99,4 +100,15 @@ func workspaceID(r *http.Request) (string, bool) {
 		return "", false
 	}
 	return claims.Workspace, true
+}
+
+// workspaceIDFromCtx extracts workspace from a context.Context (for internal helpers
+// that don't have direct access to *http.Request).
+// Returns "" when claims are absent — callers should treat empty as "no workspace".
+func workspaceIDFromCtx(ctx context.Context) string {
+	claims := middleware.ClaimsFrom(ctx)
+	if claims == nil {
+		return ""
+	}
+	return claims.Workspace
 }

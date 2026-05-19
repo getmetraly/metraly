@@ -33,9 +33,11 @@ func NewMetricQueryHandler(svc MetricQueryExecutor) *MetricQueryHandler {
 }
 
 // metricQueryRequest is the deserialized body for POST /api/v1/metrics/query.
+// WorkspaceID in the body is accepted for backward-compatibility but is IGNORED
+// for authorization; the authoritative workspace comes from JWT claims.
 type metricQueryRequest struct {
 	MetricID    string            `json:"metricId"`
-	WorkspaceID string            `json:"workspaceId"`
+	WorkspaceID string            `json:"workspaceId"` // ignored; use JWT claims
 	Granularity string            `json:"granularity"`
 	Start       string            `json:"start"` // RFC3339
 	End         string            `json:"end"`   // RFC3339
@@ -44,9 +46,17 @@ type metricQueryRequest struct {
 }
 
 // Query handles POST /api/v1/metrics/query.
+// Workspace is always sourced from JWT claims — body workspaceId is ignored.
 // Returns a MetricQueryResult with quality metadata.
 // Never returns fake data; returns quality=empty with notes when data is absent.
 func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
+	// P0-1: workspace must come from authenticated JWT claims, never from the request body.
+	wsID, ok := workspaceID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", "workspace not resolved from token")
+		return
+	}
+
 	var req metricQueryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "INVALID_JSON", err.Error())
@@ -54,10 +64,6 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.MetricID == "" {
 		respond.Error(w, http.StatusBadRequest, "MISSING_METRIC_ID", "metricId is required")
-		return
-	}
-	if req.WorkspaceID == "" {
-		respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", "workspaceId is required")
 		return
 	}
 	if req.Start == "" || req.End == "" {
@@ -91,7 +97,7 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	q := domain.MetricQuery{
 		MetricID:    req.MetricID,
-		WorkspaceID: req.WorkspaceID,
+		WorkspaceID: wsID, // authoritative: JWT claims, not req.WorkspaceID
 		Granularity: req.Granularity,
 		Start:       start,
 		End:         end,
@@ -105,13 +111,13 @@ func (h *MetricQueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, biz.ErrMetricNotFound):
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", err.Error())
 		case errors.Is(err, biz.ErrMissingWorkspaceID):
-			respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", err.Error())
+			respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", err.Error())
 		case errors.Is(err, biz.ErrUnsupportedGroupBy):
 			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_GROUP_BY", err.Error())
 		case errors.Is(err, biz.ErrUnsupportedFilter):
 			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
 		default:
-			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
+			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", "internal query error")
 		}
 		return
 	}

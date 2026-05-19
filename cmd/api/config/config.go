@@ -45,6 +45,12 @@ type AppConfig struct {
 	// Allowed values: "production" | "development" | "test"
 	// Affects: ephemeral key allowance, startup-fail behaviour on missing secrets.
 	AppEnv string
+
+	// EnableLegacyMockEndpoints controls whether the public legacy /api/v1/teams and
+	// /api/v1/dashboard mock endpoints are active.
+	// Default: false in production (disabled), true in development (enabled).
+	// Set ENABLE_LEGACY_MOCK_ENDPOINTS=true to override in non-production environments.
+	EnableLegacyMockEndpoints bool
 }
 
 func getEnv(key, def string) string {
@@ -99,5 +105,9 @@ func Load() AppConfig {
 		CORSAllowedOrigins: origins,
 		DefaultWorkspaceID: getEnv("DEFAULT_WORKSPACE_ID", "ws-default"),
 		AppEnv:             getEnv("APP_ENV", "development"),
+		// Legacy mock endpoints: disabled in production by default; enabled in dev/test.
+		// Override with ENABLE_LEGACY_MOCK_ENDPOINTS=true for non-production environments.
+		EnableLegacyMockEndpoints: getEnv("APP_ENV", "development") != "production" ||
+			getEnv("ENABLE_LEGACY_MOCK_ENDPOINTS", "false") == "true",
 	}
 }

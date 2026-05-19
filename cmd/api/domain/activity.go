@@ -13,6 +13,7 @@ type ActivityUser struct {
 
 type ActivityEvent struct {
 	ID          string       `json:"id"`
+	WorkspaceID string       `json:"workspaceId,omitempty"` // required for multi-tenant inserts
 	Type        string       `json:"type"`
 	Title       string       `json:"title"`
 	Description string       `json:"description"`

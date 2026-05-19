@@ -53,7 +53,7 @@ func (h *IngestionHandler) ingest(w http.ResponseWriter, r *http.Request, source
 
 	result, err := h.svc.Ingest(r.Context(), req)
 	if err != nil {
-		respond.Error(w, http.StatusBadRequest, "INGEST_FAILED", err.Error())
+		respond.Error(w, http.StatusBadRequest, "INGEST_FAILED", "ingest request failed")
 		return
 	}
 	respond.JSON(w, http.StatusAccepted, result)

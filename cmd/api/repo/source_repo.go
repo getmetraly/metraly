@@ -12,6 +12,7 @@ import (
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -144,10 +145,30 @@ func (r *SourceRepo) CreateSourceWithCredential(
 	})
 }
 
+// ErrRunIDConflict is returned when a runID already exists for a different source.
+// This indicates a programming bug (caller recycled a run ID).
+var ErrRunIDConflict = errors.New("run ID already exists for a different source connection")
+
+// ErrActiveRunExists is returned when the DB partial unique index rejects an INSERT
+// because an active (started/running) run already exists for the source.
+// Callers in the biz layer map this to biz.ErrRunInFlight.
+var ErrActiveRunExists = errors.New("active run already exists for this source")
+
+// isUniqueViolation returns true when err is a PostgreSQL unique-constraint violation (code 23505).
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
 // CreateCollectorRun inserts a new collector run record.
-// Uses ON CONFLICT (id) DO NOTHING so the same runID can be safely retried after a crash.
+//
+// Idempotency semantics (P1-2):
+//   - Same runID, same source_connection_id: silently ignored (safe retry after a crash).
+//   - Same runID, different source_connection_id: returns ErrRunIDConflict (programming error).
+//   - DB unique-index prevents two active runs for same source: returns ErrActiveRunExists.
+//   - No conflict: inserts and returns nil.
 func (r *SourceRepo) CreateCollectorRun(ctx context.Context, run *domain.CollectorRun) error {
-	_, err := r.pool.Exec(ctx, `
+	tag, err := r.pool.Exec(ctx, `
 		INSERT INTO collector_runs
 		(id, source_connection_id, collector_type, status, started_at, cursor,
 		 raw_event_count, error_category, error_message, rate_limit_state)
@@ -156,7 +177,29 @@ func (r *SourceRepo) CreateCollectorRun(ctx context.Context, run *domain.Collect
 		run.ID, run.SourceConnectionID, run.CollectorType, string(run.Status),
 		run.StartedAt, run.Cursor, run.RawEventCount,
 		run.ErrorCategory, run.ErrorMessage, string(run.RateLimitState))
-	return err
+	if err != nil {
+		// The partial unique index fires when an active run already exists for the source.
+		if isUniqueViolation(err) {
+			return ErrActiveRunExists
+		}
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		// Row already exists (ON CONFLICT DO NOTHING fired) — verify same source.
+		var existingSource string
+		qErr := r.pool.QueryRow(ctx,
+			`SELECT source_connection_id FROM collector_runs WHERE id=$1`, run.ID,
+		).Scan(&existingSource)
+		if qErr != nil {
+			// Can't verify; treat as idempotent to avoid spurious errors.
+			return nil
+		}
+		if existingSource != run.SourceConnectionID {
+			return ErrRunIDConflict
+		}
+		// Same source: idempotent retry — caller already holds the run record.
+	}
+	return nil
 }
 
 func (r *SourceRepo) UpdateCollectorRun(ctx context.Context, run *domain.CollectorRun) error {
@@ -179,8 +222,19 @@ func (r *SourceRepo) GetActiveRunForSource(ctx context.Context, sourceConnection
 	return runID, err
 }
 
-func (r *SourceRepo) ListCollectorRuns(ctx context.Context, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error) {
-	rows, err := r.pool.Query(ctx, `SELECT id, source_connection_id, collector_type, status, started_at, finished_at, cursor, raw_event_count, error_category, error_message, rate_limit_state, retry_after FROM collector_runs WHERE source_connection_id=$1 ORDER BY started_at DESC LIMIT $2`, sourceConnectionID, limit)
+// ListCollectorRuns returns paginated runs for a source, scoped to workspaceID.
+// Returns ErrNotFound when the source does not exist or belongs to a different workspace.
+// Results are ordered by started_at DESC.
+func (r *SourceRepo) ListCollectorRuns(ctx context.Context, workspaceID, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT cr.id, cr.source_connection_id, cr.collector_type, cr.status,
+		       cr.started_at, cr.finished_at, cr.cursor, cr.raw_event_count,
+		       cr.error_category, cr.error_message, cr.rate_limit_state, cr.retry_after
+		FROM collector_runs cr
+		JOIN source_connections sc ON sc.id = cr.source_connection_id
+		WHERE cr.source_connection_id=$1 AND sc.workspace_id=$2
+		ORDER BY cr.started_at DESC LIMIT $3`,
+		sourceConnectionID, workspaceID, limit)
 	if err != nil {
 		return nil, err
 	}

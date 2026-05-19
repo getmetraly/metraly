@@ -42,7 +42,7 @@ func (h *MetricCatalogHandler) GetMetric(w http.ResponseWriter, r *http.Request)
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", "metric not found: "+id)
 			return
 		}
-		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal catalog error")
 		return
 	}
 	respond.JSON(w, http.StatusOK, m)
@@ -88,7 +88,7 @@ func (h *MetricCatalogHandler) ValidateFormula(w http.ResponseWriter, r *http.Re
 			respond.Error(w, http.StatusNotFound, "METRIC_NOT_FOUND", "metric not found: "+req.MetricID)
 			return
 		}
-		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", "formula validation error")
 		return
 	}
 

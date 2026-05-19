@@ -18,12 +18,8 @@ type mockIngestionActivityRepo struct {
 	mock.Mock
 }
 
-func (m *mockIngestionActivityRepo) List(ctx context.Context, limit int) ([]*domain.ActivityEvent, error) {
-	args := m.Called(ctx, limit)
-	if events, ok := args.Get(0).([]*domain.ActivityEvent); ok {
-		return events, args.Error(1)
-	}
-	return nil, args.Error(1)
+func (m *mockIngestionActivityRepo) List(_ context.Context, _ string, _ int) ([]*domain.ActivityEvent, error) {
+	return nil, nil
 }
 
 func (m *mockIngestionActivityRepo) BulkInsert(ctx context.Context, events []*domain.ActivityEvent) error {

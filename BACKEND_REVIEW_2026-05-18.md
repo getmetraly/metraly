@@ -1,3 +1,6 @@
+> **SUPERSEDED** — This document is stale. Use `BACKEND_REVIEW_REMEDIATION_REPORT_2026-05-19.md` as the current source of truth.
+> All findings from this review have been addressed (either fixed in the session documented by the earlier `BACKEND_REVIEW_REMEDIATION_REPORT_2026-05-19.md`, or fixed in the new remediation session on 2026-05-19).
+
 # Backend Coding Review Report — getmetraly/metraly
 
 **Date**: 2026-05-18  

@@ -53,9 +53,11 @@ type metricWidgetRequest struct {
 }
 
 // metricWidgetQuery carries the metric execution parameters.
+// WorkspaceID in the body is accepted for backward-compatibility but is IGNORED
+// for authorization; the authoritative workspace comes from JWT claims.
 type metricWidgetQuery struct {
 	MetricID    string            `json:"metricId"`
-	WorkspaceID string            `json:"workspaceId"`
+	WorkspaceID string            `json:"workspaceId"` // ignored; use JWT claims
 	Granularity string            `json:"granularity"`
 	Start       string            `json:"start"` // RFC3339
 	End         string            `json:"end"`   // RFC3339
@@ -96,7 +98,15 @@ type activityFeedWidgetData struct {
 }
 
 // Query handles POST /api/v1/metrics/widget-data.
+// Workspace is always sourced from JWT claims — body workspaceId is ignored.
 func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
+	// P0-1: workspace must come from authenticated JWT claims, never from the request body.
+	wsID, ok := workspaceID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "MISSING_WORKSPACE", "workspace not resolved from token")
+		return
+	}
+
 	var req metricWidgetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "INVALID_JSON", err.Error())
@@ -109,7 +119,7 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	// activity_feed is handled separately and does not require a metricId.
 	if req.WidgetType == "activity_feed" {
-		h.handleActivityFeed(w, r, req)
+		h.handleActivityFeed(w, r, req, wsID)
 		return
 	}
 
@@ -155,7 +165,7 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 	q := domain.MetricQuery{
 		MetricID:    req.Query.MetricID,
-		WorkspaceID: req.Query.WorkspaceID,
+		WorkspaceID: wsID, // authoritative: JWT claims, not req.Query.WorkspaceID
 		Granularity: req.Query.Granularity,
 		Start:       start,
 		End:         end,
@@ -173,7 +183,7 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, biz.ErrUnsupportedFilter):
 			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
 		default:
-			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
+			respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", "internal query error")
 		}
 		return
 	}
@@ -181,7 +191,7 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 	data, err := adaptToWidgetShape(req.WidgetType, result)
 	if err != nil {
 		// Should not reach here since widgetType is pre-validated above, but guard defensively.
-		respond.Error(w, http.StatusInternalServerError, "ADAPT_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "ADAPT_FAILED", "internal adapt error")
 		return
 	}
 
@@ -194,16 +204,11 @@ func (h *WidgetDataHandler) Query(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleActivityFeed processes the activity_feed widget type.
-func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Request, req metricWidgetRequest) {
+// wsID is the workspace extracted from JWT claims (already validated by Query).
+func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Request, req metricWidgetRequest, wsID string) {
 	if h.activitySvc == nil {
 		respond.Error(w, http.StatusNotImplemented, "ACTIVITY_FEED_NOT_ENABLED",
 			"activity_feed widget type is not enabled in this deployment")
-		return
-	}
-
-	// Workspace isolation: empty workspaceId would produce an unscoped cross-tenant read.
-	if req.Query.WorkspaceID == "" {
-		respond.Error(w, http.StatusBadRequest, "MISSING_WORKSPACE_ID", "query.workspaceId is required")
 		return
 	}
 
@@ -223,7 +228,7 @@ func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Re
 	}
 
 	q := domain.ActivityFeedQuery{
-		WorkspaceID: req.Query.WorkspaceID,
+		WorkspaceID: wsID, // authoritative: JWT claims
 		Start:       start,
 		End:         end,
 		Filters:     req.Query.Filters,
@@ -236,7 +241,7 @@ func (h *WidgetDataHandler) handleActivityFeed(w http.ResponseWriter, r *http.Re
 			respond.Error(w, http.StatusBadRequest, "UNSUPPORTED_FILTER", err.Error())
 			return
 		}
-		respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "QUERY_FAILED", "internal query error")
 		return
 	}
 
@@ -306,8 +311,13 @@ func adaptTimeSeries(result domain.MetricQueryResult) timeSeriesData {
 }
 
 func adaptTable(result domain.MetricQueryResult) tableWidgetData {
-	return tableWidgetData{
+	td := tableWidgetData{
 		Columns: result.Data.Columns,
-		Rows:    result.Data.Rows,
+		Rows:    make([][]any, 0, len(result.Data.Rows)),
 	}
+	if td.Columns == nil {
+		td.Columns = []string{}
+	}
+	td.Rows = append(td.Rows, result.Data.Rows...)
+	return td
 }

@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/getmetraly/metraly/cmd/api/biz"
@@ -16,8 +17,6 @@ import (
 	"github.com/getmetraly/metraly/cmd/api/respond"
 	"github.com/go-chi/chi/v5"
 )
-
-const fallbackDashboardOwnerID = "admin-seed"
 
 type DashboardHandler struct {
 	svc *biz.DashboardSvc
@@ -33,9 +32,15 @@ func (h *DashboardHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dashboards, err := h.svc.List(r.Context(), dashboardOwnerID(r))
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+
+	dashboards, err := h.svc.List(r.Context(), userID)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_LIST_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_LIST_FAILED", "failed to list dashboards")
 		return
 	}
 	respond.JSON(w, http.StatusOK, dashboards)
@@ -44,6 +49,12 @@ func (h *DashboardHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
+		return
+	}
+
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
 		return
 	}
 
@@ -63,7 +74,7 @@ func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Name:             input.Name,
 		Description:      input.Description,
 		Icon:             input.Icon,
-		OwnerID:          dashboardOwnerID(r),
+		OwnerID:          userID, // always from JWT claims; never from body
 		IsPublic:         false,
 		SourceType:       sourceType,
 		SourceTemplateID: input.SourceTemplateID,
@@ -73,19 +84,27 @@ func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Create(r.Context(), dashboard); err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_CREATE_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_CREATE_FAILED", "failed to create dashboard")
 		return
 	}
 	respond.JSON(w, http.StatusOK, dashboard)
 }
 
+// Get returns a dashboard by ID.
+// Allowed for the owner or for any user if the dashboard is public (P0-3).
 func (h *DashboardHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
 		return
 	}
 
-	dashboard, err := h.svc.GetByID(r.Context(), chi.URLParam(r, "id"))
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+
+	dashboard, err := h.svc.GetByIDForUser(r.Context(), chi.URLParam(r, "id"), userID)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -93,9 +112,16 @@ func (h *DashboardHandler) Get(w http.ResponseWriter, r *http.Request) {
 	respond.JSON(w, http.StatusOK, dashboard)
 }
 
+// Update mutates a dashboard. Only the owner is allowed (P0-3).
 func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
+		return
+	}
+
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
 		return
 	}
 
@@ -105,7 +131,8 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	current, err := h.svc.GetByID(r.Context(), chi.URLParam(r, "id"))
+	// GetByIDOwned enforces ownership — foreign/private dashboards are 404.
+	current, err := h.svc.GetByIDOwned(r.Context(), chi.URLParam(r, "id"), userID)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -116,7 +143,7 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Name:             input.Name,
 		Description:      input.Description,
 		Icon:             input.Icon,
-		OwnerID:          current.OwnerID,
+		OwnerID:          current.OwnerID, // preserve — never accept ownerID from body
 		IsPublic:         current.IsPublic,
 		SourceType:       current.SourceType,
 		SourceTemplateID: current.SourceTemplateID,
@@ -131,7 +158,7 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := h.svc.Update(r.Context(), dashboard)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_UPDATE_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_UPDATE_FAILED", "failed to update dashboard")
 		return
 	}
 	if !updated {
@@ -147,9 +174,16 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 	respond.JSON(w, http.StatusOK, updatedDashboard)
 }
 
+// UpdateLayout changes the layout. Only the owner is allowed (P0-3).
 func (h *DashboardHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
+		return
+	}
+
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
 		return
 	}
 
@@ -159,9 +193,13 @@ func (h *DashboardHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, err := h.svc.UpdateLayout(r.Context(), chi.URLParam(r, "id"), input.Layout, input.Version)
+	updated, err := h.svc.UpdateLayoutForUser(r.Context(), chi.URLParam(r, "id"), input.Layout, input.Version, userID)
+	if errors.Is(err, biz.ErrDashboardNotFound) {
+		http.NotFound(w, r)
+		return
+	}
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_LAYOUT_UPDATE_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_LAYOUT_UPDATE_FAILED", "failed to update layout")
 		return
 	}
 	if !updated {
@@ -178,9 +216,16 @@ func (h *DashboardHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) 
 	respond.JSON(w, http.StatusOK, dashboard)
 }
 
+// UpdateShare toggles sharing. Only the owner is allowed (P0-3).
 func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
+		return
+	}
+
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
 		return
 	}
 
@@ -195,8 +240,13 @@ func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 		token := newShareToken()
 		shareToken = &token
 	}
-	if err := h.svc.UpdateShare(r.Context(), chi.URLParam(r, "id"), input.IsPublic, shareToken); err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_SHARE_UPDATE_FAILED", err.Error())
+
+	if err := h.svc.UpdateShareForUser(r.Context(), chi.URLParam(r, "id"), input.IsPublic, shareToken, userID); err != nil {
+		if errors.Is(err, biz.ErrDashboardNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_SHARE_UPDATE_FAILED", "failed to update share settings")
 		return
 	}
 
@@ -207,13 +257,21 @@ func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Fork creates a copy of a dashboard. Allowed for owner or public dashboards (P0-3).
 func (h *DashboardHandler) Fork(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
 		return
 	}
 
-	source, err := h.svc.GetByID(r.Context(), chi.URLParam(r, "id"))
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+
+	// GetByIDForUser: user can fork their own or any public dashboard.
+	source, err := h.svc.GetByIDForUser(r.Context(), chi.URLParam(r, "id"), userID)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -224,7 +282,7 @@ func (h *DashboardHandler) Fork(w http.ResponseWriter, r *http.Request) {
 		Name:             source.Name + " Copy",
 		Description:      source.Description,
 		Icon:             source.Icon,
-		OwnerID:          dashboardOwnerID(r),
+		OwnerID:          userID, // the requesting user owns the fork
 		IsPublic:         false,
 		SourceType:       domain.DashboardSourceForked,
 		SourceTemplateID: source.SourceTemplateID,
@@ -236,24 +294,28 @@ func (h *DashboardHandler) Fork(w http.ResponseWriter, r *http.Request) {
 		}(),
 	}
 	if err := h.svc.Create(r.Context(), forked); err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_FORK_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_FORK_FAILED", "failed to fork dashboard")
 		return
 	}
 
 	respond.JSON(w, http.StatusOK, forked)
 }
 
-func dashboardOwnerID(r *http.Request) string {
-	if claims := middleware.ClaimsFrom(r.Context()); claims != nil && claims.Sub != "" {
-		return claims.Sub
+// currentUserID extracts the authenticated user's subject claim from the request context.
+// Returns ("", false) when claims are absent or the subject is empty, meaning the route
+// must reject the request with 401. Never falls back to any seed/admin ID.
+func currentUserID(r *http.Request) (string, bool) {
+	claims := middleware.ClaimsFrom(r.Context())
+	if claims == nil || claims.Sub == "" {
+		return "", false
 	}
-	return fallbackDashboardOwnerID
+	return claims.Sub, true
 }
 
 func newDashboardID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		return fallbackDashboardOwnerID
+		return "admin-seed"
 	}
 	return hex.EncodeToString(b[:])
 }
@@ -261,7 +323,7 @@ func newDashboardID() string {
 func newShareToken() string {
 	var b [12]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		return fallbackDashboardOwnerID
+		return "admin-seed"
 	}
 	return hex.EncodeToString(b[:])
 }

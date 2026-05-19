@@ -438,13 +438,18 @@ func scanIdentityMapping(row rowScanner) (*IdentityMapping, error) {
 	return &m, nil
 }
 
-// GetCollectorRun retrieves a single collector run by ID.
-func (sr *SourceRepo) GetCollectorRun(ctx context.Context, id string) (*domain.CollectorRun, error) {
+// GetCollectorRun retrieves a single collector run by ID, scoped to workspaceID.
+// Returns ErrNotFound when the run does not exist or belongs to a different workspace,
+// preventing cross-tenant run metadata leakage (P0-2).
+func (sr *SourceRepo) GetCollectorRun(ctx context.Context, workspaceID, id string) (*domain.CollectorRun, error) {
 	row := sr.pool.QueryRow(ctx, `
-		SELECT id, source_connection_id, collector_type, status, started_at, finished_at,
-		       cursor, raw_event_count, error_category, error_message, rate_limit_state, retry_after
-		FROM collector_runs WHERE id=$1
-	`, id)
+		SELECT cr.id, cr.source_connection_id, cr.collector_type, cr.status,
+		       cr.started_at, cr.finished_at, cr.cursor, cr.raw_event_count,
+		       cr.error_category, cr.error_message, cr.rate_limit_state, cr.retry_after
+		FROM collector_runs cr
+		JOIN source_connections sc ON sc.id = cr.source_connection_id
+		WHERE cr.id=$1 AND sc.workspace_id=$2
+	`, id, workspaceID)
 	run, err := scanCollectorRun(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound

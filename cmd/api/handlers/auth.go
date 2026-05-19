@@ -62,7 +62,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid credentials")
 			return
 		}
-		respond.Error(w, http.StatusInternalServerError, "AUTH_LOGIN_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "AUTH_LOGIN_FAILED", "login service error")
 		return
 	}
 
@@ -91,7 +91,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 			respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid refresh token")
 			return
 		}
-		respond.Error(w, http.StatusInternalServerError, "AUTH_REFRESH_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "AUTH_REFRESH_FAILED", "token refresh service error")
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Logout(r.Context(), req.RefreshToken); err != nil {
-		respond.Error(w, http.StatusInternalServerError, "AUTH_LOGOUT_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "AUTH_LOGOUT_FAILED", "logout service error")
 		return
 	}
 

@@ -52,3 +52,42 @@ func TestNewRouter_PanicsWithoutKeyManager(t *testing.T) {
 		})
 	}, "NewRouter must panic when KeyManager is nil but protected services are provided")
 }
+
+// TestLegacyMockEndpoints_DisabledInProduction verifies that when
+// EnableLegacyMockEndpoints is false (the production default), legacy public
+// mock routes return 404 instead of serving hardcoded JSON (P1-5).
+func TestLegacyMockEndpoints_DisabledInProduction(t *testing.T) {
+	km, _ := auth.NewKeyManager("", true)
+	r := NewRouter(RouterDeps{
+		KeyManager:                km,
+		EnableLegacyMockEndpoints: false, // explicit production setting
+	})
+
+	legacyPaths := []string{
+		"/api/v1/teams",
+		"/api/v1/dashboard",
+		"/api/v1/teams/1",
+		"/api/v1/teams/1/overview",
+	}
+	for _, p := range legacyPaths {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", p, nil)
+		r.ServeHTTP(w, req)
+		assert.Equalf(t, 404, w.Code, "legacy endpoint %s must return 404 when disabled", p)
+	}
+}
+
+// TestLegacyMockEndpoints_EnabledInDevelopmentIfConfigured verifies that legacy
+// endpoints are accessible when EnableLegacyMockEndpoints is explicitly true (P1-5).
+func TestLegacyMockEndpoints_EnabledInDevelopmentIfConfigured(t *testing.T) {
+	km, _ := auth.NewKeyManager("", true)
+	r := NewRouter(RouterDeps{
+		KeyManager:                km,
+		EnableLegacyMockEndpoints: true, // dev/test opt-in
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/teams", nil)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code, "legacy /api/v1/teams must be accessible when enabled")
+}

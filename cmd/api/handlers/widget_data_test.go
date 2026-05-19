@@ -13,9 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/getmetraly/metraly/cmd/api/auth"
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/getmetraly/metraly/cmd/api/handlers"
+	"github.com/getmetraly/metraly/cmd/api/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +58,20 @@ func buildWidgetRequest(widgetType, metricID string) *bytes.Buffer {
 	return bytes.NewBuffer(b)
 }
 
+// doWidgetRequest sends a widget-data request with a valid workspace claim.
 func doWidgetRequest(t *testing.T, executor handlers.MetricQueryExecutor, body *bytes.Buffer) *httptest.ResponseRecorder {
+	t.Helper()
+	h := handlers.NewWidgetDataHandler(executor)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
+	req.Header.Set("Content-Type", "application/json")
+	req = withTestWorkspace(req, testWorkspace)
+	w := httptest.NewRecorder()
+	h.Query(w, req)
+	return w
+}
+
+// doWidgetRequestNoAuth sends a widget-data request without any JWT claims.
+func doWidgetRequestNoAuth(t *testing.T, executor handlers.MetricQueryExecutor, body *bytes.Buffer) *httptest.ResponseRecorder {
 	t.Helper()
 	h := handlers.NewWidgetDataHandler(executor)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
@@ -162,9 +177,10 @@ func TestWidgetDataHandler_ActivityFeed_TypedNil_Returns501(t *testing.T) {
 	h := handlers.NewWidgetDataHandler(executor)
 	h.WithActivityFeed((*stubActivityFeedExecutor)(nil))
 
-	body := buildActivityFeedRequest("ws_01")
+	body := buildActivityFeedRequestBody("ws_01")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
 	req.Header.Set("Content-Type", "application/json")
+	req = withTestWorkspace(req, "ws_01")
 	w := httptest.NewRecorder()
 	h.Query(w, req)
 
@@ -172,20 +188,77 @@ func TestWidgetDataHandler_ActivityFeed_TypedNil_Returns501(t *testing.T) {
 	assertWidgetErrorCode(t, w, "ACTIVITY_FEED_NOT_ENABLED")
 }
 
-func TestWidgetDataHandler_ActivityFeed_EmptyWorkspaceID_Returns400(t *testing.T) {
+// TestWidgetDataHandler_MissingClaimsWorkspace_Returns401 verifies that a request
+// without JWT claims is rejected 401 for any widget type (P0-1).
+func TestWidgetDataHandler_MissingClaimsWorkspace_Returns401(t *testing.T) {
 	executor := &stubMetricQueryExecutor{result: sampleResult("pr_count", [][]any{})}
-	h := handlers.NewWidgetDataHandler(executor)
-	h.WithActivityFeed(&stubActivityFeedExecutor{})
+	w := doWidgetRequestNoAuth(t, executor, buildWidgetRequest("kpi_card", "pr_count"))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assertWidgetErrorCode(t, w, "MISSING_WORKSPACE")
+}
 
-	// workspaceId is absent — must be rejected.
-	body := buildActivityFeedRequest("") // empty workspaceId
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", body)
+// TestWidgetDataHandler_MetricWidget_UsesWorkspaceFromClaims_NotBody verifies that
+// the handler passes the JWT claims workspace to the executor, not the body workspace.
+func TestWidgetDataHandler_MetricWidget_UsesWorkspaceFromClaims_NotBody(t *testing.T) {
+	var capturedQ domain.MetricQuery
+	exec := &capturingExecutor{
+		inner:    okQueryExecutor(),
+		captured: &capturedQ,
+	}
+
+	h := handlers.NewWidgetDataHandler(exec)
+	body, _ := json.Marshal(map[string]any{
+		"widgetType": "kpi_card",
+		"query": map[string]any{
+			"metricId":    "pr_count",
+			"workspaceId": "ws_attacker", // malicious body workspace
+			"granularity": "day",
+			"start":       "2026-01-01T00:00:00Z",
+			"end":         "2026-02-01T00:00:00Z",
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	h.Query(w, req)
+	claimsWS := "ws_legitimate"
+	ctx := context.WithValue(req.Context(), middleware.ClaimsKey, &auth.Claims{Workspace: claimsWS})
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	h.Query(rec, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assertWidgetErrorCode(t, w, "MISSING_WORKSPACE_ID")
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, claimsWS, capturedQ.WorkspaceID,
+		"handler must use workspace from JWT claims, not from body")
+	assert.NotEqual(t, "ws_attacker", capturedQ.WorkspaceID)
+}
+
+// TestWidgetDataHandler_ActivityFeed_UsesWorkspaceFromClaims_NotBody verifies that
+// the activity_feed widget type also uses claims workspace.
+func TestWidgetDataHandler_ActivityFeed_UsesWorkspaceFromClaims_NotBody(t *testing.T) {
+	var capturedQ domain.ActivityFeedQuery
+	stub := &capturingActivityFeedExecutor{captured: &capturedQ}
+
+	h := handlers.NewWidgetDataHandler(&stubMetricQueryExecutor{})
+	h.WithActivityFeed(stub)
+
+	body, _ := json.Marshal(map[string]any{
+		"widgetType": "activity_feed",
+		"query": map[string]any{
+			"workspaceId": "ws_attacker", // body workspace — must be ignored
+			"start":       "2026-01-01T00:00:00Z",
+			"end":         "2026-02-01T00:00:00Z",
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/widget-data", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	claimsWS := "ws_legitimate"
+	ctx := context.WithValue(req.Context(), middleware.ClaimsKey, &auth.Claims{Workspace: claimsWS})
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	h.Query(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, claimsWS, capturedQ.WorkspaceID,
+		"activity_feed must use workspace from JWT claims, not from body")
 }
 
 func TestWidgetDataHandler_MissingWidgetType(t *testing.T) {
@@ -209,8 +282,19 @@ func (s *stubActivityFeedExecutor) Execute(_ context.Context, _ domain.ActivityF
 	return s.result, s.err
 }
 
-// buildActivityFeedRequest builds a widget-data request for the activity_feed widget type.
-func buildActivityFeedRequest(workspaceID string) *bytes.Buffer {
+// capturingActivityFeedExecutor captures the ActivityFeedQuery passed to Execute.
+type capturingActivityFeedExecutor struct {
+	captured *domain.ActivityFeedQuery
+	result   biz.ActivityFeedResult
+}
+
+func (c *capturingActivityFeedExecutor) Execute(_ context.Context, q domain.ActivityFeedQuery) (biz.ActivityFeedResult, error) {
+	*c.captured = q
+	return c.result, nil
+}
+
+// buildActivityFeedRequestBody builds a widget-data request body for the activity_feed widget type.
+func buildActivityFeedRequestBody(workspaceID string) *bytes.Buffer {
 	body := map[string]any{
 		"widgetType": "activity_feed",
 		"query": map[string]any{

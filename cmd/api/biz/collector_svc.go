@@ -49,11 +49,12 @@ type Collector interface {
 }
 
 // CollectorRunRepo handles persistence of collector run records.
+// Only contains methods actually called by CollectorSvc.Run; read-side
+// methods (GetCollectorRun, ListCollectorRuns) live in CollectorRunFetcher
+// in the handlers package, where they are workspace-scoped.
 type CollectorRunRepo interface {
 	CreateCollectorRun(ctx context.Context, run *domain.CollectorRun) error
 	UpdateCollectorRun(ctx context.Context, run *domain.CollectorRun) error
-	GetCollectorRun(ctx context.Context, id string) (*domain.CollectorRun, error)
-	ListCollectorRuns(ctx context.Context, sourceConnectionID string, limit int) ([]*domain.CollectorRun, error)
 	// GetActiveRunForSource returns the run ID of any in-flight run for the source.
 	// Returns repo.ErrNotFound when none exists.
 	GetActiveRunForSource(ctx context.Context, sourceConnectionID string) (string, error)
@@ -144,6 +145,9 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 		RateLimitState:     domain.RateLimitStateOK,
 	}
 	if err := s.runRepo.CreateCollectorRun(ctx, run); err != nil {
+		if errors.Is(err, repo.ErrActiveRunExists) {
+			return nil, fmt.Errorf("%w (db constraint)", ErrRunInFlight)
+		}
 		return nil, fmt.Errorf("create collector run: %w", err)
 	}
 

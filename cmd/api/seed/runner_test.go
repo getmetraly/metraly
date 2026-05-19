@@ -103,7 +103,7 @@ type recordingActivityRepo struct {
 	created []*domain.ActivityEvent
 }
 
-func (r *recordingActivityRepo) List(ctx context.Context, limit int) ([]*domain.ActivityEvent, error) {
+func (r *recordingActivityRepo) List(_ context.Context, _ string, _ int) ([]*domain.ActivityEvent, error) {
 	return nil, nil
 }
 func (r *recordingActivityRepo) BulkInsert(ctx context.Context, events []*domain.ActivityEvent) error {

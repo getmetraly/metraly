@@ -14,9 +14,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/getmetraly/metraly/cmd/api/auth"
 	"github.com/getmetraly/metraly/cmd/api/biz"
 	"github.com/getmetraly/metraly/cmd/api/domain"
 	"github.com/getmetraly/metraly/cmd/api/handlers"
+	"github.com/getmetraly/metraly/cmd/api/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +28,22 @@ func buildQueryRequest(body map[string]any) *bytes.Buffer {
 	return bytes.NewBuffer(b)
 }
 
+// doQueryRequest sends a metric query request with a valid workspace claim (ws_test).
+// Use doQueryRequestNoAuth to omit the workspace claim.
 func doQueryRequest(t *testing.T, executor handlers.MetricQueryExecutor, body *bytes.Buffer) *httptest.ResponseRecorder {
+	t.Helper()
+	h := handlers.NewMetricQueryHandler(executor)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/query", body)
+	req.Header.Set("Content-Type", "application/json")
+	// Inject workspace from JWT claims.
+	req = withTestWorkspace(req, testWorkspace)
+	w := httptest.NewRecorder()
+	h.Query(w, req)
+	return w
+}
+
+// doQueryRequestNoAuth sends a metric query request without any JWT claims.
+func doQueryRequestNoAuth(t *testing.T, executor handlers.MetricQueryExecutor, body *bytes.Buffer) *httptest.ResponseRecorder {
 	t.Helper()
 	h := handlers.NewMetricQueryHandler(executor)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/query", body)
@@ -39,7 +56,7 @@ func doQueryRequest(t *testing.T, executor handlers.MetricQueryExecutor, body *b
 func validQueryBody() map[string]any {
 	return map[string]any{
 		"metricId":    "pr_count",
-		"workspaceId": "ws_test",
+		"workspaceId": "ws_test", // body field; ignored — workspace comes from JWT claims
 		"granularity": "day",
 		"start":       "2026-01-01T00:00:00Z",
 		"end":         "2026-02-01T00:00:00Z",
@@ -100,12 +117,50 @@ func TestMetricQueryHandler_MissingMetricID(t *testing.T) {
 	assertErrorCode(t, w, "MISSING_METRIC_ID")
 }
 
-func TestMetricQueryHandler_MissingWorkspaceID(t *testing.T) {
+// TestMetricQueryHandler_MissingClaimsWorkspace_Returns401 verifies that a request
+// without JWT claims (no workspace) is rejected with 401, not allowed through.
+func TestMetricQueryHandler_MissingClaimsWorkspace_Returns401(t *testing.T) {
 	body := validQueryBody()
-	delete(body, "workspaceId")
-	w := doQueryRequest(t, okQueryExecutor(), buildQueryRequest(body))
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assertErrorCode(t, w, "MISSING_WORKSPACE_ID")
+	// Send with a body workspaceId but NO JWT claims — must be rejected 401.
+	w := doQueryRequestNoAuth(t, okQueryExecutor(), buildQueryRequest(body))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assertErrorCode(t, w, "MISSING_WORKSPACE")
+}
+
+// TestMetricQueryHandler_UsesWorkspaceFromClaims_NotBody verifies that the handler
+// uses the workspace from JWT claims, not from the request body. A malicious client
+// providing a different workspaceId in the body must not be able to query that workspace.
+func TestMetricQueryHandler_UsesWorkspaceFromClaims_NotBody(t *testing.T) {
+	var capturedQ domain.MetricQuery
+	exec := &capturingExecutor{
+		inner:    okQueryExecutor(),
+		captured: &capturedQ,
+	}
+
+	h := handlers.NewMetricQueryHandler(exec)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/metrics/query",
+		buildQueryRequest(map[string]any{
+			"metricId":    "pr_count",
+			"workspaceId": "ws_attacker", // malicious body workspace
+			"granularity": "day",
+			"start":       "2026-01-01T00:00:00Z",
+			"end":         "2026-02-01T00:00:00Z",
+		}))
+	req.Header.Set("Content-Type", "application/json")
+	// JWT claims carry a different workspace.
+	claimsWS := "ws_victim"
+	ctx := context.WithValue(req.Context(), middleware.ClaimsKey, &auth.Claims{Workspace: claimsWS})
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	h.Query(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	// The service must have been called with the claims workspace, not the body one.
+	assert.Equal(t, claimsWS, capturedQ.WorkspaceID,
+		"handler must use workspace from JWT claims, not from body")
+	assert.NotEqual(t, "ws_attacker", capturedQ.WorkspaceID,
+		"body workspaceId must be ignored")
 }
 
 func TestMetricQueryHandler_MissingStart(t *testing.T) {
@@ -169,6 +224,16 @@ func TestMetricQueryHandler_InternalError(t *testing.T) {
 	w := doQueryRequest(t, exec, buildQueryRequest(validQueryBody()))
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assertErrorCode(t, w, "QUERY_FAILED")
+}
+
+// TestMetricQueryHandler_InternalError_DoesNotLeakDetails verifies that 500 responses
+// do not expose raw error details (P1-8).
+func TestMetricQueryHandler_InternalError_DoesNotLeakDetails(t *testing.T) {
+	exec := &stubMetricQueryExecutor{err: errors.New("pq: relation \"secret_table\" does not exist")}
+	w := doQueryRequest(t, exec, buildQueryRequest(validQueryBody()))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	body := w.Body.String()
+	assert.NotContains(t, body, "secret_table", "500 response must not leak internal error details")
 }
 
 // assertErrorCode decodes the response body and asserts the "code" field.

@@ -55,7 +55,7 @@ func (h *PreviewHandler) Templates(w http.ResponseWriter, r *http.Request) {
 
 	templates, err := h.templateSvc.List(r.Context())
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "TEMPLATES_LIST_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "TEMPLATES_LIST_FAILED", "failed to list templates")
 		return
 	}
 	respond.JSON(w, http.StatusOK, templates)
@@ -69,7 +69,7 @@ func (h *PreviewHandler) DORA(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.buildDORA(r.Context(), h.metricRange(r), h.metricTeam(r), h.metricRepo(r))
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "DORA_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "DORA_FAILED", "failed to compute DORA metrics")
 		return
 	}
 	respond.JSON(w, http.StatusOK, resp)
@@ -92,7 +92,7 @@ func (h *PreviewHandler) Metric(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.metricsSvc.GetMetric(r.Context(), metricID, h.metricRange(r), h.metricTeam(r))
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "METRIC_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "METRIC_FAILED", "failed to fetch metric")
 		return
 	}
 	respond.JSON(w, http.StatusOK, resp)
@@ -115,7 +115,7 @@ func (h *PreviewHandler) Breakdown(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.metricsSvc.GetBreakdown(r.Context(), metricID, h.metricRange(r))
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "METRIC_BREAKDOWN_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "METRIC_BREAKDOWN_FAILED", "failed to fetch metric breakdown")
 		return
 	}
 	respond.JSON(w, http.StatusOK, resp)
@@ -129,7 +129,7 @@ func (h *PreviewHandler) Insights(w http.ResponseWriter, r *http.Request) {
 
 	insights, err := h.insightRepo.List(r.Context())
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "INSIGHTS_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "INSIGHTS_FAILED", "failed to fetch insights")
 		return
 	}
 	respond.JSON(w, http.StatusOK, insights)
@@ -141,9 +141,10 @@ func (h *PreviewHandler) Activity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activity, err := h.activityRepo.List(r.Context(), 10)
+	wsID, _ := workspaceID(r)
+	activity, err := h.activityRepo.List(r.Context(), wsID, 10)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "ACTIVITY_FAILED", err.Error())
+		respond.Error(w, http.StatusInternalServerError, "ACTIVITY_FAILED", "failed to fetch activity")
 		return
 	}
 	respond.JSON(w, http.StatusOK, activity)
@@ -361,7 +362,8 @@ func (h *PreviewHandler) tableData(ctx context.Context, tableType string) (any, 
 	case "ai-insights":
 		return h.insightData(ctx, "")
 	default:
-		activity, err := h.activityRepo.List(ctx, 5)
+		wsID := workspaceIDFromCtx(ctx)
+		activity, err := h.activityRepo.List(ctx, wsID, 5)
 		if err != nil {
 			return nil, err
 		}
@@ -441,7 +443,8 @@ func (h *PreviewHandler) activityData(ctx context.Context) (any, error) {
 	if h.activityRepo == nil {
 		return map[string]any{"activities": []any{}}, nil
 	}
-	activity, err := h.activityRepo.List(ctx, 10)
+	wsID := workspaceIDFromCtx(ctx)
+	activity, err := h.activityRepo.List(ctx, wsID, 10)
 	if err != nil {
 		return nil, err
 	}
