@@ -1,7 +1,7 @@
 # Normalized Event Model — Design Spike
 
-> Status: designed (Phase 3 pre-work)
-> Claim level: designed
+> Status: historical design spike with partial implementation already landed
+> Claim level: mixed — event model ideas below are partly implemented, partly still deferred
 
 ## Purpose
 Define the minimum normalized event types and their field mappings needed to compute MVP metrics
@@ -42,11 +42,15 @@ Unresolved identities render with a warning in grouped metrics (§14 of data-cor
 | build_duration_p95 | workflow_run.completed, DurationSeconds | distribution | p95 |
 | sprint_predictability | sprint.closed | ratio | completed_points / planned_points |
 
-## Next implementation step
+## Roadmap-aligned follow-up
 
-Phase 3 implementation order:
-1. Add `normalized_events` table to Postgres (or ClickHouse, pending §9.4 decision).
-2. Implement `NormalizerSvc.Normalize(RawSourceEvent) (NormalizedEvent, error)` for each source type.
-3. Wire normalizer into collector pipeline (post-CH write path, or as a separate consumer).
-4. Add `IdentityMapping` registry (separate migration, separate service).
-5. Expose normalized event counts on `GET /sources/{id}/collector-runs`.
+Implemented already on the app backend:
+1. `normalized_events` storage on the Postgres-backed app path
+2. `NormalizerSvc.Normalize(...)` for the current supported event set
+3. normalizer wiring into the app collector pipeline
+4. `IdentityMapping` persistence and unresolved-identity handling
+
+Still open or verification-bound:
+1. confirm review-requested / review-submitted coverage before documenting them as current runtime facts
+2. extend source-health and lineage contracts so normalized-event gaps can be explained to the UI
+3. keep ClickHouse references historical unless a real bridge is implemented and documented

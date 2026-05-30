@@ -1,7 +1,8 @@
 # Data Core Backend — Implementation Progress
 
-> Source of truth: `../../docs/tech/data-core-architecture.md`
-> Last updated: 2026-05-18
+> Status: historical implementation log with still-relevant backend evidence
+> Source of truth for current roadmap state: `../../docs/plans/metraly-roadmap.md`, `../../docs/status/technical-subsystems.md`, `../../docs/tech/data-core-architecture.md`
+> Last updated: 2026-05-30
 
 ## Current status
 
@@ -164,15 +165,20 @@ Confirmed: no changes to `ui/`, `*.tsx`, `*.jsx`, `*.css`, `*.scss`, or Storyboo
 9. **Retry/backoff in collector**: Rate-limit handling stops the run; no automatic retry schedule.
 10. **Integration tests with real Postgres**: Covered by testcontainers in existing db package; collector tests use fake HTTP servers only.
 
-## Recommended next phase
+## Recommended next roadmap-aligned work
 
-**Phase 3 — Multi-workspace, groupBy, and review events:**
-1. Thread workspaceID into MetricQuerySvc SQL (critical for multi-tenant correctness)
-2. Thread workspaceID into NormalizerSvc identity resolution
-3. Implement groupBy for whitelisted dimensions (repository_id, team_id, author_id, reviewer_id)
+**Roadmap Phase 2 — Source runtime cutover:**
+1. Add durable source sync state and source-health endpoints on the Postgres-backed app path
+2. Upgrade source-management UI to real `/sources`, `/sources/{id}/test`, and `/sources/{id}/collect` flows
+3. Keep the runtime path explicit as Postgres-first until any ClickHouse bridge is intentionally implemented
+4. Re-verify collector rate-limit and deployment-normalization claims before stronger docs wording
+
+**Roadmap Phase 3 — Metric/query hardening:**
+1. Thread workspaceID into MetricQuerySvc SQL if current query path still lacks it
+2. Thread workspaceID into NormalizerSvc identity resolution if the default-workspace limitation still exists
+3. Implement groupBy for whitelisted dimensions
 4. Add review_submitted via GitHub Reviews API with per-PR batching and rate-limit budgeting
-5. Upgrade source adapters to live HTTP verification with short timeouts
-6. Add Prometheus metrics for collector run latency, event counts, failure rates
+5. Add stronger observability for collector run latency, event counts and failure rates
 
 ## What Steps 1–27 implemented (prior work)
 
