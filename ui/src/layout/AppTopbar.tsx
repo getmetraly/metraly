@@ -1,5 +1,5 @@
 import React from "react";
-import { MetralyTopbar } from "@metraly/ui";
+import { MetralyTopbar, PulseMarker } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
 import { useTweaks } from "../context/TweaksContext";
 
@@ -31,12 +31,12 @@ export function AppTopbar({ title, subtitle }: AppTopbarProps) {
         type="button"
         className="metraly-app-icon-btn metraly-app-topbar__bell"
         aria-label="Notifications"
-        style={{ position: "relative", width: 32, height: 32 }}
       >
         <Icon name="bell" size={15} />
-        <span
-          aria-hidden="true"
-          style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, background: "var(--m-cyan-500)", borderRadius: "50%", border: "1.5px solid var(--m-bg-1)" }}
+        <PulseMarker
+          tone="new"
+          size="md"
+          className="metraly-app-topbar__bell-indicator"
         />
       </button>
     </>

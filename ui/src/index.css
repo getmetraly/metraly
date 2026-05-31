@@ -115,3 +115,17 @@ button, input, select, textarea {
     overflow-y: hidden;
   }
 }
+
+.metraly-app-topbar__bell {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.metraly-app-topbar__bell-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  border: 1.5px solid var(--m-bg-1);
+  pointer-events: none;
+}
