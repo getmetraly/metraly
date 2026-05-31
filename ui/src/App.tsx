@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Sidebar, Topbar, MetralyButton, MetralyInput, MetralyEmptyState } from './design-system';
+import { Sidebar, Topbar, MetralyButton, MetralyEmptyState } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
 import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
+import { LoginScreen } from './features/auth/LoginScreen';
 // TweaksProvider + DraggableTweaksPanel are DEV-only: gated at render time so Rollup eliminates
 // both from the production bundle via dead-code elimination on `import.meta.env.DEV`.
 import { TweaksProvider } from './context/TweaksContext';
@@ -83,10 +84,6 @@ const App = () => {
   const [firstRunSelection, setFirstRunSelection] = useState<FirstRunMode>(
     FIRST_RUN_MODE.demo,
   );
-  const [email, setEmail] = useState('admin@metraly.local');
-  const [password, setPassword] = useState('admin123');
-  const [signInError, setSignInError] = useState('');
-  const [signingIn, setSigningIn] = useState(false);
   const [title, subtitle] = titles[active] || ['Metraly', ''];
 
   useEffect(() => {
@@ -102,19 +99,10 @@ const App = () => {
     };
   }, [session]);
 
-  const handleSignIn = async (event) => {
-    event.preventDefault();
-    setSignInError('');
-    setSigningIn(true);
-    try {
-      await login(email, password);
-      setSession(loadSession());
-      setActive(getInitialScreen(firstRunMode));
-    } catch (error) {
-      setSignInError(error instanceof Error ? error.message : 'Sign in failed');
-    } finally {
-      setSigningIn(false);
-    }
+  const handleSignIn = async (email: string, password: string) => {
+    await login(email, password);
+    setSession(loadSession());
+    setActive(getInitialScreen(firstRunMode));
   };
 
   const handleShowDemo = () => {
@@ -346,226 +334,9 @@ const App = () => {
     </div>
   );
 
-  const renderLoginScreen = () => (
-    <div
-      style={{
-        minHeight: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        overflow: 'auto',
-      }}
-    >
-      <form
-        onSubmit={handleSignIn}
-        style={{
-          width: '100%',
-          maxWidth: 440,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 4 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              margin: '0 auto 12px',
-              background: 'linear-gradient(135deg,#6366f1,#a855f7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: 20,
-              fontWeight: 800,
-            }}
-            aria-hidden="true"
-          >
-            M
-          </div>
-          <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>
-            Metraly
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-            Engineering Metrics · Self-hosted
-          </div>
-        </div>
-
-        <div
-          style={{
-            border: '1px solid var(--border-bright)',
-            borderRadius: 16,
-            background: 'var(--glass)',
-            padding: 32,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 20,
-          }}
-        >
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              width: 'fit-content',
-              padding: '5px 12px',
-              borderRadius: 999,
-              border: '1px solid rgba(0,200,83,0.25)',
-              background: 'rgba(0,200,83,0.1)',
-              color: 'var(--success)',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'var(--success)',
-                boxShadow: '0 0 6px var(--success)',
-              }}
-            />
-            Live local instance
-          </div>
-
-          <div>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.4px', marginBottom: 8 }}>
-              Sign in to the demo
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--muted2)', lineHeight: 1.6 }}>
-              Explore Metraly with pre-seeded data. Use the seeded local admin account to unlock dashboards and preview data.
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(0,229,255,0.05)',
-              border: '1px solid rgba(0,229,255,0.15)',
-              borderRadius: 10,
-              padding: '12px 14px',
-              fontSize: 12,
-              color: 'var(--muted2)',
-              lineHeight: 1.6,
-            }}
-          >
-            <strong style={{ color: 'var(--cyan)' }}>Demo credentials</strong>
-            <br />
-            Email: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan)' }}>admin@metraly.local</code>
-            <br />
-            Password: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan)' }}>admin123</code>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.2)',
-              borderRadius: 10,
-              padding: '12px 14px',
-              fontSize: 13,
-              color: 'var(--muted2)',
-              lineHeight: 1.6,
-            }}
-          >
-            This is a local preview. For production use, self-host Metraly on your own infrastructure.
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <MetralyInput
-              label={<span style={{ fontSize: 12, color: 'var(--muted)' }}>Email</span>}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              type="email"
-              fullWidth
-            />
-
-            <MetralyInput
-              label={<span style={{ fontSize: 12, color: 'var(--muted)' }}>Password</span>}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              type="password"
-              fullWidth
-            />
-          </div>
-
-          {signInError && (
-            <div style={{ fontSize: 12.5, color: 'var(--red)', lineHeight: 1.5 }}>{signInError}</div>
-          )}
-
-          <MetralyButton
-            type="submit"
-            disabled={signingIn}
-            loading={signingIn}
-            variant="primary"
-            size="lg"
-            fullWidth
-            iconRight={!signingIn ? <span aria-hidden="true">→</span> : undefined}
-          >
-            {signingIn ? 'Signing in…' : 'Sign in to Demo'}
-          </MetralyButton>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              margin: '4px 0',
-              color: 'var(--muted)',
-              fontSize: 12,
-            }}
-          >
-            <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span>or</span>
-            <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(168,85,247,0.05)',
-              border: '1px solid rgba(168,85,247,0.2)',
-              borderRadius: 10,
-              padding: '16px 18px',
-            }}
-          >
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-              Self-host Metraly
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted2)', lineHeight: 1.6, marginBottom: 12 }}>
-              Run Metraly on your own infrastructure. All your data stays private.
-            </div>
-            <div
-              style={{
-                background: 'rgba(0,0,0,0.3)',
-                borderRadius: 6,
-                padding: '10px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                color: 'var(--cyan)',
-                lineHeight: 1.8,
-              }}
-            >
-              <div>$ git clone https://github.com/getmetraly/metraly.git</div>
-              <div>$ cd metraly &amp;&amp; make docker-up &amp;&amp; make seed</div>
-              <div>→ Open http://localhost:3000</div>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-            You can switch later from the overview or setup flow.
-          </div>
-        </div>
-      </form>
-    </div>
-  );
 
   if (!session) {
-    return renderLoginScreen();
+    return <LoginScreen onSignIn={handleSignIn} />;
   }
 
   if (active === 'first-run') {
