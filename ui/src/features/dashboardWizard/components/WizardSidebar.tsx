@@ -4,7 +4,7 @@
 
 // src/features/dashboardWizard/components/WizardSidebar.tsx
 import React from 'react';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 import { WizardWidgetPicker } from './WizardWidgetPicker';
 import { WizardSettings } from './WizardSettings';
 import { WizardWidget } from '../store/wizardStore';

@@ -3,7 +3,7 @@ import { Responsive, WidthProvider, LayoutItem } from "react-grid-layout/legacy"
 import "react-grid-layout/css/styles.css";
 import { useWizardStore } from "../store/wizardStore";
 import { WidgetPreviewCard } from "./WidgetPreviewCard";
-import { Icon } from "../../../components/shared/Icon";
+import { Icon } from "../../../design-system";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 

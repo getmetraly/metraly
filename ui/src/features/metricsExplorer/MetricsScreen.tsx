@@ -1,6 +1,6 @@
 // src/features/metricsExplorer/MetricsScreen.jsx
 import React, { useState } from 'react';
-import { Icon } from '../../components/shared/Icon';
+import { Icon } from '../../design-system';
 import { MetralyAreaChart } from '../../design-system';
 import { makeTimeSeries } from '../../utils/seeds';
 import { FilterPill } from './components/FilterPill';

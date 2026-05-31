@@ -1,6 +1,6 @@
 // src/features/metricsExplorer/components/FilterPill.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 
 interface FilterPillProps {
   label?: string;

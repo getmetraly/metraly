@@ -10,7 +10,7 @@ import { WizardScreen } from './features/onboarding/WizardScreen';
 // both from the production bundle via dead-code elimination on `import.meta.env.DEV`.
 import { TweaksProvider } from './context/TweaksContext';
 import { DraggableTweaksPanel } from './components/layout/DraggableTweaksPanel';
-import { Icon } from './components/shared/Icon';
+import { Icon } from './design-system';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
   type FirstRunMode,

@@ -1,7 +1,7 @@
 // src/features/dashboardWizard/components/WizardWidgetPicker.tsx
 import React from 'react';
 import { WIDGET_LIBRARY, WizardWidget } from '../store/wizardStore';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 
 interface WizardWidgetPickerProps {
   selectedWidgets: WizardWidget[];

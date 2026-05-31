@@ -424,6 +424,7 @@ export function DashboardRendererCompat({
 
 // ── Draggable dashboard (no brandbook equivalent yet — tracked for Phase 4) ───
 export { DraggableDashboardRenderer } from "../../components/dashboard/DraggableDashboardRenderer";
+export { widgetRegistry } from "../../components/dashboard/widgetRegistry";
 
 // ── AI / Insight (no brandbook equivalent — tracked in P2-4) ───────────────────
 export { AIInsightCard } from "../../components/ui/AIInsightCard";
@@ -458,4 +459,5 @@ export { ReviewPanel } from "@metraly/ui";
 export type { StickyWizardFooterProps } from "@metraly/ui";
 export { StickyWizardFooter } from "@metraly/ui";
 export { MetralyIcon, CardShell } from "@metraly/ui";
+export { Icon } from "../../components/shared/Icon";
 export type { MetralyIconName } from "@metraly/ui";

@@ -1,6 +1,6 @@
 // src/features/dashboardWizard/components/WizardSettings.tsx
 import React from 'react';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 import { WizardWidget } from '../store/wizardStore';
 
 export interface WizardSettingsProps {

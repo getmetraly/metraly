@@ -1,9 +1,9 @@
 // src/features/dashboardWizard/components/WidgetPreviewCard.tsx
 import React from "react";
-import { Icon } from "../../../components/shared/Icon";
+import { Icon } from "../../../design-system";
 import { useWizardStore } from "../store/wizardStore";
 import { WizardWidget } from "../store/wizardStore";
-import { widgetRegistry } from "../../../components/dashboard/widgetRegistry";
+import { widgetRegistry } from "../../../design-system";
 import { makeTimeSeries, makeHeatData } from "../../../utils/seeds";
 
 const WIDGET_TYPE_MAP: Record<string, string> = {

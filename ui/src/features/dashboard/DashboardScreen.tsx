@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon } from "../../components/shared/Icon";
+import { Icon } from "../../design-system";
 import { DashboardRendererCompat as DashboardRenderer, DraggableDashboardRenderer } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";

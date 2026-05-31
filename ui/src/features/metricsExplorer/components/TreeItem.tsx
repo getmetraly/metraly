@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 
 interface TreeNode {
   id: string;

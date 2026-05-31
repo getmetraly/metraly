@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Icon } from '../../../components/shared/Icon';
+import { Icon } from '../../../design-system';
 import { buildMetricCsv, downloadMetricCsv } from '../export';
 
 interface ExportBarProps {

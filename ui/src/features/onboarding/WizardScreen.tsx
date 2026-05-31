@@ -5,7 +5,7 @@ import {
   WizardLayout,
 } from '../../design-system';
 import type { ReviewPanelItem, WizardLayoutStep } from '../../design-system';
-import { Icon } from '../../components/shared/Icon';
+import { Icon } from '../../design-system';
 
 interface Source {
   id: string;

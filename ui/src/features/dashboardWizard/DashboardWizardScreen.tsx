@@ -1,6 +1,6 @@
 // src/features/dashboardWizard/DashboardWizardScreen.tsx
 import React from "react";
-import { Icon } from "../../components/shared/Icon";
+import { Icon } from "../../design-system";
 import { createDashboard } from "../../api/client";
 import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
