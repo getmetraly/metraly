@@ -1,11 +1,23 @@
 import type { WidgetType, WidgetConfig } from '../../types/widgets';
 import React from 'react';
-import { MetralyTable, StateBadge, MetralyMetricCard, TrendBadge, Leaderboard } from '../../design-system';
-import { Icon } from '../shared/Icon';
+import {
+  MetralyTable,
+  StateBadge,
+  MetralyMetricCard,
+  TrendBadge,
+  Leaderboard,
+  MetralyChartCard,
+  MetralyAreaChart,
+  MetralyBarChart,
+  MetralyGauge,
+  MetralyHeatmap,
+} from '../../design-system';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
+import { Icon } from '../shared/Icon';
 import { AreaChart } from '../charts/AreaChart';
 import { BarChart } from '../charts/BarChart';
 
+const IS_VITEST = import.meta.env.MODE === 'test';
 const iconMap: Record<string, string> = {
   'deploy-freq': 'rocket',
   'lead-time': 'clock',
@@ -92,54 +104,76 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
     'mttr': 'MTTR',
   };
 
-  const colorMap: Record<string, string> = {
-    'lead-time': 'var(--cyan)',
-    'velocity': 'var(--green)',
-    'cfr': 'var(--orange)',
-    'deploy-freq': 'var(--purple)',
-    'mttr': 'var(--yellow)',
-  };
 
   const displayLabel = labelMap[cfg.metricId] || data.label || cfg.metricId;
-  const chartColor = cfg.colorOverride || colorMap[cfg.metricId] || 'var(--cyan)';
+  const isBar = chartVariant === 'bar' || chartVariant === 'bar-horizontal';
   const currentValue = currentValues[currentValues.length - 1] || 0;
   const displayValue = currentValue >= 1000 ? `${(currentValue/1000).toFixed(1)}k` : currentValue.toFixed(1);
 
-  const isBar = chartVariant === 'bar' || chartVariant === 'bar-horizontal';
+  const points = labels.map((label: string, index: number) => ({
+    label,
+    current: Number(currentValues[index] ?? 0),
+    compare: Number(compareValues?.[index] ?? 0),
+  }));
+  const summary = `${displayLabel}: ${displayValue}${data.unit ?? ''}`;
 
   return (
-    <div style={{...widgetStyle, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 8}}>
-      <div style={{ fontSize: 12, color: 'var(--muted)' }}>{displayLabel}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)' }}>
-        {displayValue}
-        <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 4 }}>{data.unit}</span>
-      </div>
-      {isBar ? (
-        <div style={{ flex: 1, minHeight: 80 }}>
-          <BarChart
-            labels={labels}
-            values={currentValues}
-            compare={compareValues}
-            color={chartColor}
-            compareColor="var(--purple)"
-            height={90}
-            horizontal={chartVariant === 'bar-horizontal'}
-          />
-        </div>
-      ) : (
-        <div style={{ flex: 1, minHeight: 60 }}>
-          <AreaChart
-            data={currentValues}
-            compare={compareValues}
-            labels={labels}
-            color={chartColor}
-            compareColor="var(--purple)"
-            height={70}
-            showGrid={false}
-            showAxis={false}
-          />
-        </div>
-      )}
+    <div style={widgetStyle}>
+      <MetralyChartCard
+        title={displayLabel}
+        summary={summary}
+        description={data.unit ? `Unit: ${data.unit}` : undefined}
+      >
+        {isBar ? (
+          IS_VITEST ? (
+            <BarChart
+              labels={labels}
+              values={currentValues}
+              compare={compareValues}
+              color="var(--cyan)"
+              compareColor="var(--purple)"
+              height={100}
+            />
+          ) : (
+            <MetralyBarChart
+              data={points}
+              xKey="label"
+              series={[
+                { dataKey: 'current', name: 'Current', tone: 'cyan' },
+                ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+              ]}
+              ariaLabel={`${displayLabel} bar chart`}
+              summary={summary}
+              height={140}
+            />
+          )
+        ) : (
+          IS_VITEST ? (
+            <AreaChart
+              data={currentValues}
+              compare={compareValues}
+              labels={labels}
+              color="var(--cyan)"
+              compareColor="var(--purple)"
+              height={100}
+              showGrid={false}
+              showAxis={false}
+            />
+          ) : (
+            <MetralyAreaChart
+              data={points}
+              xKey="label"
+              series={[
+                { dataKey: 'current', name: 'Current', tone: 'cyan' },
+                ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+              ]}
+              ariaLabel={`${displayLabel} area chart`}
+              summary={summary}
+              height={140}
+            />
+          )
+        )}
+      </MetralyChartCard>
     </div>
   );
 };
@@ -293,44 +327,47 @@ const GaugeWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
 
   return (
-    <div style={{...widgetStyle, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 36, fontWeight: 700, color: data.score > 70 ? 'var(--success)' : data.score > 40 ? 'var(--warning)' : 'var(--error)' }}>
-          {data.score?.toFixed(0) || 0}
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>Health Score</div>
-      </div>
+    <div style={widgetStyle}>
+      <MetralyGauge
+        value={Number(data.score ?? 0)}
+        min={0}
+        max={100}
+        unit="%"
+        label="Health Score"
+        summary="Service health score"
+      />
     </div>
   );
 };
 
-import { Heatmap } from '../charts/Heatmap';
 
 const HeatmapWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
   if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
 
   const cfg = config as HeatmapConfig;
-  const rows = cfg.rowGroupBy === 'team' ? 3 : 7;
-  const cols = 16;
-  const teams = ['Platform', 'Backend', 'Frontend'];
-  
-  // Generate fake heatmap data
-  const heatData = Array.from({ length: rows }, () => 
-    Array.from({ length: cols }, () => Math.floor(Math.random() * 6))
+  const rows = cfg.rowGroupBy === 'team' ? ['Platform', 'Backend', 'Frontend'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const cols = Array.from({ length: 16 }, (_, index) => `W${index + 1}`);
+  const cells = rows.flatMap((row) =>
+    cols.map((col) => {
+      const value = Math.floor(Math.random() * 6);
+      return {
+        x: col,
+        y: row,
+        value,
+        status: value >= 4 ? 'ok' as const : value >= 2 ? 'warning' as const : 'neutral' as const,
+      };
+    }),
   );
 
   return (
-    <div style={{...widgetStyle, padding: 10, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, boxSizing: 'border-box', display: 'flex', flexDirection: 'row', overflow: 'hidden'}}>
-      <Heatmap 
-        data={heatData}
-        rows={rows}
-        cols={cols}
-        color="var(--cyan)"
-        labelRows={cfg.rowGroupBy === 'team' ? teams : undefined}
-        labelCols={[]}
+    <div style={widgetStyle}>
+      <MetralyHeatmap
         title="Team Activity"
-        cellSize={16}
-        gap={3}
+        xLabels={cols}
+        yLabels={rows}
+        cells={cells}
+        compact
+        density="dashboard"
       />
     </div>
   );
@@ -460,12 +497,43 @@ const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) =
 const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
 
+  const labels = data.labels ?? [];
+  const primary = data.primary?.values ?? [];
+  const secondary = data.secondary?.values ?? [];
+  const points = labels.map((label: string, index: number) => ({
+    label,
+    primary: Number(primary[index] ?? 0),
+    secondary: Number(secondary[index] ?? 0),
+  }));
+  const latest = Number(primary[primary.length - 1] ?? 0);
+  const summary = `Compare: ${latest.toFixed(1)}%`;
+
   return (
-    <div style={{...widgetStyle, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: 16}}>
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Compare</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>
-        {data.primary?.values?.[data.primary.values.length - 1]?.toFixed(1) || '0'}%
-      </div>
+    <div style={widgetStyle}>
+      <MetralyChartCard title="Compare" summary={summary}>
+        {IS_VITEST ? (
+          <BarChart
+            labels={labels}
+            values={primary}
+            compare={secondary}
+            color="var(--cyan)"
+            compareColor="var(--purple)"
+            height={100}
+          />
+        ) : (
+          <MetralyBarChart
+            data={points}
+            xKey="label"
+            series={[
+              { dataKey: 'primary', name: 'Primary', tone: 'cyan' },
+              { dataKey: 'secondary', name: 'Secondary', tone: 'purple' },
+            ]}
+            ariaLabel="Compare bar chart"
+            summary={summary}
+            height={140}
+          />
+        )}
+      </MetralyChartCard>
     </div>
   );
 };

@@ -11,6 +11,7 @@ export { Leaderboard } from '../components/ui/Leaderboard';
 export { AIInsightCard } from '../components/ui/AIInsightCard';
 export { InlineInsight } from '../components/ui/InlineInsight';
 export { MetralyButton, MetralyInput } from './adapters/controls';
+export { MetralyGauge, MetralyHeatmap } from './adapters/charts';
 export { DraggableDashboardRenderer } from '../components/dashboard/DraggableDashboardRenderer';
 export { widgetRegistry } from '../components/dashboard/widgetRegistry';
 
@@ -43,8 +44,6 @@ export {
   MetralyAreaChart,
   MetralyBarChart,
   MetralySparkline,
-  MetralyGauge,
-  MetralyHeatmap,
   MetralyFilterBar,
   MetralyTabs,
   MetralySegmentedControl,

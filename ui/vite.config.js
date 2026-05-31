@@ -19,6 +19,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: reactAliases,
+    preserveSymlinks: true,
+    dedupe: ['react', 'react-dom', 'recharts'],
   },
   server: {
     host: '0.0.0.0',

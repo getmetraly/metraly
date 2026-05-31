@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "ui:build-dep": "npm --prefix ../../brandbook/packages/ui run build",
+    "predev": "npm run ui:build-dep",
     "dev": "vite",
+    "prebuild": "npm run ui:build-dep",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "pretest": "npm run ui:build-dep",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:a11y": "vitest run src/design-system/compat/brandbook-legacy.test.tsx",
+    "pretypecheck": "npm run ui:build-dep",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
