@@ -13,24 +13,33 @@ export function AppTopbar({ title, subtitle }: AppTopbarProps) {
   const density = tweaks.density as "compact" | "comfortable" | "spacious";
 
   const actions = (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div
-        style={{ display: "flex", alignItems: "center", background: "var(--glass)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", gap: 8, width: 220 }}
-        role="search"
-      >
-        <Icon name="search" size={13} color="var(--muted)" />
-        <span style={{ fontSize: 13, color: "var(--muted)" }}>Quick search…</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)", background: "rgba(255,255,255,0.05)", padding: "1px 5px", borderRadius: 4 }}>⌘K</span>
+    <>
+      {/* Use brandbook CSS classes — metraly-app-topbar__search and metraly-app-icon-btn
+          are defined in metraly-app-kit.css (imported via @metraly/ui/styles.css). */}
+      <div className="metraly-app-topbar__search" role="search" aria-label="Quick search">
+        <span className="metraly-app-topbar__search-icon">
+          <Icon name="search" size={13} />
+        </span>
+        <span style={{ flex: 1, fontSize: 13, color: "var(--m-fg-2)", userSelect: "none", pointerEvents: "none" }}>
+          Quick search…
+        </span>
+        <kbd style={{ fontSize: 11, fontFamily: "var(--m-font-mono)", color: "var(--m-fg-3)", background: "var(--m-bg-3)", padding: "1px 5px", borderRadius: "var(--m-r-1)", fontStyle: "normal" }}>
+          ⌘K
+        </kbd>
       </div>
       <button
         type="button"
+        className="metraly-app-icon-btn metraly-app-topbar__bell"
         aria-label="Notifications"
-        style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: "var(--muted2)", position: "relative" }}
+        style={{ position: "relative", width: 32, height: 32 }}
       >
         <Icon name="bell" size={15} />
-        <div style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, background: "var(--cyan)", borderRadius: "50%", border: "1.5px solid var(--bg)" }} />
+        <span
+          aria-hidden="true"
+          style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, background: "var(--m-cyan-500)", borderRadius: "50%", border: "1.5px solid var(--m-bg-1)" }}
+        />
       </button>
-    </div>
+    </>
   );
 
   return (

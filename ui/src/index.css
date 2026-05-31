@@ -3,26 +3,33 @@
   margin: 0;
   padding: 0;
 }
+/* ─── token bridge ──────────────────────────────────────────────────────────
+   Old custom properties alias to the canonical brandbook --m-* system so that
+   every inline-style component and CSS rule using var(--bg), var(--glass) etc.
+   resolves to exactly the same OKLCH values the metraly-* CSS classes use.
+   The definitions below run AFTER @metraly/ui/styles.css is imported (see
+   index.tsx), so --m-* tokens are already available here.
+────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg: #0B0F19;
-  --glass: #131825;
-  --glass2: #1a2235;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.12);
-  --border-bright: rgba(255,255,255,0.12);
-  --cyan: #00E5FF;
-  --purple: #B44CFF;
-  --success: #00C853;
-  --warning: #FF9100;
-  --error: #FF1744;
-  --text: #E8EDF5;
-  --muted: #6B7A9A;
-  --muted2: #9BAABF;
-  --grad: linear-gradient(135deg, #00E5FF, #B44CFF);
-  --font-head: 'Space Grotesk', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --sidebar-w: 228px;
+  --bg:           var(--m-bg-0);
+  --glass:        var(--m-bg-1);
+  --glass2:       var(--m-bg-2);
+  --border:       var(--m-line);
+  --border2:      var(--m-line-strong);
+  --border-bright: var(--m-line-strong);
+  --cyan:         var(--m-cyan-500);
+  --purple:       var(--m-purple-500);
+  --success:      var(--m-ok);
+  --warning:      var(--m-warn);
+  --error:        var(--m-err);
+  --text:         var(--m-fg-0);
+  --muted:        var(--m-fg-2);
+  --muted2:       var(--m-fg-1);
+  --grad:         linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500));
+  --font-head:    var(--m-font-display);
+  --font-body:    var(--m-font-ui);
+  --font-mono:    var(--m-font-mono);
+  --sidebar-w:    228px;
 }
 html, body, #root { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; overflow: hidden; }
 html.metraly-login-scroll, html.metraly-login-scroll body, html.metraly-login-scroll #root {
@@ -78,4 +85,11 @@ button, input, select, textarea {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* metraly-app-shell__main--flush must be a flex column so child screens that
+   use `flex: 1` for height receive a flex parent from the grid cell. */
+.metraly-app-shell__main--flush {
+  display: flex;
+  flex-direction: column;
 }

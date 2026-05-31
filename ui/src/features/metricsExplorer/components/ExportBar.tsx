@@ -31,7 +31,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
           cursor: 'pointer',
           transition: 'all 0.15s',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--m-bg-3)'}
         onMouseLeave={e => e.currentTarget.style.background = 'var(--glass)'}
       >
         <Icon name="download" size={13} /> Export
@@ -44,7 +44,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
             top: '100%',
             marginTop: 4,
             zIndex: 100,
-            background: '#1a2235',
+            background: 'var(--m-bg-2)',
             border: '1px solid var(--border2)',
             borderRadius: 9,
             minWidth: 140,
@@ -68,7 +68,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
                 color: 'var(--text)',
                 transition: 'background 0.12s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--m-bg-3)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               {opt}

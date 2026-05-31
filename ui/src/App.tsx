@@ -573,12 +573,16 @@ const App = () => {
   }
 
   const shell = (
-    <div style={{ display: 'flex', height: '100%', width: '100%', overflow: 'hidden' }}>
-      <Sidebar active={active} onNav={setActive} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Topbar title={title} subtitle={subtitle} />
-        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
+    <div className="metraly-app-shell">
+      <div className="metraly-app-shell__sidebar">
+        <Sidebar active={active} onNav={setActive} />
       </div>
+      <div className="metraly-app-shell__topbar">
+        <Topbar title={title} subtitle={subtitle} />
+      </div>
+      <main className="metraly-app-shell__main metraly-app-shell__main--flush">
+        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
+      </main>
       {import.meta.env.DEV && <DraggableTweaksPanel />}
     </div>
   );

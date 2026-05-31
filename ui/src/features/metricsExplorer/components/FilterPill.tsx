@@ -35,7 +35,7 @@ export const FilterPill: React.FC<FilterPillProps> = ({ label, options, value, o
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 100,
-          background: '#1a2235', border: '1px solid var(--border2)', borderRadius: 9,
+          background: 'var(--m-bg-2)', border: '1px solid var(--border2)', borderRadius: 9,
           minWidth: 150, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           {options?.map(opt => (

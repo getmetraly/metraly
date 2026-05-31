@@ -137,7 +137,7 @@ export const MetricsScreen = () => {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          background: 'rgba(11,15,25,0.5)',
+          background: 'var(--m-bg-1)',
         }}
       >
         <div style={{ padding: '14px 10px 8px', borderBottom: '1px solid var(--border)' }}>
@@ -159,7 +159,7 @@ export const MetricsScreen = () => {
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              background: 'rgba(255,255,255,0.04)',
+              background: 'var(--m-bg-2)',
               border: '1px solid var(--border)',
               borderRadius: 7,
               padding: '6px 10px',
@@ -204,7 +204,7 @@ export const MetricsScreen = () => {
             padding: '10px 18px',
             borderBottom: '1px solid var(--border)',
             flexShrink: 0,
-            background: 'rgba(11,15,25,0.4)',
+            background: 'var(--m-bg-1)',
           }}
         >
           <div

@@ -22,14 +22,14 @@ export const WizardPreviewGrid: React.FC = () => {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    background: "rgba(11,15,25,0.6)",
+    background: "var(--m-bg-1)",
   };
 
   return (
     <div
       style={{
         flex: 1,
-        background: "rgba(0,0,0,0.25)",
+        background: "var(--m-bg-0)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
