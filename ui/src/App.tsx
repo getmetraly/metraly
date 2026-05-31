@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SidebarCompat as Sidebar, TopbarCompat as Topbar, PlaceholderScreenCompat as PlaceholderScreen } from './design-system';
+import { SidebarCompat as Sidebar, TopbarCompat as Topbar, PlaceholderScreenCompat as PlaceholderScreen, MetralyButton, MetralyInput } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
@@ -332,26 +332,15 @@ const App = () => {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button
+          <MetralyButton
             type="button"
             onClick={handleFirstRunContinue}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 9,
-              cursor: 'pointer',
-              border: 'none',
-              background: 'var(--grad)',
-              color: '#fff',
-              fontSize: 13.5,
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 0 16px rgba(0,229,255,0.2)',
-            }}
+            variant="primary"
+            size="md"
+            iconRight={<span aria-hidden="true">→</span>}
           >
-            Continue →
-          </button>
+            Continue
+          </MetralyButton>
         </div>
       </div>
     </div>
@@ -486,76 +475,40 @@ const App = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Email</span>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                type="email"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid var(--border-bright)',
-                  borderRadius: 8,
-                  color: 'var(--text)',
-                  fontSize: 14,
-                  fontFamily: 'var(--font-body)',
-                  transition: 'border-color 0.15s',
-                  outline: 'none',
-                }}
-              />
-            </label>
+            <MetralyInput
+              label={<span style={{ fontSize: 12, color: 'var(--muted)' }}>Email</span>}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              type="email"
+              fullWidth
+            />
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Password</span>
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                type="password"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid var(--border-bright)',
-                  borderRadius: 8,
-                  color: 'var(--text)',
-                  fontSize: 14,
-                  fontFamily: 'var(--font-body)',
-                  transition: 'border-color 0.15s',
-                  outline: 'none',
-                }}
-              />
-            </label>
+            <MetralyInput
+              label={<span style={{ fontSize: 12, color: 'var(--muted)' }}>Password</span>}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              type="password"
+              fullWidth
+            />
           </div>
 
           {signInError && (
             <div style={{ fontSize: 12.5, color: 'var(--red)', lineHeight: 1.5 }}>{signInError}</div>
           )}
 
-          <button
+          <MetralyButton
             type="submit"
             disabled={signingIn}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: 8,
-              background: 'linear-gradient(135deg,#6366f1,#a855f7)',
-              border: 'none',
-              color: '#fff',
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: signingIn ? 'wait' : 'pointer',
-              fontFamily: 'var(--font-body)',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 15px rgba(99,102,241,0.3)',
-              opacity: signingIn ? 0.8 : 1,
-            }}
+            loading={signingIn}
+            variant="primary"
+            size="lg"
+            fullWidth
+            iconRight={!signingIn ? <span aria-hidden="true">→</span> : undefined}
           >
-            {signingIn ? 'Signing in…' : 'Sign in to Demo →'}
-          </button>
+            {signingIn ? 'Signing in…' : 'Sign in to Demo'}
+          </MetralyButton>
 
           <div
             style={{

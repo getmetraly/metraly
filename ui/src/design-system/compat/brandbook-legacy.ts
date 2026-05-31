@@ -2,7 +2,9 @@ import React, { createElement, type ReactElement, type ReactNode } from "react";
 import {
   DashboardGrid,
   DashboardWidget,
+  MetralyButton,
   MetralyEmptyState,
+  MetralyInput,
   MetralyMetricCard,
   MetralyTable,
   StateBadge,
@@ -318,6 +320,34 @@ export function DORABadgeCompat({
   });
 }
 
+type MetralyButtonCompatProps = React.ComponentPropsWithoutRef<"button"> & {
+  variant?: string;
+  size?: string;
+  loading?: boolean;
+  fullWidth?: boolean;
+  iconLeft?: ReactNode;
+  iconRight?: ReactNode;
+};
+
+export function MetralyButtonCompat(props: MetralyButtonCompatProps) {
+  return createElement(MetralyButton as unknown as React.ElementType, props);
+}
+
+type MetralyInputCompatProps = React.ComponentPropsWithoutRef<"input"> & {
+  search?: boolean;
+  label?: ReactNode;
+  description?: ReactNode;
+  iconLeft?: ReactNode;
+  iconRight?: ReactNode;
+  error?: string;
+  fullWidth?: boolean;
+  wrapperClassName?: string;
+};
+
+export function MetralyInputCompat(props: MetralyInputCompatProps) {
+  return createElement(MetralyInput as unknown as React.ElementType, props);
+}
+
 // ── Dashboard widget shell ─────────────────────────────────────────────────────
 // Phase 3 complete: Widget → DashboardWidget via compat adapter
 type WidgetCompatProps = Pick<
@@ -427,5 +457,5 @@ export type { ReviewPanelItem, ReviewPanelProps } from "@metraly/ui";
 export { ReviewPanel } from "@metraly/ui";
 export type { StickyWizardFooterProps } from "@metraly/ui";
 export { StickyWizardFooter } from "@metraly/ui";
-export { MetralyButton, MetralyIcon, MetralyInput, CardShell } from "@metraly/ui";
+export { MetralyIcon, CardShell } from "@metraly/ui";
 export type { MetralyIconName } from "@metraly/ui";

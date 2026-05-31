@@ -1,24 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import '@metraly/ui/styles/metraly-theme.css';
-import '@metraly/ui/styles/metraly-empty-state.css';
-import '@metraly/ui/styles/metraly-state-badge.css';
-import '@metraly/ui/styles/metraly-table.css';
-import '@metraly/ui/styles/metraly-dashboard.css';
-import '@metraly/ui/styles/metraly-shell.css';
-import '@metraly/ui/styles/metraly-card.css';
-import '@metraly/ui/styles/metraly-metric-card.css';
-import '@metraly/ui/styles/metraly-trend-badge.css';
-import '@metraly/ui/styles/metraly-button.css';
-import '@metraly/ui/styles/metraly-input.css';
-import '@metraly/ui/styles/metraly-forms.css';
-import '@metraly/ui/styles/metraly-wizard.css';
-import '@metraly/ui/styles/metraly-widget-picker.css';
-import '@metraly/ui/styles/metraly-pulse-marker.css';
-import '@metraly/ui/styles/metraly-badge.css';
-import '@metraly/ui/styles/metraly-skeleton.css';
-import '@metraly/ui/styles/metraly-widget-shell.css';
+import '@metraly/ui/styles.css';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);

@@ -1,11 +1,82 @@
 /**
- * design-system — app-facing barrel
+ * App-facing UI boundary.
  *
- * Import all design-system primitives from here, never from individual
- * component paths. This indirection lets Phase 3 swap local implementations
- * for @metraly/ui imports in one file without touching every caller.
- *
- * Usage:
- *   import { StatusBadgeCompat, DataTableCompat } from '../design-system';
+ * Feature modules MUST import reusable UI only from this barrel.
  */
-export * from './compat/brandbook-legacy';
+
+// Temporary compatibility adapters still required by legacy feature code.
+export {
+  StatusBadgeCompat,
+  DataTableCompat,
+  StatCardCompat,
+  SidebarCompat,
+  TopbarCompat,
+  PlaceholderScreenCompat,
+  DORABadgeCompat,
+  WidgetCompat,
+  DashboardRendererCompat,
+  DraggableDashboardRenderer,
+  Leaderboard,
+  AIInsightCard,
+  InlineInsight,
+  MetralyButtonCompat as MetralyButton,
+  MetralyInputCompat as MetralyInput,
+} from './compat/brandbook-legacy';
+
+// Canonical framework exports.
+export {
+  MetralyShell,
+  MetralySidebar,
+  MetralySidebarSection,
+  MetralySidebarItem,
+  MetralyTopbar,
+  MetralyCard,
+  
+  MetralyTable,
+  StateBadge,
+  StatusBadge,
+  MetralyEmptyState,
+  DashboardGrid,
+  DashboardWidget,
+  DashboardToolbar,
+  DashboardResizeHandle,
+  DashboardEmptyState,
+  WidgetPickerCard,
+  MetralyMetricCard,
+  MetralyChartCard,
+  MetralyLineChart,
+  MetralyAreaChart,
+  MetralyBarChart,
+  MetralySparkline,
+  MetralyGauge,
+  MetralyHeatmap,
+  MetralyFilterBar,
+  MetralyTabs,
+  MetralySegmentedControl,
+  WizardLayout,
+  ReviewPanel,
+  StickyWizardFooter,
+  TokenInput,
+  PermissionExplainer,
+  BackfillRangePicker,
+  ConnectionTestPanel,
+  SyncProgressPanel,
+  CardShell,
+  AIWorkspaceLayout,
+  AnswerCard,
+  EvidencePanel,
+  TraceDrawer,
+  PermissionBadge,
+  SigningBanner,
+  PluginCatalog,
+  PluginReviewDrawer,
+} from '@metraly/ui';
+
+export type {
+  ReviewPanelItem,
+  WizardLayoutStep,
+  ChatMessage,
+  EvidenceCitation,
+  Plugin,
+  PluginPermission,
+} from '@metraly/ui';

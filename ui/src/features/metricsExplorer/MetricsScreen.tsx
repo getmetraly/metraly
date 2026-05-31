@@ -1,7 +1,7 @@
 // src/features/metricsExplorer/MetricsScreen.jsx
 import React, { useState } from 'react';
 import { Icon } from '../../components/shared/Icon';
-import { AreaChart } from '../../components/charts/AreaChart';
+import { MetralyAreaChart } from '../../design-system';
 import { makeTimeSeries } from '../../utils/seeds';
 import { FilterPill } from './components/FilterPill';
 import { TreeItem } from './components/TreeItem';
@@ -113,6 +113,11 @@ export const MetricsScreen = () => {
     slicedData = [...data, ...extra];
     slicedCompare = [...compareData, ...extra.map((v) => v * 0.95)];
   }
+  const chartData = slicedData.map((value, index) => ({
+    name: WEEK_LABELS_30.slice(-slicedData.length)[index] || `${index + 1}`,
+    value,
+    compare: slicedCompare[index],
+  }));
 
   const currentValue = slicedData[slicedData.length - 1];
   const prevValue = slicedData[0];
@@ -431,12 +436,20 @@ export const MetricsScreen = () => {
               </div>
             </div>
 
-            <AreaChart
-              data={slicedData}
-              compare={compareMode ? slicedCompare : null}
-              color={currentMetric?.color || '#00E5FF'}
+            <MetralyAreaChart
+              data={chartData}
+              xKey="name"
               height={180}
-              labels={WEEK_LABELS_30.slice(-slicedData.length)}
+              series={
+                compareMode
+                  ? [
+                      { dataKey: 'value', tone: currentMetric?.color || '#00E5FF' },
+                      { dataKey: 'compare', tone: '#B44CFF' },
+                    ]
+                  : [{ dataKey: 'value', tone: currentMetric?.color || '#00E5FF' }]
+              }
+              ariaLabel={`${currentMetric?.label} trend`}
+              summary={`Range ${timeRange}`}
             />
           </div>
 
