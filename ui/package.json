@@ -10,10 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:a11y": "vitest run src/design-system/compat/brandbook-legacy.test.tsx",
-    "typecheck": "tsc --noEmit",
-    "storybook": "storybook dev -p 6007",
-    "build-storybook": "storybook build",
-    "test:visual": "npm run build-storybook && playwright test -c playwright.visual.config.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -30,8 +27,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.59.1",
-    "@storybook/react-vite": "^10.4.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -45,7 +40,6 @@
     "globals": "^17.6.0",
     "jest-axe": "^10.0.0",
     "jsdom": "^29.1.1",
-    "storybook": "^10.4.0",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.10",
