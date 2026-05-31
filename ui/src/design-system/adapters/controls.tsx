@@ -33,9 +33,11 @@ type MetralyInputProps = React.ComponentPropsWithoutRef<'input'> & {
   search?: boolean;
   label?: ReactNode;
   description?: ReactNode;
+  hint?: ReactNode;
+  icon?: ReactNode;
   iconLeft?: ReactNode;
   iconRight?: ReactNode;
-  error?: string;
+  error?: ReactNode;
   fullWidth?: boolean;
 };
 
