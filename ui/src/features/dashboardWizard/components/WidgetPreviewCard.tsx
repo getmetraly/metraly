@@ -3,7 +3,7 @@ import React from "react";
 import { Icon } from "../../../design-system";
 import { useWizardStore } from "../store/wizardStore";
 import { WizardWidget } from "../store/wizardStore";
-import { widgetRegistry } from "../../../design-system";
+import { widgetRegistry } from "../../../components/dashboard/widgetRegistry";
 import { makeTimeSeries, makeHeatData } from "../../../utils/seeds";
 
 const WIDGET_TYPE_MAP: Record<string, string> = {

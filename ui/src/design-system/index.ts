@@ -15,15 +15,14 @@ export {
   DORABadgeCompat,
   WidgetCompat,
   DashboardRendererCompat,
-  DraggableDashboardRenderer,
   Leaderboard,
   AIInsightCard,
   InlineInsight,
+  Icon,
   MetralyButtonCompat as MetralyButton,
   MetralyInputCompat as MetralyInput,
-  widgetRegistry,
-  Icon,
 } from './compat/brandbook-legacy';
+
 
 // Canonical framework exports.
 export {
