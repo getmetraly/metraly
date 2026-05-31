@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SidebarCompat as Sidebar, TopbarCompat as Topbar, MetralyButton, MetralyInput, MetralyEmptyState } from './design-system';
+import { Sidebar, Topbar, MetralyButton, MetralyInput, MetralyEmptyState } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';

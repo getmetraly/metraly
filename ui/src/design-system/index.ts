@@ -4,18 +4,15 @@
  * Feature modules MUST import reusable UI only from this barrel.
  */
 
-// Temporary compatibility adapters still required by legacy feature code.
-export {
-  SidebarCompat,
-  TopbarCompat,
-  DORABadgeCompat,
-  Leaderboard,
-  AIInsightCard,
-  InlineInsight,
-  Icon,
-  MetralyButtonCompat as MetralyButton,
-  MetralyInputCompat as MetralyInput,
-} from './compat/brandbook-legacy';
+export { Sidebar } from './compat/SidebarCompat';
+export { Topbar } from './compat/TopbarCompat';
+export { Icon } from '../components/shared/Icon';
+export { Leaderboard } from '../components/ui/Leaderboard';
+export { AIInsightCard } from '../components/ui/AIInsightCard';
+export { InlineInsight } from '../components/ui/InlineInsight';
+export { MetralyButton, MetralyInput } from './adapters/controls';
+export { DraggableDashboardRenderer } from '../components/dashboard/DraggableDashboardRenderer';
+export { widgetRegistry } from '../components/dashboard/widgetRegistry';
 
 
 // Canonical framework exports.
@@ -33,6 +30,7 @@ export {
   StatusBadge,
   MetralyEmptyState,
   DashboardGrid,
+
   DashboardWidget,
   DashboardToolbar,
   DashboardResizeHandle,

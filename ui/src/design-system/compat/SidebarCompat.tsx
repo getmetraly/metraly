@@ -8,7 +8,7 @@ import {
 import { Icon } from "../../components/shared/Icon";
 import { useTweaks } from "../../context/TweaksContext";
 
-interface SidebarCompatProps {
+interface SidebarProps {
   active?: string;
   onNav?: (id: string) => void;
 }
@@ -54,7 +54,7 @@ const SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 
 const DASHBOARD_ITEMS = SECTIONS[0].items;
 
-export const SidebarCompat: React.FC<SidebarCompatProps> = ({ active = "", onNav }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ active = "", onNav }) => {
   const { tweaks } = useTweaks();
   const collapsed = tweaks.sidebarCollapsed as boolean;
 
