@@ -1,14 +1,14 @@
 import React from "react";
 import { MetralyTopbar } from "@metraly/ui";
-import { Icon } from "../../components/shared/Icon";
-import { useTweaks } from "../../context/TweaksContext";
+import { Icon } from "../components/shared/Icon";
+import { useTweaks } from "../context/TweaksContext";
 
-interface TopbarProps {
+interface AppTopbarProps {
   title?: string;
   subtitle?: string;
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ title, subtitle }) => {
+export function AppTopbar({ title, subtitle }: AppTopbarProps) {
   const { tweaks } = useTweaks();
   const density = tweaks.density as "compact" | "comfortable" | "spacious";
 
@@ -41,4 +41,4 @@ export const Topbar: React.FC<TopbarProps> = ({ title, subtitle }) => {
       actions={actions}
     />
   );
-};
+}

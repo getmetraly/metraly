@@ -4,8 +4,8 @@
  * Feature modules MUST import reusable UI only from this barrel.
  */
 
-export { Sidebar } from './compat/SidebarCompat';
-export { Topbar } from './compat/TopbarCompat';
+export { AppSidebar as Sidebar } from '../layout/AppSidebar';
+export { AppTopbar as Topbar } from '../layout/AppTopbar';
 export { Icon } from '../components/shared/Icon';
 export { Leaderboard, AIInsightCard, InlineInsight } from '@metraly/ui';
 export { MetralyButton, MetralyInput } from './adapters/controls';
