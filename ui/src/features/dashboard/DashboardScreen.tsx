@@ -4,7 +4,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Icon } from "../../design-system";
-import { DashboardRendererCompat as DashboardRenderer } from "../../design-system";
 import { DraggableDashboardRenderer } from "../../components/dashboard/DraggableDashboardRenderer";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
@@ -219,7 +218,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       );
     }
 
-    return <DashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
+    return <DraggableDashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
   };
 
   const TabBar = () => (

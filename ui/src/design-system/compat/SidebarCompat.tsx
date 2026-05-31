@@ -135,14 +135,21 @@ export const SidebarCompat: React.FC<SidebarCompatProps> = ({ active = "", onNav
               icon={<Icon name={item.icon} size={15} color="currentColor" />}
               label={item.label}
               meta={
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   aria-label="Unpin"
-                  onClick={(e) => togglePin(item.id, e)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "color-mix(in srgb, var(--cyan) 50%, transparent)", fontSize: 12, padding: "0 2px", lineHeight: 1 }}
+                  onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      togglePin(item.id, e as unknown as React.MouseEvent);
+                    }
+                  }}
+                  style={{ cursor: "pointer", color: "color-mix(in srgb, var(--cyan) 50%, transparent)", fontSize: 12, padding: "0 2px", lineHeight: 1 }}
                 >
                   ×
-                </button>
+                </span>
               }
               onClick={() => onNav?.(item.id)}
             />
@@ -159,14 +166,21 @@ export const SidebarCompat: React.FC<SidebarCompatProps> = ({ active = "", onNav
             label={item.label}
             meta={
               !collapsed ? (
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   aria-label={pinned.includes(item.id) ? "Unpin" : "Pin to top"}
-                  onClick={(e) => togglePin(item.id, e)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: "0 2px", fontSize: 12, lineHeight: 1 }}
+                  onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      togglePin(item.id, e as unknown as React.MouseEvent);
+                    }
+                  }}
+                  style={{ cursor: "pointer", color: "var(--muted)", padding: "0 2px", fontSize: 12, lineHeight: 1 }}
                 >
                   📌
-                </button>
+                </span>
               ) : undefined
             }
             onClick={() => onNav?.(item.id)}

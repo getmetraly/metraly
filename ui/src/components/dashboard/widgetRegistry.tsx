@@ -1,6 +1,6 @@
 import type { WidgetType, WidgetConfig } from '../../types/widgets';
 import React from 'react';
-import { MetralyTable, StateBadge, StatCardCompat as StatCard, Leaderboard } from '../../design-system';
+import { MetralyTable, StateBadge, MetralyMetricCard, TrendBadge, Leaderboard } from '../../design-system';
 import { Icon } from '../shared/Icon';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { AreaChart } from '../charts/AreaChart';
@@ -23,9 +23,9 @@ const iconMap: Record<string, string> = {
   'sprint-burndown': 'target',
 };
 
-const colorMap: Record<string, string> = {
-  cyan: 'cyan',
-  purple: 'purple',
+const colorMap: Record<string, 'primary' | 'secondary' | 'success' | 'warning' | 'error'> = {
+  cyan: 'primary',
+  purple: 'secondary',
   success: 'success',
   warning: 'warning',
   error: 'error',
@@ -49,22 +49,26 @@ const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) 
   if (!data) return <div style={{...widgetStyle, padding: 20}}>Loading...</div>;
 
   const icon = iconMap[cfg.metricId] || 'activity';
-  const color = colorMap[cfg.colorKey] || 'cyan';
+  const color = colorMap[cfg.colorKey] || 'primary';
 
   // Parse delta to get trend direction
-  const trendDir = data.delta?.startsWith('+') ? 'up' : data.delta?.startsWith('-') ? 'down' : 'neutral';
-
+  const trendDir = data.delta?.startsWith('+') ? 'up' : data.delta?.startsWith('-') ? 'down' : 'flat';
+  const trendSentiment = trendDir === 'up' ? 'positive' : trendDir === 'down' ? 'negative' : 'neutral';
   return (
     <div style={widgetStyle}>
-    <StatCard
-      icon={icon}
-      label={cfg.metricId || 'Metric'}
+    <MetralyMetricCard
+      icon={<Icon name={icon} size={15} color="currentColor" />}
+      title={cfg.metricId || 'Metric'}
       value={data.value || '0'}
-      trend={data.delta}
-      trendDir={trendDir}
-      color={color}
-      spark={data.sparkline?.values}
-      delay={0}
+      description={undefined}
+      variant={color}
+      footer={
+        data.delta ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <TrendBadge direction={trendDir} sentiment={trendSentiment} value={data.delta} size="sm" />
+          </div>
+        ) : undefined
+      }
     />
     </div>
   );
