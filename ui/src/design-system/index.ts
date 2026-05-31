@@ -11,7 +11,6 @@ export {
   StatCardCompat,
   SidebarCompat,
   TopbarCompat,
-  PlaceholderScreenCompat,
   DORABadgeCompat,
   WidgetCompat,
   DashboardRendererCompat,

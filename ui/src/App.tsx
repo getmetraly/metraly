@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SidebarCompat as Sidebar, TopbarCompat as Topbar, PlaceholderScreenCompat as PlaceholderScreen, MetralyButton, MetralyInput } from './design-system';
+import { SidebarCompat as Sidebar, TopbarCompat as Topbar, MetralyButton, MetralyInput, MetralyEmptyState } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
@@ -70,7 +70,7 @@ function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
     ),
   };
 
-  return renderers[active] ? renderers[active]() : <PlaceholderScreen name={title} />;
+  return renderers[active] ? renderers[active]() : <MetralyEmptyState title={title} description="This screen is not available yet." variant="default" />;
 }
 
 const App = () => {
