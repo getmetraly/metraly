@@ -1,7 +1,6 @@
 import type { WidgetType, WidgetConfig } from '../../types/widgets';
 import React from 'react';
-import { DataTableCompat as DataTable, DORABadgeCompat as DORABadge } from '../../design-system';
-import { StatCardCompat as StatCard, Leaderboard } from '../../design-system';
+import { MetralyTable, StateBadge, StatCardCompat as StatCard, Leaderboard } from '../../design-system';
 import { Icon } from '../shared/Icon';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { AreaChart } from '../charts/AreaChart';
@@ -36,6 +35,13 @@ const widgetStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
   boxSizing: 'border-box',
+};
+
+const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error" | "info"> = {
+  Elite: 'success',
+  High: 'live',
+  Med: 'warning',
+  Low: 'error',
 };
 
 const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
@@ -243,11 +249,16 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
 
   return (
     <div style={{...widgetStyle, padding: 16, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'auto'}}>
-      <DataTable
-        title={titleMap[cfg.tableType] || cfg.tableType}
-        columns={columns}
-        rows={rows}
-        maxRows={cfg.maxRows}
+      <MetralyTable<{ title: string; status: string }>
+        columns={[
+          { key: 'title', header: 'Title' },
+          { key: 'status', header: 'Status' },
+        ]}
+        data={rows.map((row) => ({ title: String(row[0]), status: String(row[1]) }))}
+        dense
+        mobilePresentation="stacked"
+        ariaLabel={titleMap[cfg.tableType] || cfg.tableType}
+        maxHeight={cfg.maxRows ? `${Math.max(220, cfg.maxRows * 44)}px` : undefined}
       />
     </div>
   );
@@ -259,16 +270,16 @@ const DORAOverviewWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   return (
     <div style={{...widgetStyle, display: 'flex', gap: 8, flexWrap: 'wrap', padding: 16}}>
       {data.deployFrequency && (
-        <DORABadge label="Deploy" value={data.deployFrequency.currentValue} level={data.deployFrequency.level} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[data.deployFrequency.level] ?? 'info'} label={`Deploy ${data.deployFrequency.currentValue}`} />
       )}
       {data.leadTime && (
-        <DORABadge label="Lead Time" value={data.leadTime.currentValue} level={data.leadTime.level} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[data.leadTime.level] ?? 'info'} label={`Lead Time ${data.leadTime.currentValue}`} />
       )}
       {data.changeFailureRate && (
-        <DORABadge label="CFR" value={data.changeFailureRate.currentValue} level={data.changeFailureRate.level} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[data.changeFailureRate.level] ?? 'info'} label={`CFR ${data.changeFailureRate.currentValue}`} />
       )}
       {data.mttr && (
-        <DORABadge label="MTTR" value={data.mttr.currentValue} level={data.mttr.level} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[data.mttr.level] ?? 'info'} label={`MTTR ${data.mttr.currentValue}`} />
       )}
     </div>
   );

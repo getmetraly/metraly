@@ -1,10 +1,25 @@
 // src/features/metricsExplorer/components/BreakdownTable.tsx
 import React from 'react';
-import { DataTableCompat as DataTable, DORABadgeCompat as DORABadge } from '../../../design-system';
+import { MetralyTable, StateBadge } from '../../../design-system';
 
 interface BreakdownTableProps {
   metricId?: string;
 }
+
+type BreakdownRow = {
+  name: string;
+  team: string;
+  value: React.ReactNode;
+  level: React.ReactNode;
+  delta: React.ReactNode;
+};
+
+const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error" | "info"> = {
+  Elite: 'success',
+  High: 'live',
+  Med: 'warning',
+  Low: 'error',
+};
 
 export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
   const rows: Record<string, string[][]> = {
@@ -25,14 +40,33 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
   };
   const data = rows[metricId || 'deploy-freq'] || [];
   return (
-    <DataTable
-      columns={['Repository / Team', 'Team', 'Value', 'DORA Level', 'vs prev']}
-      rows={data.map((r: string[]) => [
-        r[0], r[1],
-        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{r[2]}</span>,
-        <DORABadge level={r[3]}/>,
-        <span style={{ fontFamily: 'var(--font-mono)', color: r[4].startsWith('+') && r[4] !== '+0.0' ? 'var(--success)' : 'var(--warning)' }}>{r[4]}</span>
-      ])}
+    <MetralyTable<BreakdownRow>
+      columns={[
+        { key: 'name', header: 'Repository / Team' },
+        { key: 'team', header: 'Team' },
+        { key: 'value', header: 'Value' },
+        { key: 'level', header: 'DORA Level' },
+        { key: 'delta', header: 'vs prev' },
+      ]}
+      data={data.map((r: string[]) => ({
+        name: r[0],
+        team: r[1],
+        value: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{r[2]}</span>,
+        level: <StateBadge state={DORA_LEVEL_STATE_MAP[r[3]] ?? 'info'} label={r[3]} />,
+        delta: (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              color: r[4].startsWith('+') && r[4] !== '+0.0' ? 'var(--success)' : 'var(--warning)',
+            }}
+          >
+            {r[4]}
+          </span>
+        ),
+      }))}
+      dense
+      mobilePresentation="stacked"
+      ariaLabel="Metric breakdown"
     />
   );
 };

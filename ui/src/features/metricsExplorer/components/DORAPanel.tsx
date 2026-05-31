@@ -1,6 +1,6 @@
 // src/features/metricsExplorer/components/DORAPanel.tsx
 import React from 'react';
-import { DORABadgeCompat as DORABadge } from '../../../design-system';
+import { StateBadge } from '../../../design-system';
 import { Icon } from '../../../design-system';
 
 interface DORACard {
@@ -20,6 +20,13 @@ interface DORAPanelProps {
   selected?: string[];
 }
 
+const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error"> = {
+  Elite: 'success',
+  High: 'live',
+  Med: 'warning',
+  Low: 'error',
+};
+
 export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
   const cards: DORACard[] = [
     { id: 'deploy-freq', label: 'Deployment Frequency', value: '4.2/day', delta: '+0.8', good: true, level: 'Elite', color: '#00E5FF', icon: 'zap', note: 'On-demand (multiple/day)' },
@@ -37,7 +44,7 @@ export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <Icon name={c.icon} size={14} color={c.color} />
-            <DORABadge level={c.level} />
+            <StateBadge state={DORA_LEVEL_STATE_MAP[c.level] ?? 'info'} label={c.level} />
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-head)', color: 'var(--text)' }}>{c.value}</div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>{c.label}</div>

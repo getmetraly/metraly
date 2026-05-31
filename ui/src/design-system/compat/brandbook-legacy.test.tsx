@@ -51,7 +51,7 @@ test('data table compat renders a semantic table', async () => {
 test('breakdown table stays accessible through compat barrel adapters', async () => {
   const { container, getByRole } = render(<BreakdownTable metricId="deploy-freq" />);
 
-  expect(getByRole('table', { name: 'Data table' })).toBeInTheDocument();
+  expect(getByRole('table', { name: 'Metric breakdown' })).toBeInTheDocument();
   expect((await axe(container)).violations).toHaveLength(0);
 });
 
