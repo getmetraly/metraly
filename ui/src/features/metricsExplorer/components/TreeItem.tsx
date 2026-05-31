@@ -30,13 +30,13 @@ export const TreeItem: React.FC<TreeItemProps> = ({ item, depth = 0, selected, o
       <div>
         <div onClick={() => toggleGroup(item.id)} style={{
           display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px',
-          cursor: 'pointer', borderRadius: 6, color: 'var(--muted2)', fontSize: 12.5, fontWeight: 500,
-        }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          cursor: 'pointer', borderRadius: 6, color: 'var(--m-fg-1)', fontSize: 12.5, fontWeight: 500,
+        }} onMouseEnter={e => e.currentTarget.style.background = 'var(--m-bg-2)'}
            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <Icon name={item.icon || 'layers'} size={13} color="var(--muted)" />
+          <Icon name={item.icon || 'layers'} size={13} color="var(--m-fg-2)" />
           <span style={{ flex: 1 }}>{item.label}</span>
           <div style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-            <Icon name="chevronDown" size={12} color="var(--muted)" />
+            <Icon name="chevronDown" size={12} color="var(--m-fg-2)" />
           </div>
         </div>
         {isExpanded && item.children?.map(child => (
@@ -53,14 +53,14 @@ export const TreeItem: React.FC<TreeItemProps> = ({ item, depth = 0, selected, o
     <div onClick={() => onSelect(item.id)} style={{
       display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px 6px 26px',
       cursor: 'pointer', borderRadius: 6, background: isSelected ? `${item.color}15` : 'transparent',
-      color: isSelected ? item.color : 'var(--muted2)', fontSize: 12.5,
+      color: isSelected ? item.color : 'var(--m-fg-1)', fontSize: 12.5,
       borderLeft: isSelected ? `2px solid ${item.color}` : '2px solid transparent',
       marginLeft: 8,
-    }} onMouseEnter={e => { if (!isSelected) e.currentTarget.style.color = 'var(--text)'; }}
-       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.color = 'var(--muted2)'; }}>
+    }} onMouseEnter={e => { if (!isSelected) e.currentTarget.style.color = 'var(--m-fg-0)'; }}
+       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.color = 'var(--m-fg-1)'; }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: item.color }} />
       <span style={{ flex: 1 }}>{item.label}</span>
-      <span style={{ fontSize: 10, opacity: 0.5, fontFamily: 'var(--font-mono)' }}>{item.unit}</span>
+      <span style={{ fontSize: 10, opacity: 0.5, fontFamily: 'var(--m-font-mono)' }}>{item.unit}</span>
     </div>
   );
 };

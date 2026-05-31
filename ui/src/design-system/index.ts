@@ -28,6 +28,7 @@ export {
   StateBadge,
   StatusBadge,
   MetralyEmptyState,
+  StateBlock,
   DashboardGrid,
 
   DashboardWidget,

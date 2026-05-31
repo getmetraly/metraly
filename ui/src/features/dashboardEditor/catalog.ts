@@ -21,12 +21,12 @@ export interface DashboardWidgetDefinition {
 }
 
 export const TEMPLATES: DashboardTemplateDefinition[] = [
-  { id: "cto", label: "CTO", icon: "trendingUp", color: "#00E5FF", desc: "Health score, DORA overview, team velocity trends" },
-  { id: "vp", label: "VP Engineering", icon: "users", color: "#B44CFF", desc: "Sprint velocity, team load, delivery risk heatmap" },
-  { id: "tl", label: "Tech Lead", icon: "gitPR", color: "#00C853", desc: "CI health, PR queue, sprint burndown" },
-  { id: "devops", label: "DevOps / SRE", icon: "cpu", color: "#FF9100", desc: "Deploy frequency, MTTR, incident tracking" },
-  { id: "ic", label: "My Dashboard", icon: "activity", color: "#B44CFF", desc: "My PRs, CI runs, review queue, sprint tasks" },
-  { id: "blank", label: "Blank Canvas", icon: "plus", color: "#6B7A9A", desc: "Start from scratch and add widgets one by one" },
+  { id: "cto", label: "CTO", icon: "trendingUp", color: "var(--m-cyan-500)", desc: "Health score, DORA overview, team velocity trends" },
+  { id: "vp", label: "VP Engineering", icon: "users", color: "var(--m-purple-500)", desc: "Sprint velocity, team load, delivery risk heatmap" },
+  { id: "tl", label: "Tech Lead", icon: "gitPR", color: "var(--m-ok)", desc: "CI health, PR queue, sprint burndown" },
+  { id: "devops", label: "DevOps / SRE", icon: "cpu", color: "var(--m-warn)", desc: "Deploy frequency, MTTR, incident tracking" },
+  { id: "ic", label: "My Dashboard", icon: "activity", color: "var(--m-purple-500)", desc: "My PRs, CI runs, review queue, sprint tasks" },
+  { id: "blank", label: "Blank Canvas", icon: "plus", color: "var(--m-fg-2)", desc: "Start from scratch and add widgets one by one" },
 ];
 
 export const WIDGET_LIBRARY: DashboardWidgetDefinition[] = [
@@ -67,14 +67,14 @@ const FULL_WIDTH_WIDGET_IDS = new Set([
 
 export function getWidgetColor(cat: string): string {
   const colors: Record<string, string> = {
-    DORA: "#00E5FF",
-    "CI/CD": "#00C853",
-    PR: "#B44CFF",
-    Sprint: "#FF9100",
-    Team: "#00E5FF",
-    AI: "#B44CFF",
+    DORA: "var(--m-cyan-500)",
+    "CI/CD": "var(--m-ok)",
+    PR: "var(--m-purple-500)",
+    Sprint: "var(--m-warn)",
+    Team: "var(--m-cyan-500)",
+    AI: "var(--m-purple-500)",
   };
-  return colors[cat] || "#00E5FF";
+  return colors[cat] || "var(--m-cyan-500)";
 }
 
 export function isFullWidthWidget(widgetId: string): boolean {

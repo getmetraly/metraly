@@ -20,33 +20,33 @@ const METRIC_TREE = [
   {
     id: 'dora', label: 'DORA Metrics', icon: 'zap', expanded: true,
     children: [
-      { id: 'deploy-freq', label: 'Deployment Frequency', unit: 'deploys/day', color: '#00E5FF' },
-      { id: 'lead-time', label: 'Lead Time for Changes', unit: 'hours', color: '#B44CFF' },
-      { id: 'cfr', label: 'Change Failure Rate', unit: '%', color: '#FF9100' },
-      { id: 'mttr', label: 'MTTR', unit: 'minutes', color: '#00C853' },
+      { id: 'deploy-freq', label: 'Deployment Frequency', unit: 'deploys/day', color: 'var(--m-cyan-500)' },
+      { id: 'lead-time', label: 'Lead Time for Changes', unit: 'hours', color: 'var(--m-purple-500)' },
+      { id: 'cfr', label: 'Change Failure Rate', unit: '%', color: 'var(--m-warn)' },
+      { id: 'mttr', label: 'MTTR', unit: 'minutes', color: 'var(--m-ok)' },
     ],
   },
   {
     id: 'ci', label: 'CI / CD', icon: 'activity',
     children: [
-      { id: 'ci-pass', label: 'Build Success Rate', unit: '%', color: '#00C853' },
-      { id: 'ci-duration', label: 'Build Duration', unit: 'min', color: '#00E5FF' },
-      { id: 'ci-queue', label: 'Pipeline Queue Time', unit: 'sec', color: '#FF9100' },
+      { id: 'ci-pass', label: 'Build Success Rate', unit: '%', color: 'var(--m-ok)' },
+      { id: 'ci-duration', label: 'Build Duration', unit: 'min', color: 'var(--m-cyan-500)' },
+      { id: 'ci-queue', label: 'Pipeline Queue Time', unit: 'sec', color: 'var(--m-warn)' },
     ],
   },
   {
     id: 'pr', label: 'Pull Requests', icon: 'gitPR',
     children: [
-      { id: 'pr-cycle', label: 'PR Cycle Time', unit: 'hours', color: '#B44CFF' },
-      { id: 'pr-review', label: 'Review Time', unit: 'hours', color: '#00E5FF' },
-      { id: 'pr-merge', label: 'Merge Rate', unit: '%', color: '#00C853' },
+      { id: 'pr-cycle', label: 'PR Cycle Time', unit: 'hours', color: 'var(--m-purple-500)' },
+      { id: 'pr-review', label: 'Review Time', unit: 'hours', color: 'var(--m-cyan-500)' },
+      { id: 'pr-merge', label: 'Merge Rate', unit: '%', color: 'var(--m-ok)' },
     ],
   },
   {
     id: 'teams', label: 'Teams', icon: 'users',
     children: [
-      { id: 'velocity', label: 'Sprint Velocity', unit: 'pts', color: '#00E5FF' },
-      { id: 'throughput', label: 'Throughput', unit: 'PRs/wk', color: '#B44CFF' },
+      { id: 'velocity', label: 'Sprint Velocity', unit: 'pts', color: 'var(--m-cyan-500)' },
+      { id: 'throughput', label: 'Throughput', unit: 'PRs/wk', color: 'var(--m-purple-500)' },
     ],
   },
 ];
@@ -133,15 +133,15 @@ export const MetricsScreen = () => {
         style={{
           width: 220,
           flexShrink: 0,
-          borderRight: '1px solid var(--border)',
+          borderRight: '1px solid var(--m-line)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           background: 'var(--m-bg-1)',
         }}
       >
-        <div style={{ padding: '14px 10px 8px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', color: 'var(--muted)', textTransform: 'uppercase', padding: '0 4px', marginBottom: 8 }}>
+        <div style={{ padding: '14px 10px 8px', borderBottom: '1px solid var(--m-line)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', color: 'var(--m-fg-2)', textTransform: 'uppercase', padding: '0 4px', marginBottom: 8 }}>
             Metrics
           </div>
           <MetralyInput search placeholder="Filter…" fullWidth style={{ fontSize: 12.5 }} />
@@ -169,7 +169,7 @@ export const MetricsScreen = () => {
             alignItems: 'center',
             gap: 8,
             padding: '10px 18px',
-            borderBottom: '1px solid var(--border)',
+            borderBottom: '1px solid var(--m-line)',
             flexShrink: 0,
             background: 'var(--m-bg-1)',
           }}
@@ -191,11 +191,11 @@ export const MetricsScreen = () => {
           {isDORA && (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>
+        <span style={{ fontFamily: 'var(--m-font-display)', fontWeight: 600, fontSize: 13, color: 'var(--m-fg-0)' }}>
           DORA Metrics
         </span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--m-line)' }} />
+        <span style={{ fontSize: 11, color: 'var(--m-fg-2)', fontFamily: 'var(--m-font-mono)' }}>
           Click a metric to drill in
         </span>
       </div>
@@ -220,15 +220,15 @@ export const MetricsScreen = () => {
                       width: 10,
                       height: 10,
                       borderRadius: '50%',
-                      background: currentMetric?.color || 'var(--cyan)',
+                      background: currentMetric?.color || 'var(--m-cyan-500)',
                     }}
                   />
                   <span
                     style={{
-                      fontFamily: 'var(--font-head)',
+                      fontFamily: 'var(--m-font-display)',
                       fontWeight: 600,
                       fontSize: 15,
-                      color: 'var(--text)',
+                      color: 'var(--m-fg-0)',
                     }}
                   >
                     {currentMetric?.label}
@@ -237,8 +237,8 @@ export const MetricsScreen = () => {
                     <span
                       style={{
                         fontSize: 11,
-                        color: 'var(--muted)',
-                        background: 'rgba(255,255,255,0.05)',
+                        color: 'var(--m-fg-2)',
+                        background: 'var(--m-bg-3)',
                         padding: '2px 7px',
                         borderRadius: 4,
                       }}
@@ -250,8 +250,8 @@ export const MetricsScreen = () => {
                     <span
                       style={{
                         fontSize: 11,
-                        color: 'var(--muted)',
-                        background: 'rgba(255,255,255,0.05)',
+                        color: 'var(--m-fg-2)',
+                        background: 'var(--m-bg-3)',
                         padding: '2px 7px',
                         borderRadius: 4,
                       }}
@@ -263,10 +263,10 @@ export const MetricsScreen = () => {
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 10 }}>
                   <span
                     style={{
-                      fontFamily: 'var(--font-head)',
+                      fontFamily: 'var(--m-font-display)',
                       fontSize: 32,
                       fontWeight: 700,
-                      color: 'var(--text)',
+                      color: 'var(--m-fg-0)',
                     }}
                   >
                     {currentValue >= 100
@@ -274,13 +274,13 @@ export const MetricsScreen = () => {
                       : currentValue.toFixed(1)}
                     {currentMetric?.unit?.startsWith('%') ? '%' : ''}
                   </span>
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  <span style={{ fontSize: 13, color: 'var(--m-fg-2)' }}>
                     {currentMetric?.unit?.startsWith('%') ? '' : currentMetric?.unit}
                   </span>
                   <span
                     style={{
                       fontSize: 13,
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--m-font-mono)',
                       color:
                         (delta <= 0 &&
                           [
@@ -302,8 +302,8 @@ export const MetricsScreen = () => {
                             'pr-cycle',
                             'pr-review',
                           ].includes(selected))
-                          ? 'var(--success)'
-                          : 'var(--error)',
+                          ? 'var(--m-ok)'
+                          : 'var(--m-err)',
                     }}
                   >
                     {deltaStr} {currentMetric?.unit?.startsWith('%') ? 'pp' : currentMetric?.unit} vs{' '}
@@ -319,9 +319,9 @@ export const MetricsScreen = () => {
                       padding: '4px 9px',
                       borderRadius: 6,
                       fontSize: 12,
-                      border: '1px solid var(--border)',
-                      background: t === 'Area' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
-                      color: t === 'Area' ? 'var(--cyan)' : 'var(--muted2)',
+                      border: '1px solid var(--m-line)',
+                      background: t === 'Area' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
+                      color: t === 'Area' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
                       cursor: 'pointer',
                     }}
                   >
@@ -338,10 +338,10 @@ export const MetricsScreen = () => {
               series={
                 compareMode
                   ? [
-                      { dataKey: 'value', tone: currentMetric?.color || '#00E5FF' },
-                      { dataKey: 'compare', tone: '#B44CFF' },
+                      { dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' },
+                      { dataKey: 'compare', tone: 'var(--m-purple-500)' },
                     ]
-                  : [{ dataKey: 'value', tone: currentMetric?.color || '#00E5FF' }]
+                  : [{ dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' }]
               }
               ariaLabel={`${currentMetric?.label} trend`}
               summary={`Range ${timeRange}`}
@@ -351,21 +351,21 @@ export const MetricsScreen = () => {
           {/* Breakdown table */}
           <CardShell className="fade-up-1" style={{ padding: '18px 20px', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>Breakdown</span>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                <span style={{ fontFamily: 'var(--m-font-display)', fontWeight: 600, fontSize: 13, color: 'var(--m-fg-0)' }}>Breakdown</span>
+                <div style={{ flex: 1, height: 1, background: 'var(--m-line)' }} />
                 <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => setBreakdownView('table')} style={{
                     padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'table' ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
-                    background: breakdownView === 'table' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
-                    color: breakdownView === 'table' ? 'var(--cyan)' : 'var(--muted2)',
+                    border: breakdownView === 'table' ? '1px solid color-mix(in srgb, var(--m-cyan-500) 40%, transparent)' : '1px solid var(--m-line)',
+                    background: breakdownView === 'table' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
+                    color: breakdownView === 'table' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
                     cursor: 'pointer'
                     }}>Table</button>
                     <button onClick={() => setBreakdownView('leaderboard')} style={{
                     padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'leaderboard' ? '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)' : '1px solid var(--border)',
-                    background: breakdownView === 'leaderboard' ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
-                    color: breakdownView === 'leaderboard' ? 'var(--cyan)' : 'var(--muted2)',
+                    border: breakdownView === 'leaderboard' ? '1px solid color-mix(in srgb, var(--m-cyan-500) 40%, transparent)' : '1px solid var(--m-line)',
+                    background: breakdownView === 'leaderboard' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
+                    color: breakdownView === 'leaderboard' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
                     cursor: 'pointer'
                     }}>Leaderboard</button>
                 </div>
@@ -398,7 +398,7 @@ export const MetricsScreen = () => {
                     return data.map((r: string[]) => ({ name: r[0], value: parseFloat(r[2]) }));
                     })()}
                     unit={currentMetric?.unit === 'deploys/day' ? '/day' : currentMetric?.unit}
-                    color={currentMetric?.color || '#00E5FF'}
+                    color={currentMetric?.color || 'var(--m-cyan-500)'}
                 />
                 )}
           </CardShell>
@@ -408,25 +408,25 @@ export const MetricsScreen = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <span
                 style={{
-                  fontFamily: 'var(--font-head)',
+                  fontFamily: 'var(--m-font-display)',
                   fontWeight: 600,
                   fontSize: 13,
-                  color: 'var(--text)',
+                  color: 'var(--m-fg-0)',
                 }}
               >
                 Custom Formula
               </span>
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--m-line)' }} />
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <div
                 style={{
                   flex: 1,
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--m-font-mono)',
                   fontSize: 12.5,
-                  color: 'var(--cyan)',
-                  background: 'color-mix(in srgb, var(--cyan) 4%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
+                  color: 'var(--m-cyan-500)',
+                  background: 'color-mix(in srgb, var(--m-cyan-500) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--m-cyan-500) 15%, transparent)',
                   borderRadius: 8,
                   padding: '10px 14px',
                 }}
@@ -437,9 +437,9 @@ export const MetricsScreen = () => {
                 style={{
                   padding: '9px 16px',
                   borderRadius: 8,
-                  background: 'color-mix(in srgb, var(--cyan) 10%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
-                  color: 'var(--cyan)',
+                  background: 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--m-cyan-500) 20%, transparent)',
+                  color: 'var(--m-cyan-500)',
                   fontSize: 13,
                   cursor: 'pointer',
                 }}
@@ -447,9 +447,9 @@ export const MetricsScreen = () => {
                 Run
               </button>
             </div>
-            <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>
+            <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--m-fg-2)' }}>
               Result:{' '}
-              <span style={{ color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ color: 'var(--m-fg-0)', fontFamily: 'var(--m-font-mono)' }}>
                 4.07 adjusted deploys/day
               </span>
             </div>

@@ -12,7 +12,10 @@ import {
   MetralyGauge,
   MetralyHeatmap,
   CardShell,
+  StateBlock,
   AIInsightCard,
+  ActivityFeed,
+  MetralyButton,
 } from '../../design-system';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { Icon } from '../shared/Icon';
@@ -24,12 +27,12 @@ function TestChartFallback({ summary }: { summary: string }) {
       aria-label={summary}
       style={{
         height: 140,
-        border: '1px dashed var(--line)',
+        border: '1px dashed var(--m-line)',
         borderRadius: 8,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'var(--muted)',
+        color: 'var(--m-fg-2)',
         fontSize: 12,
       }}
     >
@@ -94,6 +97,35 @@ const widgetStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
+function WidgetState({
+  variant,
+  title,
+  description,
+}: {
+  variant: 'loading' | 'empty' | 'error';
+  title: string;
+  description?: string;
+}) {
+  return (
+    <CardShell style={widgetStyle} density="compact" state={variant === 'empty' ? 'empty' : variant}>
+      <StateBlock
+        variant={variant === 'empty' ? 'empty' : variant}
+        title={title}
+        description={description}
+        density="compact"
+      />
+    </CardShell>
+  );
+}
+
+function LoadingWidget({ title = 'Loading widget…' }: { title?: string }) {
+  return <WidgetState variant="loading" title={title} />;
+}
+
+function EmptyWidget({ title = 'No data in this range', description = 'Try a wider time range or connect a source.' }: { title?: string; description?: string }) {
+  return <WidgetState variant="empty" title={title} description={description} />;
+}
+
 const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error" | "info"> = {
   Elite: 'success',
   High: 'live',
@@ -103,7 +135,7 @@ const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "err
 
 const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
   const cfg = config as StatCardConfig;
-  if (!data) return <div style={{...widgetStyle, padding: 20}}>Loading...</div>;
+  if (!data) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} loading…`} />;
 
   const icon = iconMap[cfg.metricId] || 'activity';
   const color = colorMap[cfg.colorKey] || 'primary';
@@ -133,7 +165,7 @@ const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) 
 
 const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
   const cfg = config as MetricChartConfig;
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} loading…`} />;
 
   const chartVariant = cfg.chartVariant || 'area';
   const showCompare = cfg.showCompare ?? false;
@@ -203,7 +235,7 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
 
 const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
   const cfg = config as LeaderboardConfig;
-  if (!data || !Array.isArray(data)) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data || !Array.isArray(data)) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} leaderboard loading…`} />;
 
   const labelMap: Record<string, string> = {
     'deploy-freq': 'Deploy Frequency',
@@ -248,15 +280,13 @@ const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any 
 
   return (
     <CardShell style={{...widgetStyle, height}} density="compact">
-      <Leaderboard items={items} color="#00E5FF" unit={unit} title={title} />
+      <Leaderboard items={items} color="var(--m-cyan-500)" unit={unit} title={title} />
     </CardShell>
   );
 };
 
 const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
   const cfg = config as DataTableConfig;
-  if (!data || !data.rows || data.rows.length === 0) return <div style={widgetStyle}><div style={{padding: 20, color: 'var(--muted)'}}>No data</div></div>;
-
   const titleMap: Record<string, string> = {
     'pr-queue': 'PR Review Queue',
     'ci-failures': 'Failing Builds',
@@ -266,59 +296,67 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
     'review-queue': 'Review Queue',
     'blocked-tasks': 'Blocked Tasks',
   };
+  const title = titleMap[cfg.tableType] || cfg.tableType || 'Table';
+
+  if (!data || !data.rows || data.rows.length === 0) {
+    return (
+      <EmptyWidget
+        title={title}
+        description="Connected source data for this table has not produced rows in the selected range."
+      />
+    );
+  }
 
   const hasExtraFields = cfg.tableType === 'pr-queue' || cfg.tableType === 'blocked-tasks' || cfg.tableType === 'ci-failures';
 
   if (hasExtraFields) {
-    // Render custom rows with time and extra info
-    const rows = data.rows.slice(0, cfg.maxRows || 5);
+    const rows = data.rows.slice(0, cfg.maxRows || 5).map((r: any, i: number) => ({
+      id: String(r.id ?? i),
+      title: r.title || `Item ${i + 1}`,
+      meta: [r.author, r.blockedBy, r.time].filter(Boolean).join(' · '),
+      status: r.status || 'Unknown',
+    }));
     return (
-      <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact">
-        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, color: 'var(--text)' }}>{titleMap[cfg.tableType] || cfg.tableType}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rows.map((r: any, i: number) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                  {r.author && <span style={{ marginRight: 8 }}>{r.author}</span>}
-                  {r.blockedBy && <span style={{ color: 'var(--warning)', marginRight: 8 }}>{r.blockedBy}</span>}
-                  <span style={{ fontFamily: 'var(--font-mono)' }}>{r.time}</span>
-                </div>
-              </div>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 600,
-                padding: '3px 8px',
-                borderRadius: 4,
-                background: r.status === 'Review' ? 'rgba(180,76,255,0.15)' : r.status === 'Failed' ? 'rgba(255,23,68,0.15)' : 'rgba(255,145,0,0.15)',
-                color: r.status === 'Review' ? '#B44CFF' : r.status === 'Failed' ? '#FF1744' : '#FF9100',
-              }}>{r.status}</div>
-            </div>
-          ))}
-        </div>
+      <CardShell
+        style={{...widgetStyle, overflow: 'auto'}}
+        density="compact"
+        title={title}
+      >
+        <MetralyTable<{ id: string; title: string; meta: string; status: React.ReactNode }>
+          columns={[
+            { key: 'title', header: 'Title' },
+            { key: 'meta', header: 'Context' },
+            { key: 'status', header: 'Status', width: '96px' },
+          ]}
+          data={rows.map((row) => ({
+            ...row,
+            status: <StateBadge state={row.status === 'Failed' ? 'error' : row.status === 'Review' ? 'purple' : 'warning'} label={row.status} size="sm" />,
+          }))}
+          rowKey={(row) => row.id}
+          dense
+          mobilePresentation="stacked"
+          ariaLabel={title}
+        />
       </CardShell>
     );
   }
 
-  // Fallback to simple table
-  const columns = ['Title', 'Status'];
-  const rows = (data.rows?.slice(0, cfg.maxRows || 5) || []).map((r: any) => [
-    r.title || `Item ${r.id}`,
-    r.status || 'Unknown',
-  ]);
+  const rows = (data.rows?.slice(0, cfg.maxRows || 5) || []).map((r: any) => ({
+    title: r.title || `Item ${r.id}`,
+    status: r.status || 'Unknown',
+  }));
 
   return (
-    <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact">
+    <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact" title={title}>
       <MetralyTable<{ title: string; status: string }>
         columns={[
           { key: 'title', header: 'Title' },
           { key: 'status', header: 'Status' },
         ]}
-        data={rows.map((row) => ({ title: String(row[0]), status: String(row[1]) }))}
+        data={rows}
         dense
         mobilePresentation="stacked"
-        ariaLabel={titleMap[cfg.tableType] || cfg.tableType}
+        ariaLabel={title}
         maxHeight={cfg.maxRows ? `${Math.max(220, cfg.maxRows * 44)}px` : undefined}
       />
     </CardShell>
@@ -326,7 +364,7 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
 };
 
 const DORAOverviewWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="DORA overview loading…" />;
 
   return (
     <div style={{...widgetStyle, display: 'flex', gap: 8, flexWrap: 'wrap', padding: 16}}>
@@ -347,7 +385,7 @@ const DORAOverviewWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
 };
 
 const GaugeWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="Health score loading…" />;
 
   return (
     <div style={widgetStyle}>
@@ -365,7 +403,7 @@ const GaugeWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
 
 
 const HeatmapWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="Activity heatmap loading…" />;
 
   const cfg = config as HeatmapConfig;
   const rows = cfg.rowGroupBy === 'team' ? ['Platform', 'Backend', 'Frontend'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -397,54 +435,42 @@ const HeatmapWidget = ({ config, data }: { config: WidgetConfig; data?: any }) =
 };
 
 const SprintBurndownWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="Sprint burndown loading…" />;
 
   const ideal = data.ideal?.values || [];
   const actual = data.actual?.values || [];
-  const maxVal = Math.max(...ideal, ...actual, 1);
 
   return (
-    <CardShell style={widgetStyle} density="compact">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Sprint Burndown</div>
-        <div style={{ display: 'flex', gap: 12, fontSize: 10 }}>
-          <span style={{ color: 'var(--border)' }}>● Ideal</span>
-          <span style={{ color: 'var(--cyan)' }}>● Actual</span>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 70 }}>
-        {ideal.map((v: number, i: number) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ width: '100%', background: 'var(--border)', height: `${(v / maxVal) * 70}px`, borderRadius: 2, position: 'relative' }}>
-              {actual[i] !== undefined && (
-                <div style={{ 
-                  position: 'absolute', 
-                  bottom: 0, 
-                  left: 0, 
-                  width: '100%', 
-                  background: 'var(--cyan)', 
-                  height: `${(actual[i] / maxVal) * 70}px`, 
-                  borderRadius: 2,
-                  opacity: 0.7 
-                }} />
-              )}
-            </div>
-            <span style={{ fontSize: 9, color: 'var(--muted)' }}>{i + 1}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11 }}>
-        <span style={{ color: 'var(--muted)' }}>Remaining: {actual[actual.length - 1]?.toFixed(0) || 0} pts</span>
-        <span style={{ color: actual[actual.length - 1] <= ideal[ideal.length - 1] ? 'var(--success)' : 'var(--error)' }}>
-          {actual[actual.length - 1] <= ideal[ideal.length - 1] ? 'On Track' : 'Behind'}
-        </span>
+    <CardShell style={widgetStyle} density="compact" title="Sprint Burndown">
+      <MetralyAreaChart
+        data={ideal.map((v: number, i: number) => ({
+          label: `Day ${i + 1}`,
+          ideal: Number(v),
+          actual: Number(actual[i] ?? 0),
+        }))}
+        xKey="label"
+        series={[
+          { dataKey: 'ideal', name: 'Ideal', tone: 'purple' },
+          { dataKey: 'actual', name: 'Actual', tone: 'cyan' },
+        ]}
+        height={112}
+        ariaLabel="Sprint burndown chart"
+        summary={`Remaining ${actual[actual.length - 1]?.toFixed(0) || 0} points`}
+      />
+      <div className="metraly-widget-registry__footer">
+        <span>Remaining: {actual[actual.length - 1]?.toFixed(0) || 0} pts</span>
+        <StateBadge
+          state={actual[actual.length - 1] <= ideal[ideal.length - 1] ? 'success' : 'error'}
+          label={actual[actual.length - 1] <= ideal[ideal.length - 1] ? 'On Track' : 'Behind'}
+          size="sm"
+        />
       </div>
     </CardShell>
   );
 };
 
 const AIInsightWidget = ({ config: _config, data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="AI insight loading…" />;
   return (
     <AIInsightCard
       style={widgetStyle}
@@ -457,24 +483,22 @@ const AIInsightWidget = ({ config: _config, data }: { config: WidgetConfig; data
 };
 
 const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="Anomaly detector loading…" />;
 
   return (
-    <CardShell style={widgetStyle} density="compact">
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Anomaly Detector</div>
-      {data.anomalies?.length > 0 ? (
-        <div style={{ color: 'var(--error)', fontSize: 12 }}>
-          {data.anomalies.length} anomalies detected
-        </div>
-      ) : (
-        <div style={{ color: 'var(--success)', fontSize: 12 }}>No anomalies</div>
-      )}
+    <CardShell style={widgetStyle} density="compact" title="Anomaly Detector" tone={data.anomalies?.length > 0 ? 'danger' : 'success'}>
+      <StateBlock
+        variant={data.anomalies?.length > 0 ? 'error' : 'empty'}
+        title={data.anomalies?.length > 0 ? `${data.anomalies.length} anomalies detected` : 'No anomalies'}
+        description={data.anomalies?.length > 0 ? 'Review the affected metrics before the next release window.' : 'Signals are within expected thresholds.'}
+        density="compact"
+      />
     </CardShell>
   );
 };
 
 const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
+  if (!data) return <LoadingWidget title="Comparison chart loading…" />;
 
   const labels = data.labels ?? [];
   const primary = data.primary?.values ?? [];
@@ -513,37 +537,37 @@ const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) =
 const SectionHeaderWidget = ({ config }: { config: WidgetConfig }) => {
   const cfg = config as any;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, marginTop: 4, width: '100%' }}>
-      <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{cfg.title || 'Section'}</span>
-      <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-      {cfg.rightText && <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{cfg.rightText}</span>}
+    <div className="metraly-widget-registry__section-header">
+      <span>{cfg.title || 'Section'}</span>
+      <div />
+      {cfg.rightText && <span>{cfg.rightText}</span>}
     </div>
   );
 };
 
 const RecentActivityWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   if (!data || !data.activities || data.activities.length === 0) {
-    return <div style={{padding: 20, color: 'var(--muted)'}}>No recent activity</div>;
+    return <EmptyWidget title="No recent activity" description="Source events will appear here after the next sync." />;
   }
   const activities = data.activities || [];
   return (
     <CardShell style={{ width: '100%', height: '100%', overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13.5, color: 'var(--text)' }}>Recent Activity</span>
-        <button type="button" style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer' }}>View all →</button>
-      </div>
-      {activities.map((ev: any, i: number) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: ev.color || 'var(--cyan)', flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--muted2)', marginRight: 6 }}>{ev.actor}</span>
-              {ev.description}
-            </div>
-          </div>
-          <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{ev.relativeTime}</span>
-        </div>
-      ))}
+      <ActivityFeed
+        mode="widget"
+        frame={false}
+        title="Recent Activity"
+        items={activities.map((ev: any, i: number) => ({
+          id: String(ev.id ?? i),
+          timestamp: ev.timestamp ?? ev.relativeTime ?? 'just now',
+          kind: 'info',
+          title: ev.description,
+          description: ev.actor,
+          severity: 'info',
+        }))}
+      />
+      <MetralyButton type="button" variant="ghost" size="sm" className="metraly-widget-registry__view-all">
+        View all →
+      </MetralyButton>
     </CardShell>
   );
 };

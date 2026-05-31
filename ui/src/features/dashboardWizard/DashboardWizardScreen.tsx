@@ -116,14 +116,14 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
-          borderRight: "1px solid var(--border)",
+          borderRight: "1px solid var(--m-line)",
           overflow: "hidden",
         }}
       >
         <div
           style={{
             padding: "20px 24px 16px",
-            borderBottom: "1px solid var(--border)",
+            borderBottom: "1px solid var(--m-line)",
             flexShrink: 0,
           }}
         >
@@ -135,7 +135,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             <div>
               <div
                 style={{
-                  fontFamily: "var(--font-head)",
+                  fontFamily: "var(--m-font-display)",
                   fontWeight: 700,
                   fontSize: 16,
                   marginBottom: 4,
@@ -146,7 +146,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               <div
                 style={{
                   fontSize: 13,
-                  color: "var(--muted)",
+                  color: "var(--m-fg-2)",
                   marginBottom: 18,
                 }}
               >
@@ -174,7 +174,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             <div>
               <div
                 style={{
-                  fontFamily: "var(--font-head)",
+                  fontFamily: "var(--m-font-display)",
                   fontWeight: 700,
                   fontSize: 16,
                   marginBottom: 4,
@@ -185,7 +185,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               <div
                 style={{
                   fontSize: 13,
-                  color: "var(--muted)",
+                  color: "var(--m-fg-2)",
                   marginBottom: 14,
                 }}
               >
@@ -222,7 +222,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             <div>
               <div
                 style={{
-                  fontFamily: "var(--font-head)",
+                  fontFamily: "var(--m-font-display)",
                   fontWeight: 700,
                   fontSize: 16,
                   marginBottom: 4,
@@ -233,7 +233,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               <div
                 style={{
                   fontSize: 13,
-                  color: "var(--muted)",
+                  color: "var(--m-fg-2)",
                   marginBottom: 20,
                 }}
               >
@@ -244,7 +244,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   htmlFor="dashboard-wizard-name"
                   style={{
                     fontSize: 12,
-                    color: "var(--muted)",
+                    color: "var(--m-fg-2)",
                     display: "block",
                     marginBottom: 6,
                   }}
@@ -266,7 +266,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   htmlFor="dashboard-wizard-description"
                   style={{
                     fontSize: 12,
-                    color: "var(--muted)",
+                    color: "var(--m-fg-2)",
                     display: "block",
                     marginBottom: 6,
                   }}
@@ -287,7 +287,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 <div
                   style={{
                     fontSize: 12,
-                    color: "var(--muted)",
+                    color: "var(--m-fg-2)",
                     display: "block",
                     marginBottom: 8,
                   }}
@@ -307,7 +307,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   htmlFor="dashboard-wizard-team"
                   style={{
                     fontSize: 12,
-                    color: "var(--muted)",
+                    color: "var(--m-fg-2)",
                     display: "block",
                     marginBottom: 8,
                   }}
@@ -326,7 +326,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 <label
                   style={{
                     fontSize: 12,
-                    color: "var(--muted)",
+                    color: "var(--m-fg-2)",
                     display: "block",
                     marginBottom: 8,
                   }}
@@ -337,7 +337,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   <div
                     style={{
                       fontSize: 12.5,
-                      color: "var(--muted)",
+                      color: "var(--m-fg-2)",
                       opacity: 0.6,
                     }}
                   >
@@ -356,8 +356,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                             display: "flex",
                             alignItems: "center",
                             gap: 8,
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid var(--border)",
+                            background: "var(--m-bg-2)",
+                            border: "1px solid var(--m-line)",
                             borderRadius: 9,
                             padding: "8px 10px",
                           }}
@@ -379,7 +379,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                                 border: "none",
                                 cursor: idx === 0 ? "default" : "pointer",
                                 color:
-                                  idx === 0 ? "var(--border)" : "var(--muted)",
+                                  idx === 0 ? "var(--m-line)" : "var(--m-fg-2)",
                                 padding: "1px 3px",
                                 fontSize: 10,
                               }}
@@ -400,8 +400,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                                     : "pointer",
                                 color:
                                   idx === widgets.length - 1
-                                    ? "var(--border)"
-                                    : "var(--muted)",
+                                    ? "var(--m-line)"
+                                    : "var(--m-fg-2)",
                                 padding: "1px 3px",
                                 fontSize: 10,
                               }}
@@ -437,11 +437,11 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                               borderRadius: 5,
                               fontSize: 11,
                               cursor: "pointer",
-                              border: `1px solid ${isLg ? "color-mix(in srgb, var(--cyan) 30%, transparent)" : "var(--border)"}`,
+                              border: `1px solid ${isLg ? "color-mix(in srgb, var(--m-cyan-500) 30%, transparent)" : "var(--m-line)"}`,
                               background: isLg
-                                ? "color-mix(in srgb, var(--cyan) 8%, transparent)"
+                                ? "color-mix(in srgb, var(--m-cyan-500) 8%, transparent)"
                                 : "transparent",
-                              color: isLg ? "var(--cyan)" : "var(--muted)",
+                              color: isLg ? "var(--m-cyan-500)" : "var(--m-fg-2)",
                             }}
                           >
                             {isLg ? "Full" : "Flex"}
@@ -454,7 +454,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                               background: "none",
                               border: "none",
                               cursor: "pointer",
-                              color: "var(--muted)",
+                              color: "var(--m-fg-2)",
                             }}
                           >
                             <Icon name="x" size={13} />
@@ -472,7 +472,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
         <div
           style={{
             padding: "14px 20px",
-            borderTop: "1px solid var(--border)",
+            borderTop: "1px solid var(--m-line)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -491,7 +491,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               <div
                 role="status"
                 aria-live="polite"
-                style={{ color: "var(--error)", fontSize: 12.5, maxWidth: 280 }}
+                style={{ color: "var(--m-err)", fontSize: 12.5, maxWidth: 280 }}
               >
                 {saveError}
               </div>

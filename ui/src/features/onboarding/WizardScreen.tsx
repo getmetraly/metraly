@@ -97,7 +97,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
     if (stage === 'sources') {
       return (
         <div style={{ display: 'grid', gap: 16 }}>
-          <p style={{ margin: 0, fontSize: 'var(--m-fs-12, 12px)', color: 'var(--m-fg-2, var(--muted))' }}>
+          <p style={{ margin: 0, fontSize: 'var(--m-fs-12, 12px)', color: 'var(--m-fg-2)' }}>
             Select the tools your team uses. You can add more later.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))', gap: 12 }}>
@@ -114,14 +114,14 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
                     textAlign: 'left',
                     borderRadius: 12,
                     padding: '16px 14px',
-                    border: isSelected ? '2px solid var(--m-cyan-500, var(--cyan))' : '1px solid var(--m-line, var(--border))',
-                    background: isSelected ? 'color-mix(in srgb, var(--m-cyan-500, var(--cyan)) 8%, var(--m-bg-1, var(--glass)))' : 'var(--m-bg-1, var(--glass))',
+                    border: isSelected ? '2px solid var(--m-cyan-500)' : '1px solid var(--m-line)',
+                    background: isSelected ? 'color-mix(in srgb, var(--m-cyan-500) 8%, var(--m-bg-1))' : 'var(--m-bg-1)',
                     cursor: 'pointer',
                   }}
                 >
                   <Icon name={source.icon} size={16} />
-                  <span style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0, var(--text))' }}>{source.name}</span>
-                  <span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))', lineHeight: 1.45 }}>{source.desc}</span>
+                  <span style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0)' }}>{source.name}</span>
+                  <span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))', lineHeight: 1.45 }}>{source.desc}</span>
                 </button>
               );
             })}
@@ -142,15 +142,15 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
                 alignItems: 'center',
                 gap: 12,
                 borderRadius: 10,
-                border: '1px solid var(--m-line, var(--border))',
-                background: 'var(--m-bg-1, var(--glass))',
+                border: '1px solid var(--m-line)',
+                background: 'var(--m-bg-1)',
                 padding: '14px 16px',
               }}
             >
               <Icon name={source.icon} size={16} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0, var(--text))' }}>{source.name}</div>
-                <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>{source.desc}</div>
+                <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0)' }}>{source.name}</div>
+                <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>{source.desc}</div>
               </div>
               <MetralyButton
                 type="button"
@@ -163,11 +163,11 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
               </MetralyButton>
             </div>
           ))}
-          <div style={{ borderRadius: 10, border: '1px solid var(--m-line, var(--border))', background: 'var(--m-bg-2, rgba(0,0,0,0.2))', padding: '10px 12px' }}>
-            <div style={{ fontFamily: 'var(--m-font-mono, var(--font-mono))', fontSize: 'var(--m-fs-11, 11px)', color: 'var(--m-fg-2, var(--muted))' }}>
+          <div style={{ borderRadius: 10, border: '1px solid var(--m-line)', background: 'var(--m-bg-2)', padding: '10px 12px' }}>
+            <div style={{ fontFamily: 'var(--m-font-mono)', fontSize: 'var(--m-fs-11, 11px)', color: 'var(--m-fg-2)' }}>
               $ metraly auth {cliSource.cli}
             </div>
-            <div style={{ marginTop: 4, fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-success, var(--success))' }}>
+            <div style={{ marginTop: 4, fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-ok)' }}>
               Waiting for OAuth callback on localhost:7842…
             </div>
           </div>
@@ -179,7 +179,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
       return (
         <div style={{ display: 'grid', gap: 14 }}>
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Sync interval</span>
+            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1)' }}>Sync interval</span>
             <MetralySelect
               value={syncInterval}
               options={['Every 5 minutes', 'Every 15 minutes', 'Every hour'].map((v): MetralySelectOption => ({ value: v, label: v }))}
@@ -188,12 +188,12 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Repositories</span>
+            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1)' }}>Repositories</span>
             <MetralyInput value={repos} onChange={e => setRepos(e.target.value)} fullWidth />
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Historical backfill</span>
+            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1)' }}>Historical backfill</span>
             <MetralySelect
               value={backfill}
               options={['30 days', '90 days', '1 year'].map((v): MetralySelectOption => ({ value: v, label: v }))}
@@ -256,7 +256,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
           <StickyWizardFooter
             back={<MetralyButton type="button" variant="ghost" size="md" disabled={stageIdx === 0} onClick={goBack}>Back</MetralyButton>}
             primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={goNext}>{stage === 'review' ? 'Go to Dashboard' : 'Continue'}</MetralyButton>}
-            status={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>Step {stageIdx + 1} / {STAGES.length}</span>}
+            status={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>Step {stageIdx + 1} / {STAGES.length}</span>}
           />
         }
       >

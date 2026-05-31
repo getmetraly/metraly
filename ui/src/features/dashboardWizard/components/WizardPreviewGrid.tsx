@@ -18,7 +18,7 @@ export const WizardPreviewGrid: React.FC = () => {
 
   const headerStyle = {
     padding: "12px 18px",
-    borderBottom: "1px solid var(--border)",
+    borderBottom: "1px solid var(--m-line)",
     display: "flex",
     alignItems: "center",
     gap: 10,
@@ -41,16 +41,16 @@ export const WizardPreviewGrid: React.FC = () => {
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: "var(--cyan)",
+            background: "var(--m-cyan-500)",
             animation: "pulse-dot 2s infinite",
           }}
         />
         <span
           style={{
             fontSize: 12.5,
-            fontFamily: "var(--font-head)",
+            fontFamily: "var(--m-font-display)",
             fontWeight: 600,
-            color: "var(--text)",
+            color: "var(--m-fg-0)",
           }}
         >
           {name || "My Dashboard"} — Preview
@@ -58,8 +58,8 @@ export const WizardPreviewGrid: React.FC = () => {
         <span
           style={{
             fontSize: 11,
-            color: "var(--muted)",
-            fontFamily: "var(--font-mono)",
+            color: "var(--m-fg-2)",
+            fontFamily: "var(--m-font-mono)",
             marginLeft: "auto",
           }}
         >
@@ -79,8 +79,8 @@ export const WizardPreviewGrid: React.FC = () => {
               opacity: 0.5,
             }}
           >
-            <Icon name="layers" size={32} color="var(--muted)" />
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>
+            <Icon name="layers" size={32} color="var(--m-fg-2)" />
+            <span style={{ fontSize: 13, color: "var(--m-fg-2)" }}>
               Add widgets to see a preview
             </span>
           </div>

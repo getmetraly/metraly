@@ -476,7 +476,7 @@ export async function getActivity(): Promise<ActivityEvent[]> {
     actor: item.user?.name || 'Metraly',
     description: item.description || item.title,
     relativeTime: 'just now',
-    color: 'var(--cyan)',
+    color: 'var(--m-cyan-500)',
   }));
 }
 

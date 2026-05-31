@@ -25,8 +25,8 @@ export const WizardWidgetPicker: React.FC<WizardWidgetPickerProps> = ({
 
   return (
     <div>
-      <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Customize widgets</div>
-      <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>Add or remove widgets. Selected: {selectedWidgets.length}</div>
+      <div style={{ fontFamily: 'var(--m-font-display)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Customize widgets</div>
+      <div style={{ fontSize: 13, color: 'var(--m-fg-2)', marginBottom: 14 }}>Add or remove widgets. Selected: {selectedWidgets.length}</div>
 
       <div style={{ marginBottom: 14 }}>
         <MetralySegmentedControl

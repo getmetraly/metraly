@@ -23,16 +23,16 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
           gap: 6,
           padding: '5px 12px',
           borderRadius: 7,
-          background: 'var(--glass)',
-          border: '1px solid var(--border)',
-          color: 'var(--muted2)',
-          fontFamily: 'var(--font-body)',
+          background: 'var(--m-bg-1)',
+          border: '1px solid var(--m-line)',
+          color: 'var(--m-fg-1)',
+          fontFamily: 'var(--m-font-ui)',
           fontSize: 12.5,
           cursor: 'pointer',
           transition: 'all 0.15s',
         }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--m-bg-3)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'var(--glass)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'var(--m-bg-1)'}
       >
         <Icon name="download" size={13} /> Export
       </button>
@@ -45,10 +45,10 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
             marginTop: 4,
             zIndex: 100,
             background: 'var(--m-bg-2)',
-            border: '1px solid var(--border2)',
+            border: '1px solid var(--m-line-strong)',
             borderRadius: 9,
             minWidth: 140,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--m-shadow-3)',
             overflow: 'hidden',
           }}
         >
@@ -65,7 +65,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({ metricId, timeRange, team,
                 padding: '9px 14px',
                 cursor: 'pointer',
                 fontSize: 13,
-                color: 'var(--text)',
+                color: 'var(--m-fg-0)',
                 transition: 'background 0.12s',
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--m-bg-3)'}

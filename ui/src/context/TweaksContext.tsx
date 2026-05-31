@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface TweakState {
-  accentColor: string;
   density: 'compact' | 'comfortable' | 'spacious';
-  showSparklines: boolean;
   sidebarCollapsed: boolean;
 }
 
@@ -13,9 +11,7 @@ export interface TweaksContextValue {
 }
 
 const DEFAULT_TWEAKS: TweakState = {
-  accentColor: '#00E5FF',
   density: 'comfortable',
-  showSparklines: true,
   sidebarCollapsed: false,
 };
 
@@ -33,7 +29,6 @@ export const TweaksProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     localStorage.setItem('metraly-tweaks', JSON.stringify(tweaks));
-    document.documentElement.style.setProperty('--cyan', tweaks.accentColor);
   }, [tweaks]);
 
   const setTweak = <K extends keyof TweakState>(key: K, value: TweakState[K]) =>

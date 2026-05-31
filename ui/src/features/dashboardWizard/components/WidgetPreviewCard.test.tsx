@@ -10,7 +10,7 @@ describe('WidgetPreviewCard', () => {
     type: 'deploy-freq',
     label: 'Deploy Frequency',
     icon: 'zap',
-    color: '#00E5FF',
+    color: 'var(--m-cyan-500)',
   };
 
   beforeEach(() => {

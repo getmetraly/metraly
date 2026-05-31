@@ -90,10 +90,10 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
 
   const footer = !collapsed ? (
     <div style={{ padding: "12px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--glass)", border: "1px solid var(--border)", display: "grid", placeItems: "center", fontSize: 12 }}>AZ</div>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--m-bg-1)", border: "1px solid var(--m-line)", display: "grid", placeItems: "center", fontSize: 12 }}>AZ</div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Alex Zubarev</div>
-        <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>Owner</div>
+        <div style={{ fontSize: 12.5, color: "var(--m-fg-0)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Alex Zubarev</div>
+        <div style={{ fontSize: 11, color: "var(--m-fg-2)", fontFamily: "var(--m-font-mono)" }}>Owner</div>
       </div>
     </div>
   ) : undefined;

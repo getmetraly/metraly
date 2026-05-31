@@ -9,7 +9,6 @@ import {
   createEditorStateFromTemplate,
   createEditorWidgetSizes,
   moveEditorWidget,
-  normalizeEditorLayout,
   removeEditorWidget,
   toggleEditorWidgetSize,
 } from "../../dashboardEditor/model";

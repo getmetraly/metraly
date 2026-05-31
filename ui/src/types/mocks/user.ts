@@ -15,5 +15,5 @@ export const createMockMeResponse = (): MeResponse => ({
 });
 
 export const createMockActivityEvents = (): ActivityEvent[] => [
-  { id: 'act-1', actor: 'Jamie', description: 'Created CTO Dashboard', relativeTime: '2h ago', color: '#00E5FF' },
+  { id: 'act-1', actor: 'Jamie', description: 'Created CTO Dashboard', relativeTime: '2h ago', color: 'var(--m-cyan-500)' },
 ];

@@ -140,16 +140,16 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
       style={{
         background:
           widget.id === "ai-summary"
-            ? "rgba(180,76,255,0.06)"
+            ? "color-mix(in srgb, var(--m-purple-500) 6%, var(--m-bg-1))"
             : widget.id === "anomaly"
-              ? "rgba(255,145,0,0.06)"
-              : "var(--glass)",
+              ? "color-mix(in srgb, var(--m-warn) 6%, var(--m-bg-1))"
+              : "var(--m-bg-1)",
         border:
           widget.id === "ai-summary"
-            ? "1px solid rgba(180,76,255,0.2)"
+            ? "1px solid color-mix(in srgb, var(--m-purple-500) 20%, transparent)"
             : widget.id === "anomaly"
-              ? "1px solid rgba(255,145,0,0.2)"
-              : "1px solid var(--border)",
+              ? "1px solid color-mix(in srgb, var(--m-warn) 20%, transparent)"
+              : "1px solid var(--m-line)",
         borderRadius: 10,
         height: "100%",
         width: "100%",
@@ -189,7 +189,7 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "var(--text)",
+            color: "var(--m-fg-0)",
             flex: 1,
           }}
         >
@@ -205,15 +205,15 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
           }}
           style={{
             background: "transparent",
-            border: "1px solid var(--border)",
-            color: isFull ? "var(--cyan)" : "var(--muted)",
+            border: "1px solid var(--m-line)",
+            color: isFull ? "var(--m-cyan-500)" : "var(--m-fg-2)",
             borderRadius: 6,
             padding: "4px 8px",
             fontSize: 11,
             cursor: "pointer",
           }}
         >
-          {isFull ? "Full" : "Flex"}
+          {isFull ? "Full width" : "Flexible"}
         </button>
         <button
           type="button"
@@ -225,7 +225,7 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
           style={{
             background: "transparent",
             border: "none",
-            color: "var(--muted)",
+            color: "var(--m-fg-2)",
             cursor: "pointer",
             padding: 4,
           }}
@@ -243,7 +243,7 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--muted)",
+              color: "var(--m-fg-2)",
               fontSize: 13,
             }}
           >

@@ -63,8 +63,8 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
       width: 400,
       height: '100%',
       flexShrink: 0,
-      background: 'var(--glass)',
-      borderLeft: '1px solid var(--border)',
+      background: 'var(--m-bg-1)',
+      borderLeft: '1px solid var(--m-line)',
       display: 'flex',
       flexDirection: 'column',
       paddingTop: 28,
@@ -74,7 +74,7 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '16px 16px 12px',
-        borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--m-line)',
       }}>
         <button
           type="button"
@@ -90,12 +90,12 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
             justifyContent: 'center',
           }}
         >
-          <Icon name="pin" size={18} color={isPinned ? 'var(--cyan)' : 'var(--muted)'} />
+          <Icon name="pin" size={18} color={isPinned ? 'var(--m-cyan-500)' : 'var(--m-fg-2)'} />
         </button>
 
         <div style={{
           display: 'flex',
-          background: 'var(--bg)',
+          background: 'var(--m-bg-0)',
           borderRadius: 8,
           padding: 3,
           gap: 2,
@@ -110,8 +110,8 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
               fontWeight: 600,
               cursor: 'pointer',
               border: 'none',
-              background: activeTab === 'widgets' ? 'var(--grad)' : 'transparent',
-              color: activeTab === 'widgets' ? 'var(--text)' : 'var(--muted)',
+              background: activeTab === 'widgets' ? 'linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500))' : 'transparent',
+              color: activeTab === 'widgets' ? 'var(--m-fg-0)' : 'var(--m-fg-2)',
             }}
           >
             Widgets
@@ -126,8 +126,8 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
               fontWeight: 600,
               cursor: 'pointer',
               border: 'none',
-              background: activeTab === 'settings' ? 'var(--grad)' : 'transparent',
-              color: activeTab === 'settings' ? 'var(--text)' : 'var(--muted)',
+              background: activeTab === 'settings' ? 'linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500))' : 'transparent',
+              color: activeTab === 'settings' ? 'var(--m-fg-0)' : 'var(--m-fg-2)',
             }}
           >
             Settings
@@ -149,7 +149,7 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
               justifyContent: 'center',
             }}
           >
-            <Icon name="x" size={18} color="var(--muted)" />
+            <Icon name="x" size={18} color="var(--m-fg-2)" />
           </button>
         )}
       </div>

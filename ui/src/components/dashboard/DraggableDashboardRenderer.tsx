@@ -78,8 +78,8 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
               position: "relative",
               width: "100%",
               height: "100%",
-              background: isEditable && isEmpty ? 'color-mix(in srgb, var(--cyan) 3%, transparent)' : 'transparent',
-              border: isEditable && isEmpty ? '1px dashed var(--cyan)' : 'none',
+              background: isEditable && isEmpty ? 'color-mix(in srgb, var(--m-cyan-500) 3%, transparent)' : 'transparent',
+              border: isEditable && isEmpty ? '1px dashed var(--m-cyan-500)' : 'none',
               borderRadius: 8,
             }}
           >
@@ -92,7 +92,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
                   aria-label={isFull ? 'Make widget flexible width' : 'Make widget full width'}
                   onClick={() => onToggleSize?.(widget.instanceId)}
                 >
-                  {isFull ? 'Full' : 'Flex'}
+                  {isFull ? 'Full width' : 'Flexible'}
                 </MetralyButton>
                 <MetralyButton
                   type="button"

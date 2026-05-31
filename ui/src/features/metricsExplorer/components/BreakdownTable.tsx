@@ -51,13 +51,13 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
       data={data.map((r: string[]) => ({
         name: r[0],
         team: r[1],
-        value: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{r[2]}</span>,
+        value: <span style={{ fontFamily: 'var(--m-font-mono)', color: 'var(--m-fg-0)' }}>{r[2]}</span>,
         level: <StateBadge state={DORA_LEVEL_STATE_MAP[r[3]] ?? 'info'} label={r[3]} />,
         delta: (
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              color: r[4].startsWith('+') && r[4] !== '+0.0' ? 'var(--success)' : 'var(--warning)',
+              fontFamily: 'var(--m-font-mono)',
+              color: r[4].startsWith('+') && r[4] !== '+0.0' ? 'var(--m-ok)' : 'var(--m-warn)',
             }}
           >
             {r[4]}

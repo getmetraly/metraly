@@ -25,24 +25,24 @@ export const FilterPill: React.FC<FilterPillProps> = ({ label, options, value, o
     <div ref={ref} style={{ position: 'relative' }}>
       <button onClick={() => setOpen(o => !o)} style={{
         display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7,
-        background: value !== options?.[0] ? 'rgba(0,229,255,0.1)' : 'var(--glass)',
-        border: value !== options?.[0] ? '1px solid rgba(0,229,255,0.25)' : '1px solid var(--border)',
-        color: value !== options?.[0] ? 'var(--cyan)' : 'var(--muted2)',
-        fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--font-body)',
+        background: value !== options?.[0] ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'var(--m-bg-1)',
+        border: value !== options?.[0] ? '1px solid color-mix(in srgb, var(--m-cyan-500) 25%, transparent)' : '1px solid var(--m-line)',
+        color: value !== options?.[0] ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
+        fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--m-font-ui)',
       }}>
         {label ? `${label}: ${value}` : value} <Icon name="chevronDown" size={11} color="currentColor" />
       </button>
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 100,
-          background: 'var(--m-bg-2)', border: '1px solid var(--border2)', borderRadius: 9,
-          minWidth: 150, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          background: 'var(--m-bg-2)', border: '1px solid var(--m-line-strong)', borderRadius: 9,
+          minWidth: 150, boxShadow: 'var(--m-shadow-3)',
         }}>
           {options?.map(opt => (
             <div key={opt} onClick={() => { onChange?.(opt); setOpen(false); }}
               style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13,
-                color: value === opt ? 'var(--cyan)' : 'var(--text)',
-                background: value === opt ? 'rgba(0,229,255,0.08)' : 'transparent',
+                color: value === opt ? 'var(--m-cyan-500)' : 'var(--m-fg-0)',
+                background: value === opt ? 'color-mix(in srgb, var(--m-cyan-500) 8%, transparent)' : 'transparent',
               }}>{opt}</div>
           ))}
         </div>

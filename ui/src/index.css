@@ -3,35 +3,10 @@
   margin: 0;
   padding: 0;
 }
-/* ─── token bridge ──────────────────────────────────────────────────────────
-   Old custom properties alias to the canonical brandbook --m-* system so that
-   every inline-style component and CSS rule using var(--bg), var(--glass) etc.
-   resolves to exactly the same OKLCH values the metraly-* CSS classes use.
-   The definitions below run AFTER @metraly/ui/styles.css is imported (see
-   index.tsx), so --m-* tokens are already available here.
-────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg:           var(--m-bg-0);
-  --glass:        var(--m-bg-1);
-  --glass2:       var(--m-bg-2);
-  --border:       var(--m-line);
-  --border2:      var(--m-line-strong);
-  --border-bright: var(--m-line-strong);
-  --cyan:         var(--m-cyan-500);
-  --purple:       var(--m-purple-500);
-  --success:      var(--m-ok);
-  --warning:      var(--m-warn);
-  --error:        var(--m-err);
-  --text:         var(--m-fg-0);
-  --muted:        var(--m-fg-2);
-  --muted2:       var(--m-fg-1);
-  --grad:         linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500));
-  --font-head:    var(--m-font-display);
-  --font-body:    var(--m-font-ui);
-  --font-mono:    var(--m-font-mono);
-  --sidebar-w:    228px;
+  --sidebar-w: 228px;
 }
-html, body, #root { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; overflow: hidden; }
+html, body, #root { height: 100%; width: 100%; background: var(--m-bg-0); color: var(--m-fg-0); font-family: var(--m-font-ui); font-size: 14px; line-height: 1.5; overflow: hidden; }
 html.metraly-login-scroll, html.metraly-login-scroll body, html.metraly-login-scroll #root {
   height: auto;
   min-height: 100%;
@@ -40,9 +15,9 @@ html.metraly-login-scroll, html.metraly-login-scroll body, html.metraly-login-sc
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
-@keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 0 rgba(0,229,255,0.4); opacity:1; } 50% { box-shadow:0 0 0 6px rgba(0,229,255,0); opacity:0.7; } }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--m-fg-0) 10%, transparent); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--m-fg-0) 18%, transparent); }
+@keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--m-cyan-500) 40%, transparent); opacity:1; } 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--m-cyan-500) 0%, transparent); opacity:0.7; } }
 @keyframes fade-up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 .fade-up { animation: fade-up 0.35s ease both; }
 .fade-up-1 { animation: fade-up 0.35s 0.06s ease both; }
@@ -51,18 +26,18 @@ html.metraly-login-scroll, html.metraly-login-scroll body, html.metraly-login-sc
 .fade-up-4 { animation: fade-up 0.35s 0.24s ease both; }
 .fade-up-5 { animation: fade-up 0.35s 0.30s ease both; }
 .fade-up-6 { animation: fade-up 0.35s 0.36s ease both; }
-*:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+*:focus-visible { outline: 2px solid var(--m-cyan-500); outline-offset: 2px; border-radius: 4px; }
 
 body, button, input, select, textarea, p, span, div {
-  font-family: var(--font-body);
+  font-family: var(--m-font-ui);
 }
 
 h1, h2, h3, h4, .heading, .font-head {
-  font-family: var(--font-head);
+  font-family: var(--m-font-display);
 }
 
 code, pre, .mono, .font-mono {
-  font-family: var(--font-mono);
+  font-family: var(--m-font-mono);
 }
 
 button, input, select, textarea {
@@ -128,4 +103,128 @@ button, input, select, textarea {
   right: 5px;
   border: 1.5px solid var(--m-bg-1);
   pointer-events: none;
+}
+
+.metraly-first-run {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: auto;
+}
+
+.metraly-first-run__inner {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metraly-first-run__card {
+  padding: 24px;
+}
+
+.metraly-first-run__choices {
+  display: grid;
+  gap: 10px;
+}
+
+.metraly-first-run__choice {
+  width: 100%;
+  cursor: pointer;
+}
+
+.metraly-first-run__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.metraly-first-run__hint {
+  margin: 14px 0 0;
+  color: var(--m-fg-2);
+  font-size: var(--m-fs-12);
+  line-height: 1.5;
+}
+
+.metraly-first-run__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.metraly-plugin-screen {
+  flex: 1;
+  overflow: auto;
+  padding: 24px 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.metraly-plugin-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.metraly-plugin-channel-card__controls {
+  display: grid;
+  gap: 8px;
+}
+
+.metraly-dashboard-state {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+}
+
+.metraly-settings-placeholder {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.metraly-settings-placeholder__card {
+  width: min(100%, 560px);
+  padding: 28px;
+}
+
+.metraly-widget-registry__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--m-fg-2);
+  font-size: var(--m-fs-11);
+}
+
+.metraly-widget-registry__section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 4px 0;
+  color: var(--m-fg-0);
+  font-family: var(--m-font-display);
+  font-size: var(--m-fs-13);
+  font-weight: 600;
+}
+
+.metraly-widget-registry__section-header > div {
+  flex: 1;
+  height: 1px;
+  background: var(--m-line);
+}
+
+.metraly-widget-registry__section-header > span:last-child {
+  color: var(--m-fg-2);
+  font-family: var(--m-font-mono);
+  font-size: var(--m-fs-11);
+}
+
+.metraly-widget-registry__view-all {
+  margin-top: 8px;
 }

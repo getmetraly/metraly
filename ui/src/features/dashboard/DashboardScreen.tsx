@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton, CardShell, MetralyIcon } from "../../design-system";
+import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
@@ -70,6 +70,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     dashboard,
     widgetData,
     isLoading,
+    error,
     refresh,
   } = useDashboard(dashboardId);
 
@@ -187,20 +188,40 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const renderDashboard = () => {
     if (isLoading) {
       return (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-          }}
-        >
-          <span style={{ color: "var(--muted)" }}>Loading dashboard…</span>
+        <div className="metraly-dashboard-state">
+          <StateBlock
+            variant="loading"
+            title="Loading dashboard…"
+            description="Fetching widgets and telemetry."
+            density="compact"
+          />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="metraly-dashboard-state">
+          <StateBlock
+            variant="error"
+            title="Unable to load dashboard"
+            description={error}
+            action={<MetralyButton type="button" variant="secondary" size="sm" onClick={refresh}>Retry</MetralyButton>}
+            density="compact"
+          />
         </div>
       );
     }
     if (!draftDashboard) {
-      return null;
+      return (
+        <div className="metraly-dashboard-state">
+          <StateBlock
+            variant="empty"
+            title="Dashboard unavailable"
+            description="No dashboard definition is available for this role yet."
+            density="compact"
+          />
+        </div>
+      );
     }
 
     if (isEditMode) {
@@ -342,9 +363,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               maxWidth: 360,
               padding: "10px 12px",
               borderRadius: 8,
-              border: "1px solid color-mix(in srgb, var(--error) 30%, transparent)",
-              background: "color-mix(in srgb, var(--error) 12%, transparent)",
-              color: "var(--error)",
+              border: "1px solid color-mix(in srgb, var(--m-err) 30%, transparent)",
+              background: "color-mix(in srgb, var(--m-err) 12%, transparent)",
+              color: "var(--m-err)",
               fontSize: 13,
             }}
           >

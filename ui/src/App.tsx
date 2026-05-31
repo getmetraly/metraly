@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sidebar, Topbar, MetralyButton, MetralyEmptyState } from './design-system';
+import { Sidebar, Topbar, MetralyButton, MetralyEmptyState, CardShell, MetralyBadge } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
@@ -66,6 +66,17 @@ function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
         onFinish={() => setActive('overview')}
       />
     ),
+    settings: () => (
+      <div className="metraly-settings-placeholder">
+        <CardShell tone="neutral" className="metraly-settings-placeholder__card">
+          <MetralyEmptyState
+            title="Settings"
+            description="Platform configuration is not available in this preview yet. Enterprise controls, AI providers, audit logs and workspace settings will appear here."
+            variant="default"
+          />
+        </CardShell>
+      </div>
+    ),
   };
 
   return renderers[active] ? renderers[active]() : <MetralyEmptyState title={title} description="This screen is not available yet." variant="default" />;
@@ -121,202 +132,61 @@ const App = () => {
   };
 
   const renderFirstRunChoice = () => (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '32px 24px',
-        overflow: 'auto',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 760,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}
-      >
-        <div
-          style={{
-            padding: '24px',
-            border: '1px solid var(--border)',
-            borderRadius: 16,
-            background: 'var(--glass)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 18,
-          }}
+    <div className="metraly-first-run">
+      <div className="metraly-first-run__inner">
+        <CardShell
+          title="Choose what to show first."
+          subtitle="Demo mode uses synthetic Sandbox Inc. data. Skipping demo takes you straight to source setup."
+          tone="neutral"
+          className="metraly-first-run__card"
         >
-          <div>
-            <div
-              style={{
-                fontFamily: 'var(--font-head)',
-                fontWeight: 800,
-                fontSize: 22,
-                lineHeight: 1.2,
-                letterSpacing: '-0.3px',
-                marginBottom: 8,
-                color: 'var(--text)',
-              }}
-            >
-              Choose what to show first.
-            </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--muted2)',
-                maxWidth: 640,
-                lineHeight: 1.6,
-              }}
-            >
-              Demo mode uses synthetic Sandbox Inc. data. Skipping demo takes you
-              straight to source setup.
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="metraly-first-run__choices">
             {FIRST_RUN_CHOICES.map((choice) => {
               const isSelected = firstRunSelection === choice.id;
               const isDemo = choice.id === FIRST_RUN_MODE.demo;
+              const tone = isDemo ? 'purple' : 'cyan';
+
               return (
-                <button
+                <CardShell
                   key={choice.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  state={isSelected ? 'selected' : 'default'}
+                  tone={tone}
+                  density="compact"
+                  className="metraly-first-run__choice"
                   onClick={() => setFirstRunSelection(choice.id)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: isSelected ? `1px solid ${choice.accent}40` : '1px solid var(--border)',
-                    background: isSelected ? `${choice.accent}0a` : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text)',
-                    transition: 'border-color 0.15s ease, background 0.15s ease',
-                    appearance: 'none',
-                    outline: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.borderColor = 'var(--border2)';
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setFirstRunSelection(choice.id);
                     }
                   }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.borderColor = 'var(--border)';
-                    }
-                  }}
+                  leading={<Icon name={choice.icon} size={14} color="currentColor" />}
+                  title={choice.title}
+                  subtitle={choice.description}
+                  trailing={isSelected ? <Icon name="check" size={14} color="currentColor" /> : undefined}
                 >
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      background: `${choice.accent}18`,
-                      border: `1px solid ${choice.accent}22`,
-                    }}
-                  >
-                    <Icon name={choice.icon} size={13} color={choice.accent} />
+                  <div className="metraly-first-run__badges">
+                    <MetralyBadge variant={isDemo ? 'secondary' : 'primary'}>
+                      <Icon name={isDemo ? 'alertCircle' : 'clock'} size={10} color="currentColor" />
+                      {isDemo ? 'Synthetic data' : 'Setup guided'}
+                    </MetralyBadge>
+                    <MetralyBadge variant="info">
+                      {isDemo ? 'Overview first' : 'Connect sources'}
+                    </MetralyBadge>
                   </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-head)',
-                        fontSize: 12.5,
-                        fontWeight: 600,
-                        marginBottom: 2,
-                        lineHeight: 1.2,
-                        color: 'var(--text)',
-                      }}
-                    >
-                      {choice.title}
-                    </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>
-                      {choice.description}
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 8px',
-                          borderRadius: 999,
-                          border: `1px solid ${choice.accent}24`,
-                          background: `${choice.accent}12`,
-                          color: choice.accent,
-                          fontSize: 10.5,
-                          fontFamily: 'var(--font-mono)',
-                          lineHeight: 1,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        <Icon
-                          name={isDemo ? 'alertCircle' : 'clock'}
-                          size={10}
-                          color={choice.accent}
-                        />
-                        {isDemo ? 'Synthetic data' : 'Setup ~5 min'}
-                      </div>
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 8px',
-                          borderRadius: 999,
-                          border: '1px solid var(--border)',
-                          background: 'rgba(255,255,255,0.02)',
-                          color: 'var(--muted2)',
-                          fontSize: 10.5,
-                          fontFamily: 'var(--font-mono)',
-                          lineHeight: 1,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {isDemo ? 'Overview first' : 'Connect sources'}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      border: isSelected ? 'none' : '1.5px solid var(--border)',
-                      background: isSelected ? choice.accent : 'transparent',
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: isSelected ? `0 0 0 1px ${choice.accent}18` : 'none',
-                    }}
-                  >
-                    {isSelected && (
-                      <Icon name="check" size={10} color="#0B0F19" />
-                    )}
-                  </div>
-                </button>
+                </CardShell>
               );
             })}
           </div>
-
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
+          <p className="metraly-first-run__hint">
             You can switch later from the overview or setup flow.
-          </div>
-        </div>
+          </p>
+        </CardShell>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="metraly-first-run__actions">
           <MetralyButton
             type="button"
             onClick={handleFirstRunContinue}

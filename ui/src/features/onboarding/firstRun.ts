@@ -11,7 +11,6 @@ export interface FirstRunChoice {
   title: string;
   description: string;
   icon: string;
-  accent: string;
 }
 
 export const FIRST_RUN_CHOICES: FirstRunChoice[] = [
@@ -21,7 +20,6 @@ export const FIRST_RUN_CHOICES: FirstRunChoice[] = [
     description:
       'Open Sandbox Inc. synthetic data and start on the Overview dashboard.',
     icon: 'sparkles',
-    accent: '#a855f7',
   },
   {
     id: FIRST_RUN_MODE.setup,
@@ -29,7 +27,6 @@ export const FIRST_RUN_CHOICES: FirstRunChoice[] = [
     description:
       'Go straight to source setup and configure your initial connections.',
     icon: 'settings',
-    accent: '#00e5cc',
   },
 ];
 

@@ -44,7 +44,7 @@ describe('useDashboardOverview', () => {
       { title: 'Queue pressure', body: 'Review latency is climbing.', action: 'Open queue' },
     ]);
     getActivity.mockResolvedValue([
-      { id: 'evt-1', actor: 'Jamie', description: 'Opened a PR', relativeTime: '2m ago', color: 'var(--cyan)' },
+      { id: 'evt-1', actor: 'Jamie', description: 'Opened a PR', relativeTime: '2m ago', color: 'var(--m-cyan-500)' },
     ]);
 
     const { result } = renderHook(() => useDashboardOverview());

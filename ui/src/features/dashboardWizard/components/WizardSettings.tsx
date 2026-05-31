@@ -1,6 +1,6 @@
 // src/features/dashboardWizard/components/WizardSettings.tsx
 import React from 'react';
-import { Icon, MetralyInput, MetralySelect, MetralySegmentedControl } from '../../../design-system';
+import { Icon, MetralyButton, MetralyInput, MetralySelect, MetralySegmentedControl } from '../../../design-system';
 import type { MetralySelectOption } from '../../../design-system';
 import { WizardWidget } from '../store/wizardStore';
 
@@ -24,8 +24,8 @@ export interface WizardSettingsProps {
 }
 
 const getCatColor = (cat: string): string => {
-  const colors: Record<string, string> = { DORA: '#00E5FF', 'CI/CD': '#00C853', PR: '#B44CFF', Sprint: '#FF9100', Team: '#00E5FF', AI: '#B44CFF' };
-  return colors[cat] || '#00E5FF';
+  const colors: Record<string, string> = { DORA: 'var(--m-cyan-500)', 'CI/CD': 'var(--m-ok)', PR: 'var(--m-purple-500)', Sprint: 'var(--m-warn)', Team: 'var(--m-cyan-500)', AI: 'var(--m-purple-500)' };
+  return colors[cat] || 'var(--m-cyan-500)';
 };
 
 const teamOptions: MetralySelectOption[] = ['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'].map((t) => ({ value: t, label: t }));
@@ -52,12 +52,12 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', overflow: 'auto' }}>
       <div>
-        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Dashboard settings</div>
-        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Name it, configure defaults.</div>
+        <div style={{ fontFamily: 'var(--m-font-display)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Dashboard settings</div>
+        <div style={{ fontSize: 13, color: 'var(--m-fg-2)', marginBottom: 16 }}>Name it, configure defaults.</div>
       </div>
 
       <div>
-        <label htmlFor="dashboard-settings-name" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Dashboard name *</label>
+        <label htmlFor="dashboard-settings-name" style={{ fontSize: 12, color: 'var(--m-fg-2)', display: 'block', marginBottom: 6 }}>Dashboard name *</label>
         <MetralyInput
           id="dashboard-settings-name"
           name="dashboard-name"
@@ -70,7 +70,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
       </div>
 
       <div>
-        <label htmlFor="dashboard-settings-description" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Description</label>
+        <label htmlFor="dashboard-settings-description" style={{ fontSize: 12, color: 'var(--m-fg-2)', display: 'block', marginBottom: 6 }}>Description</label>
         <MetralyInput
           id="dashboard-settings-description"
           name="dashboard-description"
@@ -84,7 +84,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
 
       {showDefaultFilters && (
         <div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Default time range</div>
+          <div style={{ fontSize: 12, color: 'var(--m-fg-2)', display: 'block', marginBottom: 8 }}>Default time range</div>
           <MetralySegmentedControl
             options={timeRangeOptions}
             value={timeRange}
@@ -97,7 +97,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
 
       {showDefaultFilters && (
         <div>
-          <label htmlFor="dashboard-settings-team" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Team scope</label>
+          <label htmlFor="dashboard-settings-team" style={{ fontSize: 12, color: 'var(--m-fg-2)', display: 'block', marginBottom: 8 }}>Team scope</label>
           <MetralySelect
             id="dashboard-settings-team"
             name="dashboard-team"
@@ -108,13 +108,13 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
         </div>
       )}
 
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, marginBottom: 8, color: 'var(--text)' }}>
+      <div style={{ borderTop: '1px solid var(--m-line)', paddingTop: 16, marginTop: 8 }}>
+        <div style={{ fontFamily: 'var(--m-font-display)', fontWeight: 600, fontSize: 13, marginBottom: 8, color: 'var(--m-fg-0)' }}>
           Selected Widgets ({selectedWidgets.length})
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {selectedWidgets.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--muted)', padding: 16, fontSize: 12 }}>
+            <div style={{ textAlign: 'center', color: 'var(--m-fg-2)', padding: 16, fontSize: 12 }}>
               No widgets selected
             </div>
           ) : (
@@ -126,8 +126,8 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
               return (
                 <div key={widget.instanceId} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
-                  border: isEmpty ? '1.5px dashed var(--cyan)' : '1px solid var(--border)',
-                  background: isEmpty ? 'rgba(0,229,255,0.06)' : 'rgba(255,255,255,0.03)',
+                  border: isEmpty ? '1.5px dashed var(--m-cyan-500)' : '1px solid var(--m-line)',
+                  background: isEmpty ? 'color-mix(in srgb, var(--m-cyan-500) 6%, transparent)' : 'var(--m-bg-2)',
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <button
@@ -137,7 +137,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                       disabled={index === 0}
                       style={{
                         background: 'none', border: 'none', padding: 2, cursor: index === 0 ? 'not-allowed' : 'pointer',
-                        color: index === 0 ? 'var(--border)' : 'var(--text)',
+                        color: index === 0 ? 'var(--m-line)' : 'var(--m-fg-0)',
                         opacity: index === 0 ? 0.3 : 1,
                       }}
                     >
@@ -150,17 +150,17 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                       disabled={index === selectedWidgets.length - 1}
                       style={{
                         background: 'none', border: 'none', padding: 2, cursor: index === selectedWidgets.length - 1 ? 'not-allowed' : 'pointer',
-                        color: index === selectedWidgets.length - 1 ? 'var(--border)' : 'var(--text)',
+                        color: index === selectedWidgets.length - 1 ? 'var(--m-line)' : 'var(--m-fg-0)',
                         opacity: index === selectedWidgets.length - 1 ? 0.3 : 1,
                       }}
                     >
                       <Icon name="chevronDown" size={14} />
                     </button>
                   </div>
-                  <div style={{ width: 28, height: 28, borderRadius: 6, background: isEmpty ? 'rgba(0,229,255,0.15)' : `${c}18`, border: `1px solid ${isEmpty ? 'var(--cyan)' : c}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon name={widget.icon} size={14} color={isEmpty ? 'var(--cyan)' : c} />
+                  <div style={{ width: 28, height: 28, borderRadius: 6, background: isEmpty ? 'color-mix(in srgb, var(--m-cyan-500) 15%, transparent)' : `${c}18`, border: `1px solid ${isEmpty ? 'var(--m-cyan-500)' : c}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon name={widget.icon} size={14} color={isEmpty ? 'var(--m-cyan-500)' : c} />
                   </div>
-                  <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{widget.label}</div>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--m-fg-0)' }}>{widget.label}</div>
                   {!isEmpty && (
                     <button
                       type="button"
@@ -172,9 +172,9 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                         fontSize: 11,
                         fontWeight: 500,
                         cursor: 'pointer',
-                        border: size === 'full' ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                        background: size === 'full' ? 'rgba(0,229,255,0.15)' : 'transparent',
-                        color: size === 'full' ? 'var(--cyan)' : 'var(--muted2)',
+                        border: size === 'full' ? '1px solid color-mix(in srgb, var(--m-cyan-500) 40%, transparent)' : '1px solid var(--m-line)',
+                        background: size === 'full' ? 'color-mix(in srgb, var(--m-cyan-500) 15%, transparent)' : 'transparent',
+                        color: size === 'full' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
                       }}
                     >
                       {size === 'full' ? 'Full' : 'Flex'}
@@ -184,7 +184,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                     type="button"
                     aria-label={`Remove ${widget.label}`}
                     onClick={() => onToggleWidget(widget.instanceId)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted2)', padding: 4, flexShrink: 0 }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-1)', padding: 4, flexShrink: 0 }}
                   >
                     <Icon name="x" size={16} />
                   </button>
@@ -198,27 +198,17 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
       <div style={{ flex: 1 }} />
 
       {showDelete && (
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,82,82,0.9)', marginBottom: 8, fontWeight: 600 }}>Danger Zone</div>
-          <button
+        <div style={{ borderTop: '1px solid var(--m-line)', paddingTop: 16 }}>
+          <div style={{ fontSize: 12, color: 'var(--m-err)', marginBottom: 8, fontWeight: 600 }}>Danger Zone</div>
+          <MetralyButton
             type="button"
+            variant="danger"
+            size="sm"
             onClick={onDelete}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 14px',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontSize: 13,
-              border: '1px solid rgba(255,82,82,0.3)',
-              background: 'rgba(255,82,82,0.1)',
-              color: '#FF5252',
-            }}
+            iconLeft={<Icon name="trash" size={14} />}
           >
-            <Icon name="trash" size={14} />
             Delete Dashboard
-          </button>
+          </MetralyButton>
         </div>
       )}
     </div>

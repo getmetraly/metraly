@@ -2,18 +2,18 @@ import type { WidgetConfig } from '../widgets';
 import type { DashboardWidgetInstance } from '../dashboard';
 
 const widgetColorMap: Record<string, string> = {
-  'deploy-freq': '#00E5FF',
-  'lead-time': '#B44CFF',
-  'cfr': '#FF9100',
-  'mttr': '#00C853',
-  'ci-pass': '#00E5FF',
-  'ci-duration': '#B44CFF',
-  'ci-queue': '#FF9100',
-  'pr-cycle': '#00E5FF',
-  'pr-review': '#B44CFF',
-  'pr-merge': '#00C853',
-  'velocity': '#00E5FF',
-  'throughput': '#B44CFF',
+  'deploy-freq': 'var(--m-cyan-500)',
+  'lead-time': 'var(--m-purple-500)',
+  'cfr': 'var(--m-warn)',
+  'mttr': 'var(--m-ok)',
+  'ci-pass': 'var(--m-cyan-500)',
+  'ci-duration': 'var(--m-purple-500)',
+  'ci-queue': 'var(--m-warn)',
+  'pr-cycle': 'var(--m-cyan-500)',
+  'pr-review': 'var(--m-purple-500)',
+  'pr-merge': 'var(--m-ok)',
+  'velocity': 'var(--m-cyan-500)',
+  'throughput': 'var(--m-purple-500)',
 };
 
 export const createMockStatCardWidget = (metricId: string, instanceId: string): DashboardWidgetInstance => ({
@@ -35,6 +35,6 @@ export const createMockMetricChartWidget = (metricId: string, instanceId: string
     metricId,
     chartVariant: 'area',
     showCompare: false,
-    colorOverride: widgetColorMap[metricId] || '#00E5FF',
+    colorOverride: widgetColorMap[metricId] || 'var(--m-cyan-500)',
   } as WidgetConfig,
 });
