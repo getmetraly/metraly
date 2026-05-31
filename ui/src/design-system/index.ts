@@ -6,13 +6,9 @@
 
 // Temporary compatibility adapters still required by legacy feature code.
 export {
-  StatusBadgeCompat,
-  DataTableCompat,
-  StatCardCompat,
   SidebarCompat,
   TopbarCompat,
   DORABadgeCompat,
-  WidgetCompat,
   Leaderboard,
   AIInsightCard,
   InlineInsight,
