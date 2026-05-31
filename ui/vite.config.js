@@ -10,6 +10,7 @@ const reactAliases = {
   'react/jsx-dev-runtime': appNodeModules('react', 'jsx-dev-runtime.js'),
   'react-dom': appNodeModules('react-dom'),
   'react-dom/client': appNodeModules('react-dom', 'client.js'),
+  'recharts': appNodeModules('recharts', 'es6'),
 };
 
 export default defineConfig({
