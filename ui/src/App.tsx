@@ -7,10 +7,7 @@ import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
-// TweaksProvider + DraggableTweaksPanel are DEV-only: gated at render time so Rollup eliminates
-// both from the production bundle via dead-code elimination on `import.meta.env.DEV`.
 import { TweaksProvider } from './context/TweaksContext';
-import { DraggableTweaksPanel } from './components/layout/DraggableTweaksPanel';
 import { Icon } from './design-system';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
@@ -354,9 +351,9 @@ const App = () => {
       <main className="metraly-app-shell__main metraly-app-shell__main--flush">
         {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
       </main>
-      {import.meta.env.DEV && <DraggableTweaksPanel />}
+
     </div>
   );
-  return import.meta.env.DEV ? <TweaksProvider>{shell}</TweaksProvider> : shell;
+  return <TweaksProvider>{shell}</TweaksProvider>;
 };
 export default App;

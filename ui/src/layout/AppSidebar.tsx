@@ -110,11 +110,13 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
               label={item.label}
               meta={
                 <span
-                  aria-hidden="true"
+                  aria-label="Unpin"
+                  role="button"
+                  tabIndex={-1}
                   onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  style={{ cursor: "pointer", color: "color-mix(in srgb, var(--cyan) 50%, transparent)", fontSize: 12, padding: "0 2px", lineHeight: 1 }}
+                  style={{ cursor: "pointer", color: "var(--m-fg-3)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}
                 >
-                  ×
+                  <Icon name="pinOff" size={13} color="currentColor" />
                 </span>
               }
               onClick={() => onNav?.(item.id)}
@@ -133,11 +135,13 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
             meta={
               !collapsed ? (
                 <span
-                  aria-hidden="true"
+                  aria-label="Pin"
+                  role="button"
+                  tabIndex={-1}
                   onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  style={{ cursor: "pointer", color: "var(--muted)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center", opacity: 0.6 }}
+                  style={{ cursor: "pointer", color: "var(--m-fg-3)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}
                 >
-                  <Icon name="pin" size={11} color="currentColor" />
+                  <Icon name="pin" size={13} color="currentColor" />
                 </span>
               ) : undefined
             }

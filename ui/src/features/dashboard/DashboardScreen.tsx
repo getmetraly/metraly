@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon, DraggableDashboardRenderer } from "../../design-system";
+import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
@@ -220,139 +220,41 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return <DraggableDashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
   };
 
+  const tabItems = DASHBOARDS.map((r) => ({
+    value: r.id,
+    label: r.label,
+    icon: <Icon name={r.icon} size={13} color="currentColor" />,
+  }));
+
   const TabBar = () => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        padding: "10px 24px 0",
-        borderBottom: "1px solid var(--border)",
-        flexShrink: 0,
-      }}
-    >
-      {DASHBOARDS.map((r) => (
-        <button
-          key={r.id}
-          type="button"
-          onClick={() => handleDashboardChange(r.id)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 14px",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            borderBottom:
-              dashboardId === r.id ? "2px solid var(--cyan)" : "2px solid transparent",
-            color: dashboardId === r.id ? "var(--cyan)" : "var(--muted2)",
-            fontFamily: "var(--font-body)",
-            fontSize: 13,
-            fontWeight: dashboardId === r.id ? 600 : 400,
-            transition: "all 0.15s",
-            marginBottom: -1,
-            whiteSpace: "nowrap",
-          }}
-          onMouseEnter={(e) => {
-            if (dashboardId !== r.id) e.currentTarget.style.color = "var(--text)";
-          }}
-          onMouseLeave={(e) => {
-            if (dashboardId !== r.id) e.currentTarget.style.color = "var(--muted2)";
-          }}
-        >
-          <Icon name={r.icon} size={13} color="currentColor" />
-          {r.label}
-        </button>
-      ))}
+    <div style={{ display: "flex", alignItems: "center", padding: "0 16px 0 24px", borderBottom: "1px solid var(--m-line)", flexShrink: 0, gap: 8 }}>
+      <MetralyTabs
+        items={tabItems}
+        value={dashboardId}
+        onValueChange={handleDashboardChange}
+        ariaLabel="Dashboard tabs"
+      />
       <div style={{ flex: 1 }} />
       {isEditMode ? (
-        <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-          <button
-            type="button"
-            onClick={handleExitEditMode}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "6px 14px",
-              borderRadius: 8,
-              cursor: "pointer",
-              background: "transparent",
-              border: "1px solid var(--border)",
-              color: "var(--muted)",
-              fontSize: 12.5,
-              fontWeight: 400,
-            }}
-          >
+        <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
+          <MetralyButton variant="neutral" size="sm" onClick={handleExitEditMode}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveLayout}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "6px 16px",
-              borderRadius: 8,
-              cursor: "pointer",
-              background: "var(--grad)",
-              border: "none",
-              color: "#fff",
-              fontSize: 12.5,
-              fontWeight: 600,
-            }}
-          >
-            <Icon name="check" size={13} /> Apply
-          </button>
+          </MetralyButton>
+          <MetralyButton variant="primary" size="sm" iconLeft={<Icon name="check" size={13} color="currentColor" />} onClick={handleSaveLayout}>
+            Apply
+          </MetralyButton>
         </div>
       ) : (
-        <>
-          <button
-            type="button"
-            onClick={handleEnterEditMode}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "6px 14px",
-              borderRadius: 8,
-              cursor: "pointer",
-              background: "color-mix(in srgb, var(--cyan) 8%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
-              color: "var(--cyan)",
-              fontSize: 12.5,
-              fontWeight: 500,
-              marginBottom: 6,
-            }}
-          >
-            <Icon name="sliders" size={13} /> Customize
-          </button>
+        <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
+          <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="sliders" size={13} color="currentColor" />} onClick={handleEnterEditMode}>
+            Customize
+          </MetralyButton>
           {onNewDashboard && (
-            <button
-              type="button"
-              onClick={onNewDashboard}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "6px 14px",
-                borderRadius: 8,
-                cursor: "pointer",
-                background: "color-mix(in srgb, var(--cyan) 8%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
-                color: "var(--cyan)",
-                fontSize: 12.5,
-                fontWeight: 500,
-                marginBottom: 6,
-                marginLeft: 8,
-              }}
-            >
-              <Icon name="plus" size={13} /> New Dashboard
-            </button>
+            <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="plus" size={13} color="currentColor" />} onClick={onNewDashboard}>
+              New Dashboard
+            </MetralyButton>
           )}
-        </>
+        </div>
       )}
     </div>
   );
