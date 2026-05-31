@@ -1,4 +1,4 @@
-.PHONY: build run seed stop clean test lint up down dev logs ps ui-run health dashboard help
+.PHONY: build run seed stop clean test lint up down dev logs ps ui-run health dashboard help start-db wait-db
 
 # Defaults
 APP_NAME := metraly
@@ -22,6 +22,39 @@ UI_LOG := $(RUN_DIR)/ui.log
 LOCAL_SEED_ENV := POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379
 LOCAL_SEED_ONLY_ENV := SEED_ONLY=true SEED_ON_START=true SEED_ADMIN_EMAIL=admin@metraly.local SEED_ADMIN_PASSWORD=admin123
 
+HOST_REDIS_CONTAINER := metraly-redis-host
+HOST_POSTGRES_CONTAINER := metraly-postgres-host
+
+DB_READY_CMD_COMPOSE := [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]
+DB_READY_CMD_HOST := docker exec $(HOST_REDIS_CONTAINER) redis-cli ping >/dev/null 2>&1 && docker exec $(HOST_POSTGRES_CONTAINER) pg_isready -U metraly -d metraly >/dev/null 2>&1
+
+# Start local database services (compose first, host-network fallback)
+start-db:
+	@echo "Starting database services..."
+	@set -e; \
+	if $(DOCKER_COMPOSE) up -d redis postgres; then \
+		echo "Using docker compose database services."; \
+	else \
+		echo "Docker bridge network unavailable, using host-network fallback containers..."; \
+		docker rm -f $(HOST_REDIS_CONTAINER) $(HOST_POSTGRES_CONTAINER) >/dev/null 2>&1 || true; \
+		docker run -d --name $(HOST_REDIS_CONTAINER) --network host redis:7-alpine >/dev/null; \
+		docker run -d --name $(HOST_POSTGRES_CONTAINER) --network host \
+			-e POSTGRES_USER=metraly \
+			-e POSTGRES_PASSWORD=metraly \
+			-e POSTGRES_DB=metraly \
+			timescale/timescaledb:latest-pg16 >/dev/null; \
+	fi
+
+# Wait until local database services are ready
+wait-db:
+	@echo "Waiting for database services to become healthy..."
+	@set -e; \
+	if [ -n "$$(docker compose ps -q postgres 2>/dev/null)" ] && [ -n "$$(docker compose ps -q redis 2>/dev/null)" ]; then \
+		until $(DB_READY_CMD_COMPOSE); do sleep 1; done; \
+	else \
+		until $(DB_READY_CMD_HOST); do sleep 1; done; \
+	fi
+
 # Build API
 build:
 	@echo "Building API..."
@@ -33,11 +66,8 @@ run: build
 	env $(LOCAL_SEED_ENV) ./bin/api
 
 # Seed local database
-seed: build
+seed: build start-db wait-db
 	@echo "Seeding local database..."
-	$(DOCKER_COMPOSE) up -d redis postgres
-	@echo "Waiting for database services to become healthy..."
-	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]; do sleep 1; done
 	@env $(LOCAL_SEED_ONLY_ENV) $(LOCAL_SEED_ENV) ./bin/api
 
 # Run UI locally
@@ -57,13 +87,10 @@ lint:
 	@which staticcheck > /dev/null && staticcheck ./... || echo "staticcheck not installed"
 
 # Canonical local start command
-up:
+# Canonical local start command
+up: start-db wait-db
 	@mkdir -p $(RUN_DIR)
 	@touch $(API_LOG) $(UI_LOG)
-	@echo "Starting database services..."
-	$(DOCKER_COMPOSE) up -d redis postgres
-	@echo "Waiting for database services to become healthy..."
-	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]; do sleep 1; done
 	@echo "Building API..."
 	$(MAKE) build
 	@echo "Starting API..."
@@ -78,7 +105,7 @@ down:
 	@echo "Stopping services..."
 	@if [ -f $(UI_PID_FILE) ]; then kill "$$(cat $(UI_PID_FILE))" || true; rm -f $(UI_PID_FILE); fi
 	@if [ -f $(API_PID_FILE) ]; then kill "$$(cat $(API_PID_FILE))" || true; rm -f $(API_PID_FILE); fi
-
+	@docker rm -f $(HOST_REDIS_CONTAINER) $(HOST_POSTGRES_CONTAINER) >/dev/null 2>&1 || true
 	$(DOCKER_COMPOSE) down
 # Alias for one-shot local startup
 dev: up
