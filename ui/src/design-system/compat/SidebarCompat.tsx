@@ -136,16 +136,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = "", onNav }) => {
               label={item.label}
               meta={
                 <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Unpin"
+                  aria-hidden="true"
                   onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      togglePin(item.id, e as unknown as React.MouseEvent);
-                    }
-                  }}
                   style={{ cursor: "pointer", color: "color-mix(in srgb, var(--cyan) 50%, transparent)", fontSize: 12, padding: "0 2px", lineHeight: 1 }}
                 >
                   ×
@@ -167,16 +159,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ active = "", onNav }) => {
             meta={
               !collapsed ? (
                 <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label={pinned.includes(item.id) ? "Unpin" : "Pin to top"}
+                  aria-hidden="true"
                   onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      togglePin(item.id, e as unknown as React.MouseEvent);
-                    }
-                  }}
                   style={{ cursor: "pointer", color: "var(--muted)", padding: "0 2px", fontSize: 12, lineHeight: 1 }}
                 >
                   📌

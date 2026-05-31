@@ -7,9 +7,7 @@
 export { Sidebar } from './compat/SidebarCompat';
 export { Topbar } from './compat/TopbarCompat';
 export { Icon } from '../components/shared/Icon';
-export { Leaderboard } from '../components/ui/Leaderboard';
-export { AIInsightCard } from '../components/ui/AIInsightCard';
-export { InlineInsight } from '../components/ui/InlineInsight';
+export { Leaderboard, AIInsightCard, InlineInsight } from '@metraly/ui';
 export { MetralyButton, MetralyInput } from './adapters/controls';
 export { MetralyGauge, MetralyHeatmap } from './adapters/charts';
 export { DraggableDashboardRenderer } from '../components/dashboard/DraggableDashboardRenderer';

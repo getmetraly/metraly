@@ -12,8 +12,9 @@ const reactAliases = {
   'react-dom/client': appNodeModules('react-dom', 'client.js'),
   'recharts': appNodeModules('recharts', 'es6'),
 };
-const workspaceRoot = resolve(__dirname, '..', '..');
-const brandbookUiRoot = resolve(__dirname, '..', '..', '..', 'brandbook', 'packages', 'ui');
+const workspaceRoot = resolve(__dirname, '..', '..', '..');
+const brandbookRoot = resolve(workspaceRoot, 'brandbook');
+const brandbookUiRoot = resolve(brandbookRoot, 'packages', 'ui');
 
 export default defineConfig({
   plugins: [react()],
@@ -37,7 +38,7 @@ export default defineConfig({
       usePolling: true,
     },
     fs: {
-      allow: [workspaceRoot, brandbookUiRoot, dirname(appNodeModules('react'))],
+      allow: [workspaceRoot, brandbookRoot, brandbookUiRoot, dirname(appNodeModules('react'))],
     },
   },
 });

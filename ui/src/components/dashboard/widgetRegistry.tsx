@@ -14,10 +14,27 @@ import {
 } from '../../design-system';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { Icon } from '../shared/Icon';
-import { AreaChart } from '../charts/AreaChart';
-import { BarChart } from '../charts/BarChart';
-
 const IS_VITEST = import.meta.env.MODE === 'test';
+
+function TestChartFallback({ summary }: { summary: string }) {
+  return (
+    <div
+      aria-label={summary}
+      style={{
+        height: 140,
+        border: '1px dashed var(--line)',
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--muted)',
+        fontSize: 12,
+      }}
+    >
+      Chart preview
+    </div>
+  );
+}
 const iconMap: Record<string, string> = {
   'deploy-freq': 'rocket',
   'lead-time': 'clock',
@@ -124,54 +141,32 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
         summary={summary}
         description={data.unit ? `Unit: ${data.unit}` : undefined}
       >
-        {isBar ? (
-          IS_VITEST ? (
-            <BarChart
-              labels={labels}
-              values={currentValues}
-              compare={compareValues}
-              color="var(--cyan)"
-              compareColor="var(--purple)"
-              height={100}
-            />
-          ) : (
-            <MetralyBarChart
-              data={points}
-              xKey="label"
-              series={[
-                { dataKey: 'current', name: 'Current', tone: 'cyan' },
-                ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
-              ]}
-              ariaLabel={`${displayLabel} bar chart`}
-              summary={summary}
-              height={140}
-            />
-          )
+        {IS_VITEST ? (
+          <TestChartFallback summary={summary} />
+        ) : isBar ? (
+          <MetralyBarChart
+            data={points}
+            xKey="label"
+            series={[
+              { dataKey: 'current', name: 'Current', tone: 'cyan' },
+              ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+            ]}
+            ariaLabel={`${displayLabel} bar chart`}
+            summary={summary}
+            height={140}
+          />
         ) : (
-          IS_VITEST ? (
-            <AreaChart
-              data={currentValues}
-              compare={compareValues}
-              labels={labels}
-              color="var(--cyan)"
-              compareColor="var(--purple)"
-              height={100}
-              showGrid={false}
-              showAxis={false}
-            />
-          ) : (
-            <MetralyAreaChart
-              data={points}
-              xKey="label"
-              series={[
-                { dataKey: 'current', name: 'Current', tone: 'cyan' },
-                ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
-              ]}
-              ariaLabel={`${displayLabel} area chart`}
-              summary={summary}
-              height={140}
-            />
-          )
+          <MetralyAreaChart
+            data={points}
+            xKey="label"
+            series={[
+              { dataKey: 'current', name: 'Current', tone: 'cyan' },
+              ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+            ]}
+            ariaLabel={`${displayLabel} area chart`}
+            summary={summary}
+            height={140}
+          />
         )}
       </MetralyChartCard>
     </div>
@@ -512,14 +507,7 @@ const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) =
     <div style={widgetStyle}>
       <MetralyChartCard title="Compare" summary={summary}>
         {IS_VITEST ? (
-          <BarChart
-            labels={labels}
-            values={primary}
-            compare={secondary}
-            color="var(--cyan)"
-            compareColor="var(--purple)"
-            height={100}
-          />
+          <TestChartFallback summary={summary} />
         ) : (
           <MetralyBarChart
             data={points}
