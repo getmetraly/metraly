@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton } from "../../design-system";
+import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton, CardShell, MetralyIcon } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
@@ -263,68 +263,21 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
       <TabBar />
       {demoMode && (
-        <div
-          style={{
-            margin: "16px 24px 0",
-            padding: "12px 14px",
-            borderRadius: 12,
-            border: "1px solid color-mix(in srgb, var(--cyan) 18%, transparent)",
-            background: "color-mix(in srgb, var(--cyan) 6%, transparent)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: "color-mix(in srgb, var(--cyan) 15%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--cyan) 25%, transparent)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Icon name="sparkles" size={13} color="var(--cyan)" />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text)" }}>
-                Synthetic Sandbox Inc. demo
-              </div>
-              <div style={{ fontSize: 11.5, color: "var(--muted2)" }}>
-                This overview is backed by synthetic data. Use it to explore the
-                preview flow or move to source setup.
-              </div>
-            </div>
-          </div>
-          {onConfigureSources && (
-            <button
-              type="button"
-              onClick={onConfigureSources}
-              style={{
-                padding: "7px 12px",
-                borderRadius: 8,
-                cursor: "pointer",
-                background: "color-mix(in srgb, var(--cyan) 10%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--cyan) 20%, transparent)",
-                color: "var(--cyan)",
-                fontSize: 12.5,
-                fontWeight: 600,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Icon name="settings" size={12} color="currentColor" />
-              Configure sources
-            </button>
-          )}
+        <div style={{ margin: "16px 24px 0" }}>
+          <CardShell
+            tone="cyan"
+            density="compact"
+            leading={<MetralyIcon name="sparkles" size="sm" />}
+            title="Synthetic Sandbox Inc. demo"
+            subtitle="This overview is backed by synthetic data. Use it to explore the preview flow or move to source setup."
+            actions={
+              onConfigureSources ? (
+                <MetralyButton variant="ghost" size="sm" iconLeft={<MetralyIcon name="settings" size="sm" />} onClick={onConfigureSources}>
+                  Configure sources
+                </MetralyButton>
+              ) : undefined
+            }
+          />
         </div>
       )}
       <div

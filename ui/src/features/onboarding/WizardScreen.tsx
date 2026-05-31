@@ -7,6 +7,8 @@ import {
   MetralyInput,
   MetralySelect,
   MetralyCheckbox,
+  CardShell,
+  MetralyIcon,
   Icon,
 } from '../../design-system';
 import type { ReviewPanelItem, WizardLayoutStep, MetralySelectOption } from '../../design-system';
@@ -228,15 +230,19 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '28px 24px' }}>
       {onUseDemo ? (
-        <div style={{ maxWidth: 760, margin: '0 auto 12px', padding: '10px 12px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--m-purple, var(--purple)) 20%, transparent)', background: 'color-mix(in srgb, var(--m-purple, var(--purple)) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon name="sparkles" size={13} color="var(--m-purple, var(--purple))" />
-            <div>
-              <div style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 700, color: 'var(--m-fg-0, var(--text))' }}>Demo mode is available</div>
-              <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>Switch back to Sandbox Inc. demo data at any point.</div>
-            </div>
-          </div>
-          <MetralyButton type="button" variant="ghost" size="sm" onClick={onUseDemo}>Show demo</MetralyButton>
+        <div style={{ maxWidth: 760, margin: '0 auto 12px' }}>
+          <CardShell
+            tone="purple"
+            density="compact"
+            leading={<MetralyIcon name="sparkles" size="sm" />}
+            title="Demo mode is available"
+            subtitle="Switch back to Sandbox Inc. demo data at any point."
+            actions={
+              <MetralyButton variant="ghost" size="sm" onClick={onUseDemo}>
+                Show demo
+              </MetralyButton>
+            }
+          />
         </div>
       ) : null}
 
