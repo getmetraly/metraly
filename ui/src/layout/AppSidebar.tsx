@@ -147,9 +147,9 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
                 <span
                   aria-hidden="true"
                   onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  style={{ cursor: "pointer", color: "var(--muted)", padding: "0 2px", fontSize: 12, lineHeight: 1 }}
+                  style={{ cursor: "pointer", color: "var(--muted)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center", opacity: 0.6 }}
                 >
-                  📌
+                  <Icon name="pin" size={11} color="currentColor" />
                 </span>
               ) : undefined
             }

@@ -52,6 +52,32 @@ const iconMap: Record<string, string> = {
   'sprint-burndown': 'target',
 };
 
+const labelMap: Record<string, string> = {
+  'deploy-freq': 'Deploy Frequency',
+  'lead-time': 'Lead Time',
+  'cfr': 'Change Failure Rate',
+  'mttr': 'MTTR',
+  'ci-pass': 'CI Pass Rate',
+  'ci-pass-rate': 'CI Pass Rate',
+  'ci-duration': 'CI Duration',
+  'ci-queue': 'CI Queue Time',
+  'pr-cycle': 'PR Cycle Time',
+  'pr-review': 'PR Review Time',
+  'pr-merge': 'PR Merge Time',
+  'velocity': 'Velocity',
+  'throughput': 'Throughput',
+  'health-score': 'Health Score',
+  'sprint-burndown': 'Sprint Burndown',
+};
+
+function resolveLabel(metricId: string): string {
+  if (labelMap[metricId]) return labelMap[metricId];
+  return metricId
+    .split('-')
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ');
+}
+
 const colorMap: Record<string, 'primary' | 'secondary' | 'success' | 'warning' | 'error'> = {
   cyan: 'primary',
   purple: 'secondary',
@@ -87,7 +113,7 @@ const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) 
     <div style={widgetStyle}>
     <MetralyMetricCard
       icon={<Icon name={icon} size={15} color="currentColor" />}
-      title={cfg.metricId || 'Metric'}
+      title={resolveLabel(cfg.metricId || '')}
       value={data.value || '0'}
       description={undefined}
       variant={color}

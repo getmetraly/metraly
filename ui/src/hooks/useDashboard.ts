@@ -41,7 +41,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const dataMap: Record<string, any> = {};
         dataResponse.widgets.forEach((item) => {
-          dataMap[`${requestId}-${item.instanceId}`] = item.data;
+          dataMap[`${dash.id}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
       } catch (err) {
@@ -76,7 +76,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
 
         const dataMap: Record<string, any> = {};
         dataResponse.widgets.forEach((item) => {
-          dataMap[`${requestId}-${item.instanceId}`] = item.data;
+          dataMap[`${dash.id}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
       } catch (err) {

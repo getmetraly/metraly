@@ -97,10 +97,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     newLayout.forEach((item) => {
       widgetSizes[item.i] = item.w === 12 ? "full" : "half";
     });
-    set({
-      layout: normalizeEditorLayout(newLayout, widgetSizes),
-      widgetSizes,
-    });
+    set({ layout: newLayout, widgetSizes });
   },
 
   toggleWidgetSize: (instanceId) => {

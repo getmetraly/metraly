@@ -1,5 +1,6 @@
 // src/components/layout/DraggableTweaksPanel.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { Icon } from '../shared/Icon';
 
 // Default values
 const DEFAULT_TWEAKS = {
@@ -128,11 +129,14 @@ export const DraggableTweaksPanel = () => {
           cursor: 'pointer',
           fontFamily: 'var(--font-body)',
           transition: 'all 0.15s',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
         }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--glass2)'}
         onMouseLeave={e => e.currentTarget.style.background = 'var(--glass)'}
       >
-        ⚙️ Tweaks
+        <Icon name="settings" size={12} color="currentColor" /> Tweaks
       </button>
     );
   }
