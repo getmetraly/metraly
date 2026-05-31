@@ -41,5 +41,6 @@ export const TweaksProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- intentional: context hook co-located with provider
 export const useTweaks = (): TweaksContextValue =>
   useContext(TweaksContext) ?? { tweaks: DEFAULT_TWEAKS, setTweak: () => {} };

@@ -71,6 +71,10 @@ export {
   MetralyPanel,
   MetralyCodeBlock,
   MetralyLogo,
+  HandlePrimitive,
+  MoveMenu,
+  PulseMarker,
+  DashboardDropZone,
 } from '@metraly/ui';
 
 export type {

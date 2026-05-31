@@ -3,7 +3,7 @@ import { Responsive, WidthProvider, LayoutItem } from "react-grid-layout/legacy"
 import "react-grid-layout/css/styles.css";
 import { useWizardStore } from "../store/wizardStore";
 import { WidgetPreviewCard } from "./WidgetPreviewCard";
-import { Icon } from "../../../design-system";
+import { Icon, PulseMarker } from "../../../design-system";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -36,15 +36,7 @@ export const WizardPreviewGrid: React.FC = () => {
       }}
     >
       <div style={headerStyle}>
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "var(--m-cyan-500)",
-            animation: "pulse-dot 2s infinite",
-          }}
-        />
+        <PulseMarker tone="new" size="sm" aria-hidden="true" />
         <span
           style={{
             fontSize: 12.5,
@@ -94,7 +86,7 @@ export const WizardPreviewGrid: React.FC = () => {
               isDraggable={true}
               isResizable={true}
               onLayoutChange={(currentLayout: LayoutItem[]) => updateLayout(currentLayout)}
-              draggableHandle=".widget-drag-handle"
+              draggableHandle=".metraly-widget-shell-drag-handle"
               compactType="vertical"
               margin={[8, 8]}
             >

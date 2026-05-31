@@ -127,10 +127,11 @@ function EmptyWidget({ title = 'No data in this range', description = 'Try a wid
 }
 
 const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error" | "info"> = {
-  Elite: 'success',
-  High: 'live',
-  Med: 'warning',
-  Low: 'error',
+  elite: 'success',
+  high: 'live',
+  med: 'warning',
+  medium: 'warning',
+  low: 'error',
 };
 
 const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
@@ -369,16 +370,16 @@ const DORAOverviewWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   return (
     <div style={{...widgetStyle, display: 'flex', gap: 8, flexWrap: 'wrap', padding: 16}}>
       {data.deployFrequency && (
-        <StateBadge state={DORA_LEVEL_STATE_MAP[data.deployFrequency.level] ?? 'info'} label={`Deploy ${data.deployFrequency.currentValue}`} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[String(data.deployFrequency.level).toLowerCase()] ?? 'info'} label={`Deploy ${data.deployFrequency.currentValue}`} />
       )}
       {data.leadTime && (
-        <StateBadge state={DORA_LEVEL_STATE_MAP[data.leadTime.level] ?? 'info'} label={`Lead Time ${data.leadTime.currentValue}`} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[String(data.leadTime.level).toLowerCase()] ?? 'info'} label={`Lead Time ${data.leadTime.currentValue}`} />
       )}
       {data.changeFailureRate && (
-        <StateBadge state={DORA_LEVEL_STATE_MAP[data.changeFailureRate.level] ?? 'info'} label={`CFR ${data.changeFailureRate.currentValue}`} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[String(data.changeFailureRate.level).toLowerCase()] ?? 'info'} label={`CFR ${data.changeFailureRate.currentValue}`} />
       )}
       {data.mttr && (
-        <StateBadge state={DORA_LEVEL_STATE_MAP[data.mttr.level] ?? 'info'} label={`MTTR ${data.mttr.currentValue}`} />
+        <StateBadge state={DORA_LEVEL_STATE_MAP[String(data.mttr.level).toLowerCase()] ?? 'info'} label={`MTTR ${data.mttr.currentValue}`} />
       )}
     </div>
   );

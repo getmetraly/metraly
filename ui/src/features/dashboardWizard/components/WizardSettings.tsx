@@ -157,7 +157,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
                       <Icon name="chevronDown" size={14} />
                     </button>
                   </div>
-                  <div style={{ width: 28, height: 28, borderRadius: 6, background: isEmpty ? 'color-mix(in srgb, var(--m-cyan-500) 15%, transparent)' : `${c}18`, border: `1px solid ${isEmpty ? 'var(--m-cyan-500)' : c}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 6, background: isEmpty ? 'color-mix(in srgb, var(--m-cyan-500) 15%, transparent)' : `color-mix(in srgb, ${c} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${isEmpty ? 'var(--m-cyan-500)' : c} 22%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon name={widget.icon} size={14} color={isEmpty ? 'var(--m-cyan-500)' : c} />
                   </div>
                   <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--m-fg-0)' }}>{widget.label}</div>

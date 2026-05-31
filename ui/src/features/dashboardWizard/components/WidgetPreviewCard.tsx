@@ -1,6 +1,6 @@
 // src/features/dashboardWizard/components/WidgetPreviewCard.tsx
 import React from "react";
-import { Icon, widgetRegistry } from "../../../design-system";
+import { Icon, widgetRegistry, MetralyButton, DashboardWidget } from "../../../design-system";
 import { useWizardStore } from "../store/wizardStore";
 import { WizardWidget } from "../store/wizardStore";
 import { makeTimeSeries, makeHeatData } from "../../../utils/seeds";
@@ -136,121 +136,44 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
   const isFull = widgetSizes[widget.instanceId] === "full";
 
   return (
-    <div
-      style={{
-        background:
-          widget.id === "ai-summary"
-            ? "color-mix(in srgb, var(--m-purple-500) 6%, var(--m-bg-1))"
-            : widget.id === "anomaly"
-              ? "color-mix(in srgb, var(--m-warn) 6%, var(--m-bg-1))"
-              : "var(--m-bg-1)",
-        border:
-          widget.id === "ai-summary"
-            ? "1px solid color-mix(in srgb, var(--m-purple-500) 20%, transparent)"
-            : widget.id === "anomaly"
-              ? "1px solid color-mix(in srgb, var(--m-warn) 20%, transparent)"
-              : "1px solid var(--m-line)",
-        borderRadius: 10,
-        height: "100%",
-        width: "100%",
-        maxWidth: "100%",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        boxSizing: "border-box",
-      }}
-    >
-      <div
-        className="widget-drag-handle"
-        style={{
-          padding: "8px 12px",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          cursor: "grab",
-          userSelect: "none",
-        }}
-      >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 5,
-            background: `${widget.color}18`,
-            border: `1px solid ${widget.color}25`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Icon name={widget.icon} size={11} color={widget.color} />
-        </div>
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: "var(--m-fg-0)",
-            flex: 1,
-          }}
-        >
-          {widget.label}
-        </span>
-        <button
+    <DashboardWidget
+      id={widget.instanceId}
+      title={widget.label}
+      subtitle={widget.id}
+      onDragStart={() => {}}
+      onRemove={() => removeWidget(widget.instanceId)}
+      footer={
+        <MetralyButton
           type="button"
-          aria-label={isFull ? "Make widget flexible width" : "Make widget full width"}
-          title={isFull ? "Make flexible" : "Make full width"}
+          size="sm"
+          variant={isFull ? "secondary" : "ghost"}
+          aria-label={isFull ? "Switch to flexible width" : "Switch to full width"}
           onClick={(event) => {
             event.stopPropagation();
             toggleWidgetSize(widget.instanceId);
           }}
-          style={{
-            background: "transparent",
-            border: "1px solid var(--m-line)",
-            color: isFull ? "var(--m-cyan-500)" : "var(--m-fg-2)",
-            borderRadius: 6,
-            padding: "4px 8px",
-            fontSize: 11,
-            cursor: "pointer",
-          }}
+          iconLeft={<Icon name={isFull ? "minimize2" : "maximize2"} size={11} />}
         >
-          {isFull ? "Full width" : "Flexible"}
-        </button>
-        <button
-          type="button"
-          aria-label="Remove widget"
-          onClick={(event) => {
-            event.stopPropagation();
-            removeWidget(widget.instanceId);
-          }}
+          {isFull ? "Full" : "Flex"}
+        </MetralyButton>
+      }
+    >
+      {WidgetComponent ? (
+        <WidgetComponent config={widgetConfig as any} data={mockData} />
+      ) : (
+        <div
           style={{
-            background: "transparent",
-            border: "none",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             color: "var(--m-fg-2)",
-            cursor: "pointer",
-            padding: 4,
+            fontSize: 13,
           }}
         >
-          <Icon name="x" size={13} />
-        </button>
-      </div>
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {WidgetComponent ? (
-          <WidgetComponent config={widgetConfig as any} data={mockData} />
-        ) : (
-          <div
-            style={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--m-fg-2)",
-              fontSize: 13,
-            }}
-          >
-            {widget.label}
-          </div>
-        )}
-      </div>
-    </div>
+          {widget.label}
+        </div>
+      )}
+    </DashboardWidget>
   );
 };

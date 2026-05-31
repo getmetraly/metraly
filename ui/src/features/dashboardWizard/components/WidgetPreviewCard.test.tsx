@@ -19,12 +19,12 @@ describe('WidgetPreviewCard', () => {
 
   it('renders widget label and icon', () => {
     render(<WidgetPreviewCard widget={mockWidget} />);
-    expect(screen.getByText('Deploy Frequency', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getAllByText('Deploy Frequency').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows toggle size button', () => {
     render(<WidgetPreviewCard widget={mockWidget} />);
-    expect(screen.getByTitle('Make full width')).toBeInTheDocument();
+    expect(screen.getByLabelText('Switch to full width')).toBeInTheDocument();
   });
 
   it('calls toggleWidgetSize when size button clicked', () => {
@@ -32,7 +32,7 @@ describe('WidgetPreviewCard', () => {
     const addedWidget = useWizardStore.getState().widgets[0];
     const testWidget = { ...mockWidget, instanceId: addedWidget.instanceId };
     render(<WidgetPreviewCard widget={testWidget} />);
-    const toggleBtn = screen.getByTitle('Make full width');
+    const toggleBtn = screen.getByLabelText('Switch to full width');
     fireEvent.click(toggleBtn);
     const layout = useWizardStore.getState().layout.find(l => l.i === testWidget.instanceId);
     expect(layout?.w).toBe(12);
@@ -43,7 +43,7 @@ describe('WidgetPreviewCard', () => {
     const addedWidget = useWizardStore.getState().widgets[0];
     const testWidget = { ...mockWidget, instanceId: addedWidget.instanceId };
     render(<WidgetPreviewCard widget={testWidget} />);
-    const removeBtn = screen.getByLabelText('Remove widget');
+    const removeBtn = screen.getByRole('button', { name: 'Remove' });
     fireEvent.click(removeBtn);
     expect(useWizardStore.getState().widgets).toHaveLength(0);
   });

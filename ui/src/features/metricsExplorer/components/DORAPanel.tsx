@@ -20,10 +20,11 @@ interface DORAPanelProps {
 }
 
 const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error"> = {
-  Elite: 'success',
-  High: 'live',
-  Med: 'warning',
-  Low: 'error',
+  elite: 'success',
+  high: 'live',
+  med: 'warning',
+  medium: 'warning',
+  low: 'error',
 };
 
 export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
@@ -41,12 +42,15 @@ export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
           className={`fade-up-${i+1}`}
           tone={selected?.includes(c.id) ? 'cyan' : 'neutral'}
           state={selected?.includes(c.id) ? 'selected' : 'default'}
+          role="button"
+          tabIndex={0}
           onClick={() => onSelect?.(c.id)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(c.id); } }}
           style={{ cursor: 'pointer', padding: '14px 16px' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <Icon name={c.icon} size={14} color={c.color} />
-            <StateBadge state={DORA_LEVEL_STATE_MAP[c.level] ?? 'info'} label={c.level} />
+            <StateBadge state={DORA_LEVEL_STATE_MAP[c.level.toLowerCase()] ?? 'info'} label={c.level} />
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--m-font-display)', color: 'var(--m-fg-0)' }}>{c.value}</div>
           <div style={{ fontSize: 11.5, color: 'var(--m-fg-2)', marginTop: 4 }}>{c.label}</div>

@@ -1,13 +1,22 @@
-// src/features/metricsExplorer/MetricsScreen.jsx
-import React, { useState } from 'react';
-import { Icon, MetralyAreaChart, MetralySegmentedControl, MetralyButton, CardShell, MetralyInput } from '../../design-system';
+// src/features/metricsExplorer/MetricsScreen.tsx
+import React, { useState, useMemo } from 'react';
+import {
+  Icon,
+  MetralyAreaChart,
+  MetralyBarChart,
+  MetralySegmentedControl,
+  MetralyButton,
+  MetralySelect,
+  MetralyNavigationTree,
+  CardShell,
+  MetralyInput,
+  Leaderboard,
+} from '../../design-system';
+import type { MetralyNavigationTreeItem } from '../../design-system';
 import { makeTimeSeries } from '../../utils/seeds';
-import { FilterPill } from './components/FilterPill';
-import { TreeItem } from './components/TreeItem';
 import { DORAPanel } from './components/DORAPanel';
 import { BreakdownTable } from './components/BreakdownTable';
 import { ExportBar } from './components/ExportBar';
-import { Leaderboard } from '../../design-system';
 
 // ---------- Static Data (unchanged from original) ----------
 const WEEK_LABELS_30 = Array.from({ length: 30 }, (_, i) => {
@@ -76,6 +85,24 @@ const METRIC_COMPARE = Object.fromEntries(
 const TIME_RANGES = ['7d', '14d', '30d', '90d'];
 const TEAMS = ['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'];
 const REPOS = ['All repos', 'monorepo', 'api-gateway', 'frontend-app', 'mobile-app', 'data-pipeline'];
+const CHART_TYPES = [
+  { value: 'area', label: 'Area' },
+  { value: 'bar', label: 'Bar' },
+  { value: 'table', label: 'Table' },
+];
+const BREAKDOWN_VIEWS = [
+  { value: 'table', label: 'Table' },
+  { value: 'leaderboard', label: 'Leaderboard' },
+];
+
+/** Map CSS var color token to MetralyNavigationTree tone */
+function colorToTone(color: string): 'primary' | 'secondary' | 'success' | 'warning' | 'default' {
+  if (color.includes('cyan')) return 'primary';
+  if (color.includes('purple')) return 'secondary';
+  if (color.includes('warn')) return 'warning';
+  if (color.includes('ok')) return 'success';
+  return 'default';
+}
 
 // ---------- Main Component ----------
 export const MetricsScreen = () => {
@@ -84,13 +111,25 @@ export const MetricsScreen = () => {
   const [compareMode, setCompareMode] = useState(false);
   const [team, setTeam] = useState('All teams');
   const [repo, setRepo] = useState('All repos');
-  const [expandedGroups, setExpandedGroups] = useState(['dora', 'ci']);
-  const [breakdownView, setBreakdownView] = useState('table'); // 'table' or 'leaderboard'
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['dora', 'ci']);
+  const [breakdownView, setBreakdownView] = useState('table');
+  const [chartType, setChartType] = useState('area');
 
-  const toggleGroup = (id: string) =>
-    setExpandedGroups((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  /** Convert METRIC_TREE to MetralyNavigationTree items (memoised, stable refs) */
+  const treeItems = useMemo<MetralyNavigationTreeItem[]>(
+    () =>
+      METRIC_TREE.map((group) => ({
+        value: group.id,
+        label: group.label,
+        icon: <Icon name={group.icon || 'activity'} size={13} />,
+        children: group.children?.map((child) => ({
+          value: child.id,
+          label: child.label,
+          tone: colorToTone(child.color || ''),
+        })),
+      })),
+    []
+  );
 
   const allMetrics = METRIC_TREE.flatMap((g) => g.children || []);
   const currentMetric = allMetrics.find((m) => m.id === selected) || allMetrics[0];
@@ -146,17 +185,15 @@ export const MetricsScreen = () => {
           </div>
           <MetralyInput search placeholder="Filter…" fullWidth style={{ fontSize: 12.5 }} />
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '8px 4px' }}>
-          {METRIC_TREE.map((group) => (
-            <TreeItem
-              key={group.id}
-              item={group}
-              selected={selected}
-              onSelect={setSelected}
-              expandedGroups={expandedGroups}
-              toggleGroup={toggleGroup}
-            />
-          ))}
+        <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+          <MetralyNavigationTree
+            items={treeItems}
+            value={selected}
+            expandedValues={expandedGroups}
+            onValueChange={setSelected}
+            onExpandedValuesChange={setExpandedGroups}
+            ariaLabel="Metrics tree"
+          />
         </div>
       </div>
 
@@ -176,8 +213,18 @@ export const MetricsScreen = () => {
         >
           <MetralySegmentedControl options={TIME_RANGES.map(t => ({ value: t, label: t }))} value={timeRange} onChange={setTimeRange} size="sm" ariaLabel="Time range" />
 
-          <FilterPill label="Team" options={TEAMS} value={team} onChange={setTeam} />
-          <FilterPill label="Repo" options={REPOS} value={repo} onChange={setRepo} />
+          <MetralySelect
+            options={TEAMS.map(t => ({ value: t, label: t }))}
+            value={team}
+            onChange={setTeam}
+            aria-label="Team filter"
+          />
+          <MetralySelect
+            options={REPOS.map(r => ({ value: r, label: r }))}
+            value={repo}
+            onChange={setRepo}
+            aria-label="Repository filter"
+          />
 
           <MetralyButton size="sm" variant={compareMode ? 'secondary' : 'ghost'} onClick={() => setCompareMode(c => !c)} iconLeft={<Icon name="layers" size={13} />}>Compare {compareMode ? 'ON' : 'OFF'}</MetralyButton>
 
@@ -311,41 +358,50 @@ export const MetricsScreen = () => {
                   </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {['Area', 'Bar', 'Table'].map((t) => (
-                  <button
-                    key={t}
-                    style={{
-                      padding: '4px 9px',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      border: '1px solid var(--m-line)',
-                      background: t === 'Area' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
-                      color: t === 'Area' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+              <MetralySegmentedControl
+                options={CHART_TYPES}
+                value={chartType}
+                onChange={setChartType}
+                size="sm"
+                ariaLabel="Chart type"
+              />
             </div>
 
-            <MetralyAreaChart
-              data={chartData}
-              xKey="name"
-              height={180}
-              series={
-                compareMode
-                  ? [
-                      { dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' },
-                      { dataKey: 'compare', tone: 'var(--m-purple-500)' },
-                    ]
-                  : [{ dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' }]
-              }
-              ariaLabel={`${currentMetric?.label} trend`}
-              summary={`Range ${timeRange}`}
-            />
+            {chartType === 'bar' ? (
+              <MetralyBarChart
+                data={chartData}
+                xKey="name"
+                height={180}
+                series={
+                  compareMode
+                    ? [
+                        { dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' },
+                        { dataKey: 'compare', tone: 'var(--m-purple-500)' },
+                      ]
+                    : [{ dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' }]
+                }
+                ariaLabel={`${currentMetric?.label} bar chart`}
+                summary={`Range ${timeRange}`}
+              />
+            ) : chartType === 'table' ? (
+              <BreakdownTable metricId={selected} />
+            ) : (
+              <MetralyAreaChart
+                data={chartData}
+                xKey="name"
+                height={180}
+                series={
+                  compareMode
+                    ? [
+                        { dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' },
+                        { dataKey: 'compare', tone: 'var(--m-purple-500)' },
+                      ]
+                    : [{ dataKey: 'value', tone: currentMetric?.color || 'var(--m-cyan-500)' }]
+                }
+                ariaLabel={`${currentMetric?.label} trend`}
+                summary={`Range ${timeRange}`}
+              />
+            )}
           </CardShell>
 
           {/* Breakdown table */}
@@ -353,22 +409,13 @@ export const MetricsScreen = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <span style={{ fontFamily: 'var(--m-font-display)', fontWeight: 600, fontSize: 13, color: 'var(--m-fg-0)' }}>Breakdown</span>
                 <div style={{ flex: 1, height: 1, background: 'var(--m-line)' }} />
-                <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => setBreakdownView('table')} style={{
-                    padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'table' ? '1px solid color-mix(in srgb, var(--m-cyan-500) 40%, transparent)' : '1px solid var(--m-line)',
-                    background: breakdownView === 'table' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
-                    color: breakdownView === 'table' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
-                    cursor: 'pointer'
-                    }}>Table</button>
-                    <button onClick={() => setBreakdownView('leaderboard')} style={{
-                    padding: '4px 9px', borderRadius: 6, fontSize: 12,
-                    border: breakdownView === 'leaderboard' ? '1px solid color-mix(in srgb, var(--m-cyan-500) 40%, transparent)' : '1px solid var(--m-line)',
-                    background: breakdownView === 'leaderboard' ? 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)' : 'transparent',
-                    color: breakdownView === 'leaderboard' ? 'var(--m-cyan-500)' : 'var(--m-fg-1)',
-                    cursor: 'pointer'
-                    }}>Leaderboard</button>
-                </div>
+                <MetralySegmentedControl
+                  options={BREAKDOWN_VIEWS}
+                  value={breakdownView}
+                  onChange={setBreakdownView}
+                  size="sm"
+                  ariaLabel="Breakdown view"
+                />
                 </div>
 
                 {breakdownView === 'table' ? (
@@ -433,19 +480,13 @@ export const MetricsScreen = () => {
               >
                 deploy_frequency * (1 - change_failure_rate / 100)
               </div>
-              <button
-                style={{
-                  padding: '9px 16px',
-                  borderRadius: 8,
-                  background: 'color-mix(in srgb, var(--m-cyan-500) 10%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--m-cyan-500) 20%, transparent)',
-                  color: 'var(--m-cyan-500)',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+              <MetralyButton
+                size="sm"
+                variant="secondary"
+                iconLeft={<Icon name="play" size={13} />}
               >
                 Run
-              </button>
+              </MetralyButton>
             </div>
             <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--m-fg-2)' }}>
               Result:{' '}
