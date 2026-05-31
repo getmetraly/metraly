@@ -1,6 +1,7 @@
 // src/features/dashboardWizard/components/WizardSettings.tsx
 import React from 'react';
-import { Icon } from '../../../design-system';
+import { Icon, MetralyInput, MetralySelect, MetralySegmentedControl } from '../../../design-system';
+import type { MetralySelectOption } from '../../../design-system';
 import { WizardWidget } from '../store/wizardStore';
 
 export interface WizardSettingsProps {
@@ -27,6 +28,9 @@ const getCatColor = (cat: string): string => {
   return colors[cat] || '#00E5FF';
 };
 
+const teamOptions: MetralySelectOption[] = ['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'].map((t) => ({ value: t, label: t }));
+const timeRangeOptions = ['7d', '14d', '30d', '90d'].map((t) => ({ value: t, label: t }));
+
 export const WizardSettings: React.FC<WizardSettingsProps> = ({
   name,
   desc,
@@ -51,99 +55,56 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
         <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Dashboard settings</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Name it, configure defaults.</div>
       </div>
-      
+
       <div>
         <label htmlFor="dashboard-settings-name" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Dashboard name *</label>
-        <input
+        <MetralyInput
           id="dashboard-settings-name"
           name="dashboard-name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
           autoComplete="off"
           placeholder="e.g. Backend Team Overview…"
-          style={{
-            width: '100%',
-            background: 'var(--glass)',
-            border: '1px solid var(--border)',
-            borderRadius: 9,
-            padding: '9px 12px',
-            color: 'var(--text)',
-            fontSize: 13.5,
-          }}
+          fullWidth
         />
       </div>
-      
+
       <div>
         <label htmlFor="dashboard-settings-description" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Description</label>
-        <input
+        <MetralyInput
           id="dashboard-settings-description"
           name="dashboard-description"
           value={desc}
           onChange={(e) => onDescChange(e.target.value)}
           autoComplete="off"
           placeholder="Optional - visible to teammates…"
-          style={{
-            width: '100%',
-            background: 'var(--glass)',
-            border: '1px solid var(--border)',
-            borderRadius: 9,
-            padding: '9px 12px',
-            color: 'var(--text)',
-            fontSize: 13.5,
-          }}
+          fullWidth
         />
       </div>
 
       {showDefaultFilters && (
         <div>
           <div style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Default time range</div>
-          <div style={{ display: 'flex', gap: 6 }} role="group" aria-label="Default time range">
-            {['7d', '14d', '30d', '90d'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={timeRange === t}
-                onClick={() => onTimeRangeChange(t)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 7,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  border: timeRange === t ? '1px solid rgba(0,229,255,0.4)' : '1px solid var(--border)',
-                  background: timeRange === t ? 'rgba(0,229,255,0.1)' : 'transparent',
-                  color: timeRange === t ? 'var(--cyan)' : 'var(--muted2)',
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          <MetralySegmentedControl
+            options={timeRangeOptions}
+            value={timeRange}
+            onChange={onTimeRangeChange}
+            size="sm"
+            ariaLabel="Default time range"
+          />
         </div>
       )}
 
       {showDefaultFilters && (
         <div>
           <label htmlFor="dashboard-settings-team" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Team scope</label>
-          <select
+          <MetralySelect
             id="dashboard-settings-team"
             name="dashboard-team"
             value={team}
-            onChange={(e) => onTeamChange(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'var(--glass)',
-              border: '1px solid var(--border)',
-              borderRadius: 9,
-              padding: '9px 12px',
-              color: 'var(--text)',
-              fontSize: 13.5,
-              cursor: 'pointer',
-            }}
-          >
-            {['All teams', 'Platform', 'Backend', 'Frontend', 'Mobile', 'Data'].map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
+            options={teamOptions}
+            onChange={onTeamChange}
+          />
         </div>
       )}
 
@@ -161,7 +122,7 @@ export const WizardSettings: React.FC<WizardSettingsProps> = ({
               const isEmpty = widget.id === 'empty';
               const size = widgetSizes[widget.instanceId] || 'half';
               const c = getCatColor(widget.cat);
-              
+
               return (
                 <div key={widget.instanceId} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,

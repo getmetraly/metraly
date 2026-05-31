@@ -3,9 +3,13 @@ import {
   ReviewPanel,
   StickyWizardFooter,
   WizardLayout,
+  MetralyButton,
+  MetralyInput,
+  MetralySelect,
+  MetralyCheckbox,
+  Icon,
 } from '../../design-system';
-import type { ReviewPanelItem, WizardLayoutStep } from '../../design-system';
-import { Icon } from '../../design-system';
+import type { ReviewPanelItem, WizardLayoutStep, MetralySelectOption } from '../../design-system';
 
 interface Source {
   id: string;
@@ -39,13 +43,6 @@ interface WizardScreenProps {
   onFinish?: () => void;
 }
 
-const buttonBase: React.CSSProperties = {
-  borderRadius: 8,
-  border: '1px solid var(--m-line, var(--border))',
-  padding: '8px 12px',
-  cursor: 'pointer',
-  fontSize: 'var(--m-fs-12, 12px)',
-};
 
 export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish }) => {
   const [stage, setStage] = useState<Stage>('sources');
@@ -153,19 +150,15 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
                 <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0, var(--text))' }}>{source.name}</div>
                 <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>{source.desc}</div>
               </div>
-              <button
+              <MetralyButton
                 type="button"
-                disabled={connected[source.id]}
+                variant={connected[source.id] ? 'neutral' : 'primary'}
+                size="sm"
+                disabled={!!connected[source.id]}
                 onClick={() => setConnected((prev) => ({ ...prev, [source.id]: true }))}
-                style={{
-                  ...buttonBase,
-                  border: connected[source.id] ? '1px solid var(--m-line, var(--border))' : 'none',
-                  background: connected[source.id] ? 'var(--m-bg-1, var(--glass))' : 'var(--m-cyan-500, var(--cyan))',
-                  color: connected[source.id] ? 'var(--m-fg-2, var(--muted))' : 'var(--m-bg-0, #fff)',
-                }}
               >
                 {connected[source.id] ? 'Connected' : 'Connect'}
-              </button>
+              </MetralyButton>
             </div>
           ))}
           <div style={{ borderRadius: 10, border: '1px solid var(--m-line, var(--border))', background: 'var(--m-bg-2, rgba(0,0,0,0.2))', padding: '10px 12px' }}>
@@ -185,35 +178,32 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
         <div style={{ display: 'grid', gap: 14 }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Sync interval</span>
-            <select value={syncInterval} onChange={(event) => setSyncInterval(event.target.value)} style={{ borderRadius: 8, border: '1px solid var(--m-line, var(--border))', background: 'var(--m-bg-2, var(--glass2))', color: 'var(--m-fg-0, var(--text))', padding: '8px 10px' }}>
-              <option>Every 5 minutes</option>
-              <option>Every 15 minutes</option>
-              <option>Every hour</option>
-            </select>
-          </label>
-
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Repositories</span>
-            <input
-              value={repos}
-              onChange={(event) => setRepos(event.target.value)}
-              style={{ borderRadius: 8, border: '1px solid var(--m-line, var(--border))', background: 'var(--m-bg-2, var(--glass2))', color: 'var(--m-fg-0, var(--text))', padding: '8px 10px' }}
+            <MetralySelect
+              value={syncInterval}
+              options={['Every 5 minutes', 'Every 15 minutes', 'Every hour'].map((v): MetralySelectOption => ({ value: v, label: v }))}
+              onChange={setSyncInterval}
             />
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Historical backfill</span>
-            <select value={backfill} onChange={(event) => setBackfill(event.target.value)} style={{ borderRadius: 8, border: '1px solid var(--m-line, var(--border))', background: 'var(--m-bg-2, var(--glass2))', color: 'var(--m-fg-0, var(--text))', padding: '8px 10px' }}>
-              <option>30 days</option>
-              <option>90 days</option>
-              <option>1 year</option>
-            </select>
+            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Repositories</span>
+            <MetralyInput value={repos} onChange={e => setRepos(e.target.value)} fullWidth />
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--m-fs-11, 11px)', color: 'var(--m-fg-1, var(--muted2))' }}>
-            <input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />
-            Include archived repositories
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 'var(--m-fs-11, 11px)', fontWeight: 600, color: 'var(--m-fg-1, var(--muted2))' }}>Historical backfill</span>
+            <MetralySelect
+              value={backfill}
+              options={['30 days', '90 days', '1 year'].map((v): MetralySelectOption => ({ value: v, label: v }))}
+              onChange={setBackfill}
+            />
           </label>
+
+          <MetralyCheckbox
+            checked={includeArchived}
+            label="Include archived repositories"
+            onChange={e => setIncludeArchived(e.target.checked)}
+          />
         </div>
       );
     }
@@ -246,9 +236,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
               <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>Switch back to Sandbox Inc. demo data at any point.</div>
             </div>
           </div>
-          <button type="button" onClick={onUseDemo} style={{ ...buttonBase, background: 'var(--m-bg-1, var(--glass))', color: 'var(--m-purple, var(--purple))' }}>
-            Show demo
-          </button>
+          <MetralyButton type="button" variant="ghost" size="sm" onClick={onUseDemo}>Show demo</MetralyButton>
         </div>
       ) : null}
 
@@ -260,8 +248,8 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
         contentWidth={760}
         footer={
           <StickyWizardFooter
-            back={<button type="button" disabled={stageIdx === 0} onClick={goBack} style={{ ...buttonBase, background: 'transparent', color: stageIdx === 0 ? 'var(--m-fg-3, var(--muted2))' : 'var(--m-fg-0, var(--text))' }}>Back</button>}
-            primary={<button type="button" disabled={!canGoNext} onClick={goNext} style={{ ...buttonBase, border: 'none', background: canGoNext ? 'var(--m-cyan-500, var(--cyan))' : 'var(--m-bg-2, rgba(255,255,255,0.1))', color: canGoNext ? 'var(--m-bg-0, #fff)' : 'var(--m-fg-3, var(--muted2))' }}>{stage === 'review' ? 'Go to Dashboard' : 'Continue'}</button>}
+            back={<MetralyButton type="button" variant="ghost" size="md" disabled={stageIdx === 0} onClick={goBack}>Back</MetralyButton>}
+            primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={goNext}>{stage === 'review' ? 'Go to Dashboard' : 'Continue'}</MetralyButton>}
             status={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--muted2))' }}>Step {stageIdx + 1} / {STAGES.length}</span>}
           />
         }

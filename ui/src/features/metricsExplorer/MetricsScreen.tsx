@@ -1,7 +1,6 @@
 // src/features/metricsExplorer/MetricsScreen.jsx
 import React, { useState } from 'react';
-import { Icon } from '../../design-system';
-import { MetralyAreaChart } from '../../design-system';
+import { Icon, MetralyAreaChart, MetralySegmentedControl, MetralyButton, CardShell, MetralyInput } from '../../design-system';
 import { makeTimeSeries } from '../../utils/seeds';
 import { FilterPill } from './components/FilterPill';
 import { TreeItem } from './components/TreeItem';
@@ -127,9 +126,10 @@ export const MetricsScreen = () => {
   const isDORA = ['deploy-freq', 'lead-time', 'cfr', 'mttr'].includes(selected);
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div className="metrics-screen" style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left sidebar: Metric tree */}
       <div
+        className="metrics-screen__sidebar"
         style={{
           width: 220,
           flexShrink: 0,
@@ -141,43 +141,10 @@ export const MetricsScreen = () => {
         }}
       >
         <div style={{ padding: '14px 10px 8px', borderBottom: '1px solid var(--border)' }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.07em',
-              color: 'var(--muted)',
-              textTransform: 'uppercase',
-              padding: '0 4px',
-              marginBottom: 8,
-            }}
-          >
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', color: 'var(--muted)', textTransform: 'uppercase', padding: '0 4px', marginBottom: 8 }}>
             Metrics
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'var(--m-bg-2)',
-              border: '1px solid var(--border)',
-              borderRadius: 7,
-              padding: '6px 10px',
-            }}
-          >
-            <Icon name="search" size={12} color="var(--muted)" />
-            <input
-              placeholder="Filter…"
-              style={{
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: 'var(--text)',
-                fontSize: 12.5,
-                width: '100%',
-              }}
-            />
-          </div>
+          <MetralyInput search placeholder="Filter…" fullWidth style={{ fontSize: 12.5 }} />
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 4px' }}>
           {METRIC_TREE.map((group) => (
@@ -207,79 +174,16 @@ export const MetricsScreen = () => {
             background: 'var(--m-bg-1)',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: 2,
-              background: 'var(--glass)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: 2,
-            }}
-          >
-            {TIME_RANGES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTimeRange(t)}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: timeRange === t ? 'color-mix(in srgb, var(--cyan) 15%, transparent)' : 'transparent',
-                  color: timeRange === t ? 'var(--cyan)' : 'var(--muted2)',
-                  fontSize: 12,
-                  fontWeight: timeRange === t ? 600 : 400,
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          <MetralySegmentedControl options={TIME_RANGES.map(t => ({ value: t, label: t }))} value={timeRange} onChange={setTimeRange} size="sm" ariaLabel="Time range" />
 
           <FilterPill label="Team" options={TEAMS} value={team} onChange={setTeam} />
           <FilterPill label="Repo" options={REPOS} value={repo} onChange={setRepo} />
 
-          <button
-            onClick={() => setCompareMode((c) => !c)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '5px 11px',
-              borderRadius: 7,
-              background: compareMode ? 'color-mix(in srgb, var(--purple) 12%, transparent)' : 'var(--glass)',
-              border: compareMode ? '1px solid color-mix(in srgb, var(--purple) 30%, transparent)' : '1px solid var(--border)',
-              color: compareMode ? 'var(--purple)' : 'var(--muted2)',
-              fontSize: 12.5,
-              cursor: 'pointer',
-            }}
-          >
-            <Icon name="layers" size={13} /> Compare {compareMode ? 'ON' : 'OFF'}
-          </button>
+          <MetralyButton size="sm" variant={compareMode ? 'secondary' : 'ghost'} onClick={() => setCompareMode(c => !c)} iconLeft={<Icon name="layers" size={13} />}>Compare {compareMode ? 'ON' : 'OFF'}</MetralyButton>
 
           <div style={{ flex: 1 }} />
           <ExportBar metricId={selected} timeRange={timeRange} team={team} repo={repo} values={slicedData} />
-    <button
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 5,
-      padding: '5px 10px',
-      borderRadius: 7,
-      background: 'var(--glass)',
-      border: '1px solid var(--border)',
-      color: 'var(--muted2)',
-      fontFamily: 'var(--font-body)',
-      fontSize: 12.5,
-      cursor: 'pointer',
-      transition: 'all 0.15s',
-    }}
-    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-    onMouseLeave={e => e.currentTarget.style.background = 'var(--glass)'}
-  >
-            <Icon name="activity" size={13} /> Auto ▾
-          </button>
+          <MetralyButton size="sm" variant="ghost" iconLeft={<Icon name="activity" size={13} />}>Auto ▾</MetralyButton>
         </div>
 
         {/* Scrolling content */}
@@ -300,16 +204,7 @@ export const MetricsScreen = () => {
   )}
 
           {/* Chart card */}
-          <div
-            className="fade-up"
-            style={{
-              background: 'var(--glass)',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: '18px 20px',
-              marginBottom: 16,
-            }}
-          >
+          <CardShell className="fade-up" style={{ padding: '18px 20px', marginBottom: 16 }}>
             <div
               style={{
                 display: 'flex',
@@ -451,19 +346,10 @@ export const MetricsScreen = () => {
               ariaLabel={`${currentMetric?.label} trend`}
               summary={`Range ${timeRange}`}
             />
-          </div>
+          </CardShell>
 
           {/* Breakdown table */}
-          <div
-            className="fade-up-1"
-            style={{
-              background: 'var(--glass)',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: '18px 20px',
-              marginBottom: 16,
-            }}
-          >
+          <CardShell className="fade-up-1" style={{ padding: '18px 20px', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>Breakdown</span>
                 <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
@@ -515,18 +401,10 @@ export const MetricsScreen = () => {
                     color={currentMetric?.color || '#00E5FF'}
                 />
                 )}
-          </div>
+          </CardShell>
 
           {/* Custom formula */}
-          <div
-            className="fade-up-2"
-            style={{
-              background: 'var(--glass)',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: '16px 20px',
-            }}
-          >
+          <CardShell className="fade-up-2" style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <span
                 style={{
@@ -575,7 +453,7 @@ export const MetricsScreen = () => {
                 4.07 adjusted deploys/day
               </span>
             </div>
-          </div>
+          </CardShell>
         </div>
       </div>
     </div>

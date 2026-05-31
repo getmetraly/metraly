@@ -93,3 +93,25 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
 }
+
+/* ─── Metrics Explorer responsive layout ────────────────────────────────────
+   On narrow viewports the left sidebar collapses into a compact header strip.
+   At ≤640px the layout stacks (sidebar on top, content below).
+────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .metrics-screen {
+    flex-direction: column;
+    overflow: auto;
+  }
+  .metrics-screen__sidebar {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 180px;
+    border-right: none !important;
+    border-bottom: 1px solid var(--m-line);
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}

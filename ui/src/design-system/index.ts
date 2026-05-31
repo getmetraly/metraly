@@ -8,7 +8,7 @@ export { AppSidebar as Sidebar } from '../layout/AppSidebar';
 export { AppTopbar as Topbar } from '../layout/AppTopbar';
 export { Icon } from '../components/shared/Icon';
 export { Leaderboard, AIInsightCard, InlineInsight } from '@metraly/ui';
-export { MetralyButton, MetralyInput } from './adapters/controls';
+export { MetralyButton, MetralyInput, MetralySelect, MetralyCheckbox, MetralySwitch } from './adapters/controls';
 export { MetralyGauge, MetralyHeatmap } from './adapters/charts';
 export { DraggableDashboardRenderer } from '../components/dashboard/DraggableDashboardRenderer';
 export { widgetRegistry } from '../components/dashboard/widgetRegistry';
@@ -35,6 +35,7 @@ export {
   DashboardResizeHandle,
   DashboardEmptyState,
   WidgetPickerCard,
+  WidgetPickerList,
   MetralyMetricCard,
   TrendBadge,
   MetralyChartCard,
@@ -45,6 +46,9 @@ export {
   MetralyFilterBar,
   MetralyTabs,
   MetralySegmentedControl,
+  MetralyNavigationTree,
+  StepRail,
+  ActivityFeed,
   WizardLayout,
   ReviewPanel,
   StickyWizardFooter,
@@ -71,4 +75,13 @@ export type {
   EvidenceCitation,
   Plugin,
   PluginPermission,
+  MetralySelectOption,
+  StepRailStep,
+  StepRailStepStatus,
+  ActivityFeedProps,
+  ActivityFeedState,
+  ActivityKind,
+  MetralyNavigationTreeItem,
+  MetralyNavigationTreeProps,
+  WidgetPickerListProps,
 } from '@metraly/ui';

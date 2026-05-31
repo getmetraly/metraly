@@ -11,6 +11,8 @@ import {
   MetralyBarChart,
   MetralyGauge,
   MetralyHeatmap,
+  CardShell,
+  AIInsightCard,
 } from '../../design-system';
 import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
 import { Icon } from '../shared/Icon';
@@ -245,9 +247,9 @@ const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any 
   const height = 60 + items.length * 30; // Dynamic height: title + items
 
   return (
-    <div style={{...widgetStyle, height, padding: 16, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12}}>
+    <CardShell style={{...widgetStyle, height}} density="compact">
       <Leaderboard items={items} color="#00E5FF" unit={unit} title={title} />
-    </div>
+    </CardShell>
   );
 };
 
@@ -271,7 +273,7 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
     // Render custom rows with time and extra info
     const rows = data.rows.slice(0, cfg.maxRows || 5);
     return (
-      <div style={{...widgetStyle, padding: 16, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'auto'}}>
+      <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact">
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, color: 'var(--text)' }}>{titleMap[cfg.tableType] || cfg.tableType}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rows.map((r: any, i: number) => (
@@ -295,7 +297,7 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
             </div>
           ))}
         </div>
-      </div>
+      </CardShell>
     );
   }
 
@@ -307,7 +309,7 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
   ]);
 
   return (
-    <div style={{...widgetStyle, padding: 16, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'auto'}}>
+    <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact">
       <MetralyTable<{ title: string; status: string }>
         columns={[
           { key: 'title', header: 'Title' },
@@ -319,7 +321,7 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
         ariaLabel={titleMap[cfg.tableType] || cfg.tableType}
         maxHeight={cfg.maxRows ? `${Math.max(220, cfg.maxRows * 44)}px` : undefined}
       />
-    </div>
+    </CardShell>
   );
 };
 
@@ -402,7 +404,7 @@ const SprintBurndownWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
   const maxVal = Math.max(...ideal, ...actual, 1);
 
   return (
-    <div style={{...widgetStyle, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: 16}}>
+    <CardShell style={widgetStyle} density="compact">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Sprint Burndown</div>
         <div style={{ display: 'flex', gap: 12, fontSize: 10 }}>
@@ -437,64 +439,20 @@ const SprintBurndownWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
           {actual[actual.length - 1] <= ideal[ideal.length - 1] ? 'On Track' : 'Behind'}
         </span>
       </div>
-    </div>
+    </CardShell>
   );
 };
 
-const AIInsightWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
-  const [seen, setSeen] = React.useState(false);
-  const [hovered, setHovered] = React.useState(false);
-
+const AIInsightWidget = ({ config: _config, data }: { config: WidgetConfig; data?: any }) => {
   if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
-
-  const cfg = config as any;
-
-  const containerStyle = {
-    ...(cfg.containerStyle || {}),
-    transition: 'all 0.22s ease',
-    boxShadow: hovered ? '0 8px 32px rgba(0,0,0,0.35)' : 'none',
-    cursor: 'pointer',
-    width: '100%', height: '100%', boxSizing: 'border-box' as const,
-  };
-
-  if (seen) {
-    (containerStyle as React.CSSProperties).background = hovered ? 'var(--glass2)' : 'var(--glass)';
-  } else if (cfg.unseenStyle) {
-    Object.assign(containerStyle, cfg.unseenStyle);
-  }
-
   return (
-    <div
-      className="fade-up-1"
-      style={containerStyle}
-      onMouseEnter={() => { setHovered(true); if (!seen) setSeen(true); }}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{ position: 'relative', flexShrink: 0, marginTop: 2 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, rgba(0,229,255,0.15), rgba(180,76,255,0.15))', border: '1px solid rgba(180,76,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="sparkles" size={13} color="var(--purple)"/></div>
-          <div style={{
-            position: 'absolute', top: -2, right: -2,
-            width: 8, height: 8, borderRadius: '50%',
-            background: 'var(--cyan)',
-            border: '1.5px solid var(--bg)',
-            animation: 'pulse-dot 2s ease infinite',
-          }}/>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-head)', color: 'var(--text)' }}>{data.title || 'AI Insight'}</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', background: 'rgba(180,76,255,0.15)', color: 'var(--purple)', border: '1px solid rgba(180,76,255,0.25)', borderRadius: 4, padding: '1px 6px' }}>AI</span>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--muted2)', lineHeight: 1.55, margin: 0 }}>{data.body || data.text || 'No insight available'}</p>
-          {cfg.variant !== 'inline' && data.action && (
-            <button type="button" style={{ marginTop: 12, padding: '6px 14px', borderRadius: 8, background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--cyan)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {data.action} <Icon name="arrowRight" size={12} color="var(--cyan)"/>
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    <AIInsightCard
+      style={widgetStyle}
+      title={data.title || 'AI Insight'}
+      body={data.body || data.text || 'No insight available'}
+      action={data.action}
+      onAction={() => {}}
+    />
   );
 };
 
@@ -502,7 +460,7 @@ const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) =
   if (!data) return <div style={widgetStyle}><div style={{padding: 20}}>Loading...</div></div>;
 
   return (
-    <div style={{...widgetStyle, background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, padding: 16}}>
+    <CardShell style={widgetStyle} density="compact">
       <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Anomaly Detector</div>
       {data.anomalies?.length > 0 ? (
         <div style={{ color: 'var(--error)', fontSize: 12 }}>
@@ -511,7 +469,7 @@ const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) =
       ) : (
         <div style={{ color: 'var(--success)', fontSize: 12 }}>No anomalies</div>
       )}
-    </div>
+    </CardShell>
   );
 };
 
@@ -569,7 +527,7 @@ const RecentActivityWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
   }
   const activities = data.activities || [];
   return (
-    <div style={{ width: '100%', height: '100%', boxSizing: 'border-box', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px', overflow: 'auto' }}>
+    <CardShell style={{ width: '100%', height: '100%', overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--font-head)', fontWeight: 600, fontSize: 13.5, color: 'var(--text)' }}>Recent Activity</span>
         <button type="button" style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer' }}>View all →</button>
@@ -586,7 +544,7 @@ const RecentActivityWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
           <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{ev.relativeTime}</span>
         </div>
       ))}
-    </div>
+    </CardShell>
   );
 };
 

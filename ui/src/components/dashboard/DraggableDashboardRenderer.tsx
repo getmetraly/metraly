@@ -9,6 +9,7 @@ import type { Dashboard } from "../../types/dashboard";
 import { widgetRegistry } from "./widgetRegistry";
 import type { MetricTimeSeries } from "../../types/metrics";
 import { Icon } from "../shared/Icon";
+import { CardShell, MetralyButton } from "../../design-system";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -63,9 +64,9 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
 
         if (!WidgetComponent) {
           return (
-            <div key={scopedInstanceId} style={{ background: "var(--glass)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
+            <CardShell key={scopedInstanceId} style={{ padding: 16 }}>
               Unknown widget type: {widget.widgetType}
-            </div>
+            </CardShell>
           );
         }
 
@@ -84,38 +85,23 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
           >
             {isEditable && (
               <div style={{ position: "absolute", top: 8, right: 8, zIndex: 100, display: "flex", gap: 4, alignItems: "center" }}>
-                <button
+                <MetralyButton
                   type="button"
-                  aria-label={isFull ? "Make widget flexible width" : "Make widget full width"}
+                  size="sm"
+                  variant={isFull ? 'secondary' : 'ghost'}
+                  aria-label={isFull ? 'Make widget flexible width' : 'Make widget full width'}
                   onClick={() => onToggleSize?.(widget.instanceId)}
-                  style={{
-                    padding: "3px 8px",
-                    borderRadius: 5,
-                    fontSize: 11,
-                    cursor: "pointer",
-                    border: isFull ? "1px solid color-mix(in srgb, var(--cyan) 30%, transparent)" : "1px solid var(--border)",
-                    background: isFull ? "color-mix(in srgb, var(--cyan) 8%, transparent)" : "transparent",
-                    color: isFull ? "var(--cyan)" : "var(--muted)",
-                  }}
                 >
-                  {isFull ? "Full" : "Flex"}
-                </button>
-                <button
+                  {isFull ? 'Full' : 'Flex'}
+                </MetralyButton>
+                <MetralyButton
                   type="button"
+                  size="sm"
+                  variant="ghost"
                   aria-label="Remove widget"
                   onClick={() => onRemoveWidget?.(widget.instanceId)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted)",
-                    padding: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <Icon name="x" size={13} />
-                </button>
+                  iconLeft={<Icon name="x" size={13} />}
+                />
               </div>
             )}
             <WidgetComponent config={widget.config} data={widgetData[scopedInstanceId]} />

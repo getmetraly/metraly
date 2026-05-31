@@ -1,75 +1,22 @@
 // src/features/dashboardWizard/DashboardWizardScreen.tsx
 import React from "react";
-import { Icon } from "../../design-system";
+import {
+  Icon,
+  StepRail,
+  MetralyButton,
+  MetralyInput,
+  MetralySelect,
+  WidgetPickerCard,
+  WidgetPickerList,
+  MetralySegmentedControl,
+} from "../../design-system";
+import type { StepRailStep, MetralySelectOption } from "../../design-system";
 import { createDashboard } from "../../api/client";
 import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
 import { WizardPreviewGrid } from "./components/WizardPreviewGrid";
 
 const CATS = ["All", "DORA", "CI/CD", "PR", "Sprint", "Team", "AI"];
-
-const StepDot: React.FC<{
-  n: number;
-  label: string;
-  active: boolean;
-  done: boolean;
-}> = ({ n, label, active, done }) => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 5,
-      minWidth: 60,
-    }}
-  >
-    <div
-      style={{
-        width: 28,
-        height: 28,
-        borderRadius: "50%",
-        background: done
-          ? "var(--cyan)"
-          : active
-            ? "color-mix(in srgb, var(--cyan) 15%, transparent)"
-            : "transparent",
-        border: done
-          ? "2px solid var(--cyan)"
-          : active
-            ? "2px solid var(--cyan)"
-            : "2px solid var(--border)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: active ? "0 0 12px color-mix(in srgb, var(--cyan) 30%, transparent)" : "none",
-      }}
-    >
-      {done ? (
-        <Icon name="check" size={13} color="#0B0F19" />
-      ) : (
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            fontFamily: "var(--font-mono)",
-            color: active ? "var(--cyan)" : "var(--muted)",
-          }}
-        >
-          {n}
-        </span>
-      )}
-    </div>
-    <span
-      style={{
-        fontSize: 10.5,
-        color: active ? "var(--text)" : "var(--muted)",
-        fontWeight: active ? 600 : 400,
-      }}
-    >
-      {label}
-    </span>
-  </div>
-);
 
 interface WizardProps {
   onSave?: (data: unknown) => void;
@@ -126,18 +73,6 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
     name.trim().length > 0,
   ][step];
 
-  const getCatColor = (cat: string): string => {
-    const colors: Record<string, string> = {
-      DORA: "#00E5FF",
-      "CI/CD": "#00C853",
-      PR: "#B44CFF",
-      Sprint: "#FF9100",
-      Team: "#00E5FF",
-      AI: "#B44CFF",
-    };
-    return colors[cat] || "#00E5FF";
-  };
-
   const handleSave = async () => {
     if (isSaving) {
       return;
@@ -155,6 +90,21 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
       setIsSaving(false);
     }
   };
+
+  const railSteps: StepRailStep[] = steps.map((s, i) => ({
+    id: String(i),
+    label: s,
+    status: step === i ? "current" : step > i ? "done" : "next",
+  }));
+
+  const teamOptions: MetralySelectOption[] = [
+    "All teams",
+    "Platform",
+    "Backend",
+    "Frontend",
+    "Mobile",
+    "Data",
+  ].map((t) => ({ value: t, label: t }));
 
   return (
     <div
@@ -177,29 +127,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
-            {steps.map((s, i) => (
-              <React.Fragment key={i}>
-                <StepDot
-                  n={i + 1}
-                  label={s}
-                  active={step === i}
-                  done={step > i}
-                />
-                {i < steps.length - 1 && (
-                  <div
-                    style={{
-                      flex: 1,
-                      height: 2,
-                      background: step > i ? "var(--cyan)" : "var(--border)",
-                      marginTop: 13,
-                      transition: "background 0.3s",
-                    }}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+          <StepRail steps={railSteps} ariaLabel="Dashboard wizard steps" />
         </div>
 
         <div style={{ flex: 1, overflow: "auto", padding: "18px 20px" }}>
@@ -224,87 +152,21 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               >
                 Choose a pre-built layout for your role, or start blank.
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <WidgetPickerList style={{ flexDirection: "column", gap: 8 }}>
                 {TEMPLATES.map((tmpl) => {
                   const isSelected = selectedTemplate === tmpl.id;
                   return (
-                    <button
+                    <WidgetPickerCard
                       key={tmpl.id}
-                      type="button"
-                      onClick={() => setTemplate(tmpl.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "12px 14px",
-                        borderRadius: 10,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        width: "100%",
-                        border: isSelected
-                          ? `1px solid ${tmpl.color}55`
-                          : "1px solid var(--border)",
-                        background: isSelected
-                          ? `${tmpl.color}0a`
-                          : "transparent",
-                        boxShadow: isSelected
-                          ? `0 0 12px ${tmpl.color}12`
-                          : "none",
-                        transition: "all 0.15s",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected)
-                          e.currentTarget.style.borderColor = "var(--border2)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected)
-                          e.currentTarget.style.borderColor = "var(--border)";
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 9,
-                          background: `${tmpl.color}18`,
-                          border: `1px solid ${tmpl.color}25`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Icon name={tmpl.icon} size={16} color={tmpl.color} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: 13.5,
-                            fontWeight: 600,
-                            color: "var(--text)",
-                            fontFamily: "var(--font-head)",
-                            marginBottom: 2,
-                          }}
-                        >
-                          {tmpl.label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11.5,
-                            color: "var(--muted)",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {tmpl.desc}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <Icon name="check" size={16} color={tmpl.color} />
-                      )}
-                    </button>
+                      title={tmpl.label}
+                      description={tmpl.desc}
+                      selected={isSelected}
+                      iconLabel={tmpl.icon}
+                      onSelect={() => setTemplate(tmpl.id)}
+                    />
                   );
                 })}
-              </div>
+              </WidgetPickerList>
             </div>
           )}
 
@@ -329,104 +191,30 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
               >
                 Add or remove widgets. Selected: {widgets.length}
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  marginBottom: 14,
-                }}
-              >
-                {CATS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={widgetCat === c}
-                    onClick={() => setWidgetCat(c)}
-                    style={{
-                      padding: "4px 11px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      cursor: "pointer",
-                      border:
-                        widgetCat === c
-                          ? "1px solid color-mix(in srgb, var(--cyan) 40%, transparent)"
-                          : "1px solid var(--border)",
-                      background:
-                        widgetCat === c ? "color-mix(in srgb, var(--cyan) 10%, transparent)" : "transparent",
-                      color: widgetCat === c ? "var(--cyan)" : "var(--muted2)",
-                    }}
-                  >
-                    {c}
-                  </button>
-                ))}
+              <div style={{ marginBottom: 14 }}>
+                <MetralySegmentedControl
+                  options={CATS.map((c) => ({ value: c, label: c }))}
+                  value={widgetCat}
+                  onChange={setWidgetCat}
+                  size="sm"
+                  ariaLabel="Widget category"
+                />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <WidgetPickerList ariaLabel="Widget catalog" style={{ flexDirection: "column", gap: 6 }}>
                 {filteredWidgets.map((w) => {
                   const sel = widgets.some((x) => x.id === w.id);
-                  const c = getCatColor(w.cat);
                   return (
-                    <button
+                    <WidgetPickerCard
                       key={w.id}
-                      type="button"
-                      aria-pressed={sel}
-                      onClick={() => toggleWidget(w.id)}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 12px",
-                        borderRadius: 9,
-                        cursor: "pointer",
-                        border: sel
-                          ? `1px solid ${c}40`
-                          : "1px solid var(--border)",
-                        background: sel ? `${c}0a` : "transparent",
-                        color: "var(--text)",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 7,
-                          background: `${c}18`,
-                          border: `1px solid ${c}22`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Icon name={w.icon} size={13} color={c} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 500 }}>
-                          {w.label}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                          {w.desc}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: "50%",
-                          border: sel ? "none" : "1.5px solid var(--border)",
-                          background: sel ? c : "transparent",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {sel && <Icon name="check" size={10} color="#0B0F19" />}
-                      </div>
-                    </button>
+                      title={w.label}
+                      description={w.desc}
+                      selected={sel}
+                      iconLabel={w.icon}
+                      onSelect={() => toggleWidget(w.id)}
+                    />
                   );
                 })}
-              </div>
+              </WidgetPickerList>
             </div>
           )}
 
@@ -463,22 +251,14 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 >
                   Dashboard name *
                 </label>
-                <input
+                <MetralyInput
                   id="dashboard-wizard-name"
                   name="dashboard-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="off"
                   placeholder="e.g. Backend Team Overview"
-                  style={{
-                    width: "100%",
-                    background: "var(--glass)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 9,
-                    padding: "9px 12px",
-                    color: "var(--text)",
-                    fontSize: 13.5,
-                  }}
+                  fullWidth
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
@@ -493,22 +273,14 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 >
                   Description
                 </label>
-                <input
+                <MetralyInput
                   id="dashboard-wizard-description"
                   name="dashboard-description"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   autoComplete="off"
                   placeholder="Optional - visible to teammates"
-                  style={{
-                    width: "100%",
-                    background: "var(--glass)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 9,
-                    padding: "9px 12px",
-                    color: "var(--text)",
-                    fontSize: 13.5,
-                  }}
+                  fullWidth
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
@@ -522,34 +294,13 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 >
                   Default time range
                 </div>
-                <div style={{ display: "flex", gap: 6 }} role="group" aria-label="Default time range">
-                  {["7d", "14d", "30d", "90d"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      aria-pressed={timeRange === t}
-                      onClick={() => setTimeRange(t)}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: 7,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        border:
-                          timeRange === t
-                            ? "1px solid color-mix(in srgb, var(--cyan) 40%, transparent)"
-                            : "1px solid var(--border)",
-                        background:
-                          timeRange === t
-                            ? "color-mix(in srgb, var(--cyan) 10%, transparent)"
-                            : "transparent",
-                        color:
-                          timeRange === t ? "var(--cyan)" : "var(--muted2)",
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+                <MetralySegmentedControl
+                  options={["7d", "14d", "30d", "90d"].map((t) => ({ value: t, label: t }))}
+                  value={timeRange}
+                  onChange={setTimeRange}
+                  size="sm"
+                  ariaLabel="Default time range"
+                />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label
@@ -563,33 +314,13 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 >
                   Team scope
                 </label>
-                <select
+                <MetralySelect
                   id="dashboard-wizard-team"
                   name="dashboard-team"
                   value={team}
-                  onChange={(e) => setTeam(e.target.value)}
-                  style={{
-                    width: "100%",
-                    background: "var(--glass)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 9,
-                    padding: "9px 12px",
-                    color: "var(--text)",
-                    fontSize: 13.5,
-                    cursor: "pointer",
-                  }}
-                >
-                  {[
-                    "All teams",
-                    "Platform",
-                    "Backend",
-                    "Frontend",
-                    "Mobile",
-                    "Data",
-                  ].map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
+                  options={teamOptions}
+                  onChange={setTeam}
+                />
               </div>
               <div>
                 <label
@@ -748,21 +479,13 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
             flexShrink: 0,
           }}
         >
-          <button
+          <MetralyButton
             type="button"
+            variant="ghost"
             onClick={() => (step === 0 ? onCancel?.() : setStep(step - 1))}
-            style={{
-              padding: "8px 18px",
-              borderRadius: 9,
-              cursor: "pointer",
-              background: "transparent",
-              border: "1px solid var(--border)",
-              color: "var(--muted2)",
-              fontSize: 13,
-            }}
           >
             {step === 0 ? "Cancel" : "Back"}
-          </button>
+          </MetralyButton>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {saveError && (
               <div
@@ -773,8 +496,9 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 {saveError}
               </div>
             )}
-            <button
+            <MetralyButton
               type="button"
+              variant="primary"
               onClick={() => {
                 if (step === steps.length - 1) {
                   void handleSave();
@@ -783,20 +507,10 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                 setStep(step + 1);
               }}
               disabled={!canContinue || isSaving}
-              style={{
-                padding: "8px 22px",
-                borderRadius: 9,
-                cursor: canContinue && !isSaving ? "pointer" : "not-allowed",
-                background: step === steps.length - 1 ? "var(--success)" : "var(--grad)",
-                border: "none",
-                color: "#fff",
-                fontSize: 13.5,
-                fontWeight: 600,
-                opacity: canContinue && !isSaving ? 1 : 0.4,
-              }}
+              loading={isSaving}
             >
-              {step === steps.length - 1 ? (isSaving ? "Saving…" : "Save Dashboard") : "Continue"}
-            </button>
+              {step === steps.length - 1 ? "Save Dashboard" : "Continue"}
+            </MetralyButton>
           </div>
         </div>
       </div>

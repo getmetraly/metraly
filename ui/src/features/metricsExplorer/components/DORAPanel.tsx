@@ -1,7 +1,6 @@
 // src/features/metricsExplorer/components/DORAPanel.tsx
 import React from 'react';
-import { StateBadge } from '../../../design-system';
-import { Icon } from '../../../design-system';
+import { StateBadge, Icon, CardShell } from '../../../design-system';
 
 interface DORACard {
   id: string;
@@ -35,13 +34,16 @@ export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
     { id: 'mttr',        label: 'MTTR',                  value: '18 min', delta: '−6 min',good: true, level: 'Elite', color: '#00C853', icon: 'activity', note: 'Less than 1 hour = Elite' },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))', gap: 12, marginBottom: 20 }}>
       {cards.map((c, i) => (
-        <div key={c.id} className={`fade-up-${i+1}`} onClick={() => onSelect?.(c.id)} style={{
-          background: selected?.includes(c.id) ? 'var(--glass2)' : 'var(--glass)',
-          border: selected?.includes(c.id) ? `1px solid ${c.color}55` : '1px solid var(--border)',
-          borderRadius: 12, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.18s ease',
-        }}>
+        <CardShell
+          key={c.id}
+          className={`fade-up-${i+1}`}
+          tone={selected?.includes(c.id) ? 'cyan' : 'neutral'}
+          state={selected?.includes(c.id) ? 'selected' : 'default'}
+          onClick={() => onSelect?.(c.id)}
+          style={{ cursor: 'pointer', padding: '14px 16px' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <Icon name={c.icon} size={14} color={c.color} />
             <StateBadge state={DORA_LEVEL_STATE_MAP[c.level] ?? 'info'} label={c.level} />
@@ -52,7 +54,7 @@ export const DORAPanel: React.FC<DORAPanelProps> = ({ onSelect, selected }) => {
             <span style={{ fontSize: 11, color: c.good ? '#00C853' : '#FF1744', fontFamily: 'var(--font-mono)' }}>{c.delta}</span>
             <span style={{ fontSize: 10, color: 'var(--muted)', opacity: 0.7 }}>{c.note}</span>
           </div>
-        </div>
+        </CardShell>
       ))}
     </div>
   );
