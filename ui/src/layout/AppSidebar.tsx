@@ -4,6 +4,7 @@ import {
   MetralySidebarSection,
   MetralySidebarItem,
   StateBadge,
+  MetralyLogo,
 } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
 import { useTweaks } from "../context/TweaksContext";
@@ -82,21 +83,8 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
   const unpinnedDashboardItems = DASHBOARD_ITEMS.filter((it) => !pinned.includes(it.id));
 
   const header = (
-    <div style={{ padding: collapsed ? "16px 0" : "20px 18px 16px", textAlign: collapsed ? "center" : "left" }}>
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: collapsed ? 0 : 10,
-          padding: collapsed ? "8px 0" : "8px 10px",
-          borderRadius: 10,
-          border: "1px solid var(--border)",
-          background: "var(--glass)",
-        }}
-      >
-        <Icon name="zap" size={17} color="var(--cyan)" />
-        {!collapsed && <span style={{ fontFamily: "var(--font-head)", fontWeight: 600, fontSize: 14 }}>Metraly</span>}
-      </div>
+    <div style={{ padding: collapsed ? "14px 12px" : "18px 16px 14px", display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start" }}>
+      <MetralyLogo variant={collapsed ? "mark" : "horizontal"} />
     </div>
   );
 
