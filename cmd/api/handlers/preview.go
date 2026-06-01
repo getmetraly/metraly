@@ -715,3 +715,98 @@ func (h *PreviewHandler) readyDashboard() bool {
 }
 
 var _ = errors.Is
+
+// ── Heatmap widget data ────────────────────────────────────────────────────
+
+// heatmapCell is a single cell in a team-activity heatmap.
+type heatmapCell struct {
+	X      string `json:"x"`
+	Y      string `json:"y"`
+	Value  int    `json:"value"`
+	Status string `json:"status,omitempty"`
+}
+
+// heatmapWidgetData is the data shape for widgetType=heatmap.
+// Matches the HeatmapWidgetData interface expected by the UI.
+type heatmapWidgetData struct {
+	Title   string        `json:"title,omitempty"`
+	XLabels []string      `json:"xLabels"`
+	YLabels []string      `json:"yLabels"`
+	Cells   []heatmapCell `json:"cells"`
+	Summary string        `json:"summary,omitempty"`
+}
+
+// buildHeatmapData produces a deterministic HeatmapWidgetData payload from a
+// widget config. Output is stable across calls for the same config — it uses a
+// Park-Miller LCG seeded at 42, matching makeHeatmapWidgetData on the frontend.
+func buildHeatmapData(config json.RawMessage) heatmapWidgetData {
+	var cfg struct {
+		RowGroupBy string `json:"rowGroupBy"`
+		Columns    int    `json:"columns"`
+	}
+	_ = json.Unmarshal(config, &cfg)
+
+	cols := cfg.Columns
+	switch {
+	case cols == 0:
+		cols = 16
+	case cols < 4:
+		cols = 4
+	case cols > 24:
+		cols = 24
+	}
+
+	var yLabels []string
+	var title string
+	switch cfg.RowGroupBy {
+	case "weekday":
+		yLabels = []string{"Mon", "Tue", "Wed", "Thu", "Fri"}
+		title = "Activity by Weekday"
+	default: // "team" or unset
+		yLabels = []string{"Atlas", "Beacon", "Comet", "Delta", "Echo"}
+		title = "Team Activity"
+	}
+
+	xLabels := make([]string, cols)
+	for i := range cols {
+		xLabels[i] = fmt.Sprintf("W%d", i+1)
+	}
+
+	// Park-Miller LCG, seed 42 — same constants as seed.PRNG.
+	state := int64(42)
+	nextInt := func(n int) int {
+		state = (state * 16807) % 2147483647
+		return int(float64(state-1) / 2147483646.0 * float64(n))
+	}
+
+	cells := make([]heatmapCell, 0, len(yLabels)*cols)
+	for _, y := range yLabels {
+		for _, x := range xLabels {
+			v := nextInt(6)
+			cells = append(cells, heatmapCell{X: x, Y: y, Value: v, Status: heatmapCellStatus(v)})
+		}
+	}
+
+	return heatmapWidgetData{
+		Title:   title,
+		XLabels: xLabels,
+		YLabels: yLabels,
+		Cells:   cells,
+		Summary: fmt.Sprintf("Team activity across %d weeks", cols),
+	}
+}
+
+// heatmapCellStatus derives a status string from a cell value.
+// Thresholds match the frontend makeHeatmapWidgetData helper.
+func heatmapCellStatus(v int) string {
+	switch {
+	case v >= 4:
+		return "ok"
+	case v >= 2:
+		return "warning"
+	case v >= 1:
+		return "neutral"
+	default:
+		return "error"
+	}
+}

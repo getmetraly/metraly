@@ -42,10 +42,8 @@ func newWidgetProcessorRegistry(h *PreviewHandler) *widgetProcessorRegistry {
 	r.register("dora-overview", func(ctx context.Context, _ string, _ json.RawMessage, _ *domain.Dashboard) (any, error) {
 		return h.buildDORA(ctx, "30d", "All teams", "All repos")
 	})
-	r.register("heatmap", func(context.Context, string, json.RawMessage, *domain.Dashboard) (any, error) {
-		return map[string]any{
-			"matrix": [][]int{{2, 3, 1, 4}, {1, 4, 3, 2}, {3, 2, 4, 1}},
-		}, nil
+	r.register("heatmap", func(_ context.Context, _ string, config json.RawMessage, _ *domain.Dashboard) (any, error) {
+		return buildHeatmapData(config), nil
 	})
 	r.register("sprint-burndown", func(ctx context.Context, _ string, _ json.RawMessage, _ *domain.Dashboard) (any, error) {
 		return h.sprintBurndownData(ctx)

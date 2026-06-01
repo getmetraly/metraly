@@ -15,8 +15,9 @@ const heatmapConfig: WidgetConfig = {
 describe('HeatmapWidget', () => {
   it('shows LoadingWidget when data is undefined', () => {
     render(<HeatmapWidget config={heatmapConfig} data={undefined} />);
-    // LoadingWidget renders a StateBlock with aria-busy and the title as aria-label
-    expect(screen.getByRole('region', { name: /activity heatmap loading/i })).toBeInTheDocument();
+    // LoadingWidget renders a MetralyStateBlock with aria-busy="true" and a skeleton (role="status")
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('shows EmptyWidget when data has no cells', () => {
