@@ -1,3 +1,4 @@
+import { WIDGET_DESCRIPTORS } from "./widgetDescriptors";
 import type { DashboardEditorWidgetSize } from "./model";
 
 export interface DashboardTemplateDefinition {
@@ -29,24 +30,14 @@ export const TEMPLATES: DashboardTemplateDefinition[] = [
   { id: "blank", label: "Blank Canvas", icon: "plus", color: "var(--m-fg-2)", desc: "Start from scratch and add widgets one by one" },
 ];
 
-export const WIDGET_LIBRARY: DashboardWidgetDefinition[] = [
-  { cat: "DORA", id: "dora-overview", icon: "zap", label: "DORA Overview", desc: "4 key metrics at a glance" },
-  { cat: "DORA", id: "deploy-freq", icon: "zap", label: "Deploy Frequency", desc: "Chart + current value" },
-  { cat: "DORA", id: "lead-time", icon: "clock", label: "Lead Time", desc: "Time from commit -> production" },
-  { cat: "DORA", id: "mttr-trend", icon: "activity", label: "MTTR Trend", desc: "Mean time to restore incidents" },
-  { cat: "CI/CD", id: "ci-pass-rate", icon: "activity", label: "CI Pass Rate", desc: "Build success trend" },
-  { cat: "CI/CD", id: "failing-builds", icon: "xCircle", label: "Failing Builds", desc: "Recent failures list" },
-  { cat: "PR", id: "pr-queue", icon: "gitPR", label: "PR Review Queue", desc: "Open PRs awaiting review" },
-  { cat: "PR", id: "pr-cycle", icon: "gitPR", label: "PR Cycle Time", desc: "Time to merge by author/team" },
-  { cat: "Sprint", id: "burndown", icon: "chart", label: "Sprint Burndown", desc: "Points remaining vs ideal" },
-  { cat: "Sprint", id: "velocity", icon: "trendingUp", label: "Sprint Velocity", desc: "Historical velocity trend" },
-  { cat: "Sprint", id: "blocked-tasks", icon: "alertTri", label: "Blocked Tasks", desc: "Items blocked this sprint" },
-  { cat: "Team", id: "empty", icon: "square", label: "Empty Space", desc: "Transparent spacer for layout flexibility", defaultSize: { w: 3, h: 2 } },
-  { cat: "Team", id: "team-heatmap", icon: "layers", label: "Team Activity Map", desc: "Commit heatmap per team" },
-  { cat: "Team", id: "leaderboard", icon: "star", label: "Leaderboard", desc: "Top contributors ranking" },
-  { cat: "AI", id: "ai-summary", icon: "sparkles", label: "AI Summary", desc: "Auto-generated insights" },
-  { cat: "AI", id: "anomaly", icon: "brain", label: "Anomaly Detector", desc: "ML-flagged metric changes" },
-];
+export const WIDGET_LIBRARY: DashboardWidgetDefinition[] = WIDGET_DESCRIPTORS.map((d) => ({
+  cat: d.cat,
+  id: d.libraryId,
+  icon: d.icon,
+  label: d.label,
+  desc: d.desc,
+  defaultSize: d.defaultSize,
+}));
 
 export const TEMPLATE_WIDGETS: Record<string, string[]> = {
   cto: ["dora-overview", "deploy-freq", "velocity", "ai-summary"],

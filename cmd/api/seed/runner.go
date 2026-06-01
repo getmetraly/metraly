@@ -101,8 +101,15 @@ func (r *Runner) seedAdmin(ctx context.Context, email, password string) error {
 }
 
 func (r *Runner) seedDashboards(ctx context.Context) error {
+	// Clean up old system-template dashboards from schema versions prior to user-created Demo.
 	if err := r.dashboards.DeleteSystemTemplateDashboards(ctx); err != nil {
 		return fmt.Errorf("delete old system dashboards: %w", err)
+	}
+	// Create Demo only if it does not exist — respects deletion by the user.
+	// A deleted Demo will be recreated on next startup (tombstone deferred to Phase 3).
+	existing, err := r.dashboards.GetByID(ctx, sandboxAllWidgets.ID)
+	if err == nil && existing != nil {
+		return nil // already exists; do not overwrite user edits
 	}
 	return r.dashboards.Create(ctx, sandboxAllWidgets)
 }
@@ -296,7 +303,7 @@ var sandboxAllWidgets = &domain.Dashboard{
 	Icon:             "sparkles",
 	OwnerID:          "admin-seed",
 	IsPublic:         true,
-	SourceType:       domain.DashboardSourceSystemTemplate,
+	SourceType:       domain.DashboardSourceUserCreated,
 	SourceTemplateID: stringPtr("all-widgets"),
 	Widgets: []domain.WidgetInstance{
 		{InstanceID: "all-section-exec", WidgetType: "section-header", Config: mustJSON(map[string]any{"type": "section-header", "title": "Executive Overview"})},

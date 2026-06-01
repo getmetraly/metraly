@@ -94,6 +94,11 @@ func (m *mockDashboardCache) Set(ctx context.Context, d *domain.Dashboard) error
 	return args.Error(0)
 }
 
+func (m *mockDashboardCache) Delete(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func TestDashboardSvc_GetByID_CacheHit(t *testing.T) {
 	ctx := context.Background()
 	dashboardRepo := new(mockDashboardRepo)

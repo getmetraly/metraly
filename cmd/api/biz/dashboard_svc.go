@@ -118,7 +118,7 @@ func (s *DashboardSvc) UpdateShare(ctx context.Context, id string, isPublic bool
 	return s.repo.UpdateShare(ctx, id, isPublic, shareToken)
 }
 
-// DeleteForUser deletes a dashboard owned by userID. System-template dashboards are protected.
+// DeleteForUser deletes a dashboard owned by userID.
 func (s *DashboardSvc) DeleteForUser(ctx context.Context, id, userID string) error {
 	d, err := s.repo.GetByID(ctx, id)
 	if err != nil || d == nil {
@@ -127,8 +127,9 @@ func (s *DashboardSvc) DeleteForUser(ctx context.Context, id, userID string) err
 	if d.OwnerID != userID {
 		return ErrDashboardNotFound // prefer 404 over 403 for enumeration safety
 	}
-	if d.SourceType == domain.DashboardSourceSystemTemplate {
-		return ErrForbidden
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
 	}
-	return s.repo.Delete(ctx, id)
+	_ = s.cache.Delete(ctx, id)
+	return nil
 }

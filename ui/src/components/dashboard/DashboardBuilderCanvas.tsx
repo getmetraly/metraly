@@ -7,7 +7,7 @@ import { Responsive, WidthProvider, LayoutItem as RGLLayout } from "react-grid-l
 import "react-grid-layout/css/styles.css";
 import type { Dashboard } from "../../types/dashboard";
 import { widgetRegistry } from "./widgetRegistry";
-import type { MetricTimeSeries } from "../../types/metrics";
+// widgetData is Record<string, unknown> — individual widget components use their own type assertions
 import { DashboardWidget, DashboardDropZone, PulseMarker, MetralyButton } from "../../design-system";
 import { Icon } from "../shared/Icon";
 
@@ -35,40 +35,88 @@ const WIDGET_TITLE: Record<string, string> = {
 function sampleWidgetData(widgetType: string, _config?: unknown): unknown {
   switch (widgetType) {
     case "stat-card":
-      return { value: 42, trend: 0.12, sparkline: [30, 35, 38, 40, 42], unit: "" };
+      return { currentValue: '4.2/d', currentValueRaw: 4.2, delta: '+12%', level: 'good', timeSeries: [30, 35, 38, 40, 42] };
     case "metric-chart":
       return {
-        points: [
-          { t: "2026-01-01", v: 10 },
-          { t: "2026-02-01", v: 20 },
-          { t: "2026-03-01", v: 30 },
-        ],
-        metricId: "preview",
+        current: { values: [10, 20, 30, 25, 35], labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], unit: '' },
+        previous: { values: [8, 18, 25, 22, 30], labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], unit: '' },
+        summary: 'Preview metric chart',
+        metricId: 'preview',
+        label: 'Metric',
       };
     case "data-table":
-      return { rows: [{ col1: "sample", col2: "data" }], columns: ["col1", "col2"] };
+      return {
+        rows: [
+          { id: '1', title: 'PR #101: Fix auth flow', author: 'alice', status: 'Review', time: '2h' },
+          { id: '2', title: 'PR #102: Refactor pipeline', author: 'bob', status: 'Review', time: '4h' },
+        ],
+      };
     case "heatmap":
-      return null;
+      return {
+        title: 'Team Activity',
+        xLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        yLabels: ['Atlas', 'Beacon', 'Comet'],
+        cells: [[2, 5, 3, 7, 4], [1, 4, 6, 3, 5], [3, 2, 4, 5, 3]],
+        summary: 'Sample',
+      };
     case "dora-overview":
-      return { deployFreq: 4.2, leadTime: 2.1, cfr: 0.05, mttr: 0.8 };
+      return {
+        deployFrequency: { currentValue: '4.2/d', level: 'elite' },
+        leadTime: { currentValue: '2.1h', level: 'high' },
+        changeFailureRate: { currentValue: '3.1%', level: 'high' },
+        mttr: { currentValue: '28min', level: 'elite' },
+      };
     case "leaderboard":
-      return { entries: [{ name: "Preview", score: 100 }] };
+      return [
+        { team: 'Beacon', value: '42 pts', valueRaw: 42 },
+        { team: 'Delta', value: '35 pts', valueRaw: 35 },
+        { team: 'Atlas', value: '32 pts', valueRaw: 32 },
+      ];
     case "sprint-burndown":
-      return { ideal: [100, 80, 60, 40, 20, 0], actual: [100, 85, 70, 50, 35, 15] };
+      return {
+        ideal: { values: [100, 80, 60, 40, 20, 0] },
+        actual: { values: [100, 90, 72, 55, 38, 20] },
+      };
     case "ai-insight":
-      return { summary: "Preview mode — AI insights will load after save.", tags: [] };
+      return {
+        title: 'Preview Insight',
+        body: 'Sample data mode — save the dashboard to load real AI insights from your connected sources.',
+        action: 'Connect sources',
+      };
     case "anomaly-detector":
-      return { anomalies: [] };
+      return {
+        status: 'healthy',
+        summary: 'All signals within normal range (preview)',
+        signalsChecked: 5,
+        lastChecked: 'now',
+        window: '30d',
+        thresholds: [
+          { name: 'Deploy Frequency', value: '4.2/d', status: 'ok' },
+          { name: 'CI Pass Rate', value: '94%', status: 'ok' },
+        ],
+        anomalies: [],
+      };
     case "compare-bar-chart":
-      return { series: [{ label: "A", value: 30 }, { label: "B", value: 50 }] };
+      return {
+        labels: ['Atlas', 'Beacon', 'Comet', 'Delta', 'Echo'],
+        primary: { label: 'This sprint', values: [42, 58, 35, 28, 20] },
+        secondary: { label: 'Last sprint', values: [38, 52, 38, 30, 18] },
+        summary: 'Team velocity comparison',
+      };
     case "recent-activity":
-      return { events: [{ msg: "Preview event", ts: "2026-01-01" }] };
+      return {
+        activities: [
+          { id: '1', actor: 'Beacon CD', description: 'Deployment frequency improved', timestamp: '2h ago' },
+          { id: '2', actor: 'Atlas Bot', description: 'PR review queue exceeded threshold', timestamp: '6h ago' },
+          { id: '3', actor: 'Comet CI', description: 'Flaky test fixed in integration suite', timestamp: '10h ago' },
+        ],
+      };
+    case "health-gauge":
+      return { score: 82, label: 'Good', status: 'ok', summary: 'Preview health score' };
     case "section-header":
       return {};
-    case "health-gauge":
-      return { score: 85, label: "Good" };
     default:
-      return null;
+      return {};
   }
 }
 
@@ -78,7 +126,7 @@ interface DashboardBuilderCanvasProps {
   mode: CanvasMode;
   dashboard: Dashboard;
   /** Only used in view and edit modes; ignored in preview mode. */
-  widgetData?: Record<string, MetricTimeSeries>;
+  widgetData?: Record<string, unknown>;
   onLayoutChange?: (layout: readonly RGLLayout[]) => void;
   onRemoveWidget?: (instanceId: string) => void;
   onToggleSize?: (instanceId: string) => void;

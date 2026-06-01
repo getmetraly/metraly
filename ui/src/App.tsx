@@ -29,13 +29,20 @@ const titles: Record<string, [string, string]> = {
   settings: ['Settings', 'Platform configuration'],
 };
 
-function renderDashboardScreen(initialDashboard: string, setActive: (id: string) => void, firstRunMode: FirstRunMode) {
+function renderDashboardScreen(
+  initialDashboard: string,
+  setActive: (id: string) => void,
+  firstRunMode: FirstRunMode,
+  dashboards: { id: string }[],
+  onDeleted: () => void,
+) {
   return (
     <DashboardScreen
       initialDashboard={initialDashboard}
       demoMode={firstRunMode === FIRST_RUN_MODE.demo}
       onConfigureSources={() => setActive('wizard')}
       onNewDashboard={() => setActive('dash-wizard')}
+      onDeleted={onDeleted}
     />
   );
 }
@@ -89,7 +96,14 @@ function renderActiveScreen(
     );
   }
 
-  return renderDashboardScreen(active, setActive, firstRunMode);
+  return renderDashboardScreen(active, setActive, firstRunMode, dashboards, () => {
+    const remaining = dashboards.filter(d => d.id !== active);
+    if (remaining.length > 0) {
+      setActive(remaining[0].id);
+    } else {
+      setActive('dash-wizard');
+    }
+  });
 }
 
 const AppInner = () => {

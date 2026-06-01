@@ -3,7 +3,8 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon, DraggableDashboardRenderer, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
+import { Icon, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
+import { DashboardBuilderCanvas } from "../../components/dashboard/DashboardBuilderCanvas";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard, deleteDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
@@ -23,6 +24,7 @@ interface DashboardScreenProps {
   isEditMode?: boolean;
   demoMode?: boolean;
   onConfigureSources?: () => void;
+  onDeleted?: () => void;
 }
 
 function makeDraftDashboard(
@@ -50,6 +52,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   isEditMode: externalEditMode,
   demoMode = false,
   onConfigureSources,
+  onDeleted,
 }) => {
   const [dashboardId, setDashboardId] = useState(initialDashboard);
   const [internalEditMode, setInternalEditMode] = useState(false);
@@ -150,8 +153,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       await deleteDashboard(dashboard.id);
       refreshBootstrap();
       handleExitEditMode();
+      onDeleted?.();
     } catch (err) {
-      console.error("Failed to delete dashboard:", err);
+      const msg = err instanceof Error ? err.message : 'Failed to delete dashboard';
+      setSaveError(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -207,10 +212,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
     if (isEditMode) {
       return (
-        <DraggableDashboardRenderer
+        <DashboardBuilderCanvas
+          mode="edit"
           dashboard={draftDashboard}
           widgetData={widgetData}
-          isEditable={true}
           onLayoutChange={editor.updateLayout}
           onRemoveWidget={editor.removeWidget}
           onToggleSize={editor.toggleWidgetSize}
@@ -219,7 +224,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       );
     }
 
-    return <DraggableDashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
+    return <DashboardBuilderCanvas mode="view" dashboard={draftDashboard} widgetData={widgetData} />;
   };
 
 
@@ -302,7 +307,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               onToggleSize={editor.toggleWidgetSize}
               onMoveWidget={editor.moveWidget}
               showDefaultFilters={false}
-              showDelete={!!(dashboard?.sourceType !== "system-template")}
+              showDelete={true}
               name={editor.state.name}
               desc={editor.state.desc}
               timeRange={editor.state.timeRange}

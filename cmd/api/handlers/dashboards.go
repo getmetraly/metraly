@@ -277,7 +277,7 @@ func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Delete removes a dashboard owned by the caller. System-template dashboards cannot be deleted.
+// Delete removes a dashboard owned by the caller.
 func (h *DashboardHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")

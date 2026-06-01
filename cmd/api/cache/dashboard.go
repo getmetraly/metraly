@@ -16,6 +16,7 @@ import (
 type DashboardCache interface {
 	Get(ctx context.Context, id string) (*domain.Dashboard, error)
 	Set(ctx context.Context, d *domain.Dashboard) error
+	Delete(ctx context.Context, id string) error
 }
 
 type redisDashboardCache struct {
@@ -55,10 +56,18 @@ func (c *redisDashboardCache) Set(ctx context.Context, d *domain.Dashboard) erro
 	return c.rdb.Set(ctx, c.key(d.ID), b, c.ttl).Err()
 }
 
+func (c *redisDashboardCache) Delete(ctx context.Context, id string) error {
+	return c.rdb.Del(ctx, c.key(id)).Err()
+}
+
 func (noopDashboardCache) Get(ctx context.Context, id string) (*domain.Dashboard, error) {
 	return nil, ErrCacheMiss
 }
 
 func (noopDashboardCache) Set(ctx context.Context, d *domain.Dashboard) error {
+	return nil
+}
+
+func (noopDashboardCache) Delete(_ context.Context, _ string) error {
 	return nil
 }
