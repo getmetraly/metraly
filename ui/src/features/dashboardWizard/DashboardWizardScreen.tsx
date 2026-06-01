@@ -14,14 +14,15 @@ import type { StepRailStep, MetralySelectOption } from "../../design-system";
 import { createDashboard } from "../../api/client";
 import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
-import { WizardPreviewGrid } from "./components/WizardPreviewGrid";
+import { DashboardBuilderCanvas } from '../../components/dashboard/DashboardBuilderCanvas';
+import type { Dashboard } from '../../types/dashboard';
 import { DASHBOARD_ICON_OPTIONS, sanitizeDashboardIcon } from "./dashboardIcons";
-import { useDashboards } from "../../hooks/useDashboards";
+import { useAppBootstrap } from '../../hooks/AppBootstrapContext';
 
 const CATS = ["All", "DORA", "CI/CD", "PR", "Sprint", "Team", "AI"];
 
 interface WizardProps {
-  onSave?: (data: unknown) => void;
+  onSave?: (saved: Dashboard) => void;
   onCancel?: () => void;
 }
 
@@ -43,13 +44,15 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
   const setTeam = useWizardStore((s) => s.setTeam);
   const icon = useWizardStore((s) => s.icon);
   const setIcon = useWizardStore((s) => s.setIcon);
-  const { iconOptions } = useDashboards();
+  const { iconOptions } = useAppBootstrap();
   const widgets = useWizardStore((s) => s.widgets);
   const addWidget = useWizardStore((s) => s.addWidget);
   const removeWidget = useWizardStore((s) => s.removeWidget);
   const toggleWidgetSize = useWizardStore((s) => s.toggleWidgetSize);
   const moveWidget = useWizardStore((s) => s.moveWidget);
   const widgetSizes = useWizardStore((s) => s.widgetSizes);
+  const layout = useWizardStore((s) => s.layout);
+  const updateLayout = useWizardStore((s) => s.updateLayout);
   const reset = useWizardStore((s) => s.reset);
 
   const [widgetCat, setWidgetCat] = React.useState<string>("All");
@@ -110,6 +113,25 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
     "Mobile",
     "Data",
   ].map((t) => ({ value: t, label: t }));
+
+  const previewDashboard = React.useMemo((): Dashboard => ({
+    id: '__preview__',
+    name: name || 'New Dashboard',
+    description: '',
+    sourceType: 'user-created',
+    visibility: 'private' as const,
+    defaultFilters: { timeRange: timeRange as '7d' | '14d' | '30d' | '90d', team, repo: 'All repos' },
+    widgets: widgets.map((w) => ({
+      instanceId: w.instanceId,
+      widgetType: (w.config.type as import('../../types/widgets').WidgetType),
+      config: w.config,
+    })),
+    layout,
+    version: 0,
+    createdBy: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }), [name, widgets, layout, timeRange, team]);
 
   return (
     <div className="wizard-layout">
@@ -507,7 +529,14 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
       </div>
 
       <div className="wizard-layout__preview">
-        <WizardPreviewGrid />
+        <DashboardBuilderCanvas
+          mode="preview"
+          dashboard={previewDashboard}
+          onLayoutChange={updateLayout}
+          onRemoveWidget={removeWidget}
+          onToggleSize={toggleWidgetSize}
+          widgetSizes={widgetSizes}
+        />
       </div>
     </div>
   );

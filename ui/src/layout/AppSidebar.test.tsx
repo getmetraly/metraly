@@ -2,15 +2,13 @@ import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { AppSidebar } from './AppSidebar';
 
-vi.mock('../hooks/useDashboards', () => ({
-  useDashboards: () => ({
+vi.mock('../hooks/AppBootstrapContext', () => ({
+  useAppBootstrap: () => ({
     dashboards: [
       { id: 'sandbox-all-widgets', name: 'Demo', icon: 'sparkles' },
     ],
     isLoading: false,
-    isRefreshing: false,
     error: null,
-    source: 'network',
     refresh: vi.fn(),
   }),
 }));

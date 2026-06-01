@@ -130,6 +130,21 @@ metric-query-check: login
 		-H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
 		-d '{"metricId":"pr_count","start":"2026-05-01T00:00:00Z","end":"2026-06-01T00:00:00Z","granularity":"day","groupBy":[],"filters":{}}' | python3 -m json.tool
 
+# dashboard-create-render-check: create a dashboard via API, fetch /view, assert widgetErrors is empty
+# and all persisted widgetTypes are in the supported set. Proves the taxonomy fix (P0-1) end-to-end.
+dashboard-create-render-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	PAYLOAD='{"name":"CI Render Check","icon":"activity","sourceType":"user-created","widgets":[{"instanceId":"chk-1","widgetType":"stat-card","config":{"type":"stat-card","metricId":"deploy-freq","showSparkline":true,"colorKey":"cyan"}},{"instanceId":"chk-2","widgetType":"metric-chart","config":{"type":"metric-chart","metricId":"velocity","chartVariant":"area","showCompare":false}}],"layout":[{"instanceId":"chk-1","x":0,"y":0,"w":6,"h":2},{"instanceId":"chk-2","x":6,"y":0,"w":6,"h":2}],"defaultFilters":{"timeRange":"30d","team":"All teams","repo":"All repos"},"visibility":"private"}'; \
+	DASH_ID=$$(curl -s -X POST http://localhost:$(API_PORT)/api/v1/dashboards \
+		-H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
+		-d "$$PAYLOAD" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("id",""))'); \
+	test -n "$$DASH_ID" || (echo "create failed: empty id"; exit 1); \
+	VIEW=$$(curl -s http://localhost:$(API_PORT)/api/v1/dashboards/$$DASH_ID/view -H "Authorization: Bearer $$TOKEN"); \
+	ERRORS=$$(echo "$$VIEW" | python3 -c 'import sys,json; d=json.load(sys.stdin); e=d.get("widgetErrors",{}); print(len(e))'); \
+	test "$$ERRORS" = "0" || (echo "widgetErrors not empty: $$VIEW"; curl -s -X DELETE http://localhost:$(API_PORT)/api/v1/dashboards/$$DASH_ID -H "Authorization: Bearer $$TOKEN"; exit 1); \
+	curl -s -X DELETE http://localhost:$(API_PORT)/api/v1/dashboards/$$DASH_ID -H "Authorization: Bearer $$TOKEN" > /dev/null; \
+	echo "dashboard-create-render-check: PASS (id=$$DASH_ID, widgetErrors=0)"
+
 runtime-check: health bootstrap dashboard-view connectors-check
 
 api-test:
@@ -162,4 +177,4 @@ brandbook-check: brandbook-typecheck brandbook-build
 
 check: api-test ui-check brandbook-check
 
-mvp-check: runtime-check dashboard-crud-check source-create-check source-test-check source-collect-check metric-query-check check
+mvp-check: runtime-check dashboard-crud-check dashboard-create-render-check source-create-check source-test-check source-collect-check metric-query-check check

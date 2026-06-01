@@ -23,6 +23,7 @@ type DashboardRepo interface {
 	UpdateShare(ctx context.Context, id string, isPublic bool, shareToken *string) error
 	ListTemplates(ctx context.Context) ([]*domain.DashboardTemplate, error)
 	DeleteSystemTemplateDashboards(ctx context.Context) error
+	Delete(ctx context.Context, id string) error
 }
 
 type pgDashboardRepo struct{ pool *pgxpool.Pool }
@@ -183,5 +184,10 @@ func (r *pgDashboardRepo) ListTemplates(ctx context.Context) ([]*domain.Dashboar
 }
 func (r *pgDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Context) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM dashboards WHERE source_type = 'system-template'`)
+	return err
+}
+
+func (r *pgDashboardRepo) Delete(ctx context.Context, id string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM dashboards WHERE id=$1`, id)
 	return err
 }

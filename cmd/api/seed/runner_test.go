@@ -79,6 +79,10 @@ func (r *recordingDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Cont
 	return nil
 }
 
+func (r *recordingDashboardRepo) Delete(ctx context.Context, id string) error {
+	return nil
+}
+
 type recordingPluginRepo struct {
 	created []*domain.Plugin
 }

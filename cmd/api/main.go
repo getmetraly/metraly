@@ -147,6 +147,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Post("/api/v1/dashboards", dashboardHandler.Create)
 			r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
 			r.Put("/api/v1/dashboards/{id}", dashboardHandler.Update)
+			r.Delete("/api/v1/dashboards/{id}", dashboardHandler.Delete)
 			r.Post("/api/v1/dashboards/{id}/fork", dashboardHandler.Fork)
 			r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
 			r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)

@@ -20,6 +20,24 @@ type widgetProcessorRegistry struct {
 	fallback   widgetProcessor
 }
 
+// SupportedWidgetTypes is the authoritative set of widget types this server can render.
+// Handlers use it to reject unknown types before persisting dashboards.
+var SupportedWidgetTypes = map[string]bool{
+	"stat-card":        true,
+	"metric-chart":     true,
+	"leaderboard":      true,
+	"data-table":       true,
+	"dora-overview":    true,
+	"heatmap":          true,
+	"sprint-burndown":  true,
+	"ai-insight":       true,
+	"anomaly-detector": true,
+	"compare-bar-chart": true,
+	"recent-activity":  true,
+	"section-header":   true,
+	"health-gauge":     true,
+}
+
 func newWidgetProcessorRegistry(h *PreviewHandler) *widgetProcessorRegistry {
 	r := &widgetProcessorRegistry{
 		processors: make(map[string]widgetProcessor),

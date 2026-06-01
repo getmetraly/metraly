@@ -7,7 +7,7 @@ import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
-import { useDashboards, getInitialDashboardId } from './hooks/useDashboards';
+import { AppBootstrapProvider, useAppBootstrap, getInitialDashboardIdFromCache } from './hooks/AppBootstrapContext';
 import { Icon } from './design-system';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
@@ -47,10 +47,11 @@ function renderActiveScreen(
   title: string,
   onUseDemo: () => void,
   dashboards: { id: string }[],
+  refreshBootstrap: () => void,
 ) {
   const renderers: Record<string, () => React.ReactNode> = {
     'dash-wizard': () => (
-      <DashboardWizardScreen onSave={() => setActive(getInitialDashboardId() ?? 'dash-wizard')} onCancel={() => setActive(getInitialDashboardId() ?? 'dash-wizard')} />
+      <DashboardWizardScreen onSave={(saved) => { refreshBootstrap(); setActive(saved?.id ?? getInitialDashboardIdFromCache() ?? 'dash-wizard'); }} onCancel={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')} />
     ),
     metrics: () => <MetricsScreen />,
     ai: () => <AIScreen />,
@@ -58,7 +59,7 @@ function renderActiveScreen(
     wizard: () => (
       <WizardScreen
         onUseDemo={onUseDemo}
-        onFinish={() => setActive(getInitialDashboardId() ?? 'dash-wizard')}
+        onFinish={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')}
       />
     ),
     settings: () => (
@@ -91,18 +92,18 @@ function renderActiveScreen(
   return renderDashboardScreen(active, setActive, firstRunMode);
 }
 
-const App = () => {
+const AppInner = () => {
   const [session, setSession] = useState(() => loadSession());
   const [firstRunMode, setFirstRunMode] = useLocalStorage<FirstRunMode>(
     'metraly.first-run-mode',
     FIRST_RUN_MODE.undecided,
   );
   const [active, setActive] = useState(() => {
-    const cached = getInitialDashboardId();
+    const cached = getInitialDashboardIdFromCache();
     if (cached && firstRunMode !== FIRST_RUN_MODE.undecided) return cached;
     return getInitialScreen(firstRunMode);
   });
-  const { dashboards, selectedDashboardId, isLoading: dashboardsLoading } = useDashboards();
+  const { dashboards, selectedDashboardId, isLoading: dashboardsLoading, refresh: refreshBootstrap } = useAppBootstrap();
   const selectedDashboard = dashboards.find(d => d.id === active);
   const [title, subtitle] = selectedDashboard
     ? [selectedDashboard.name, selectedDashboard.description ?? '']
@@ -151,7 +152,7 @@ const App = () => {
   const handleShowDemo = () => {
     setFirstRunMode(FIRST_RUN_MODE.demo);
     // Prefer loaded dashboard > cached id > 'first-run' (redirect effect will fix it)
-    setActive(selectedDashboardId ?? dashboards[0]?.id ?? getInitialDashboardId() ?? 'first-run');
+    setActive(selectedDashboardId ?? dashboards[0]?.id ?? getInitialDashboardIdFromCache() ?? 'first-run');
   };
 
   const handleSkipDemo = () => {
@@ -262,7 +263,7 @@ const App = () => {
         <Topbar title={title} subtitle={subtitle} onOpenMobileNav={() => setMobileNavOpen(true)} />
       </div>
       <main className="metraly-app-shell__main metraly-app-shell__main--flush">
-        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo, dashboards)}
+        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo, dashboards, refreshBootstrap)}
       </main>
 
       {mobileNavOpen && (
@@ -296,4 +297,10 @@ const App = () => {
   );
   return shell;
 };
+
+const App = () => (
+  <AppBootstrapProvider>
+    <AppInner />
+  </AppBootstrapProvider>
+);
 export default App;

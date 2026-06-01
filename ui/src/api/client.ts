@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, SystemTemplate, WidgetLayout } from '../types/dashboard';
-import type { CreateDashboardRequest, ForkDashboardRequest, ShareDashboardRequest, ShareDashboardResponse, UpdateDashboardRequest, UpdateLayoutRequest } from '../types/api';
+import type { CreateDashboardRequest, ForkDashboardRequest, ShareDashboardRequest, ShareDashboardResponse, UpdateDashboardRequest } from '../types/api';
 import { sanitizeDashboardIcon } from '../features/dashboardWizard/dashboardIcons';
 import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricBreakdownItem as UiMetricBreakdownItem, MetricTimeSeries } from '../types/metrics';
 import type { ActivityEvent, MeResponse } from '../types/user';
@@ -531,12 +531,8 @@ export async function updateDashboard(id: string, input: UpdateDashboardRequest)
   return toApiDashboardResponse(res.data);
 }
 
-export async function updateLayout(id: string, input: UpdateLayoutRequest): Promise<Dashboard> {
-  const res = await client.put<DashboardWriteResponse>(`/dashboards/${id}/layout`, {
-    ...input,
-    layout: mapLayoutToApi(input.layout),
-  });
-  return toApiDashboardResponse(res.data);
+export async function deleteDashboard(id: string): Promise<void> {
+  await client.delete(`/dashboards/${id}`);
 }
 
 export async function forkDashboard(id: string, input: ForkDashboardRequest): Promise<Dashboard> {

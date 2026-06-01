@@ -106,6 +106,11 @@ func (f *fakeDashboardRepoAuth) DeleteSystemTemplateDashboards(_ context.Context
 	return nil
 }
 
+func (f *fakeDashboardRepoAuth) Delete(_ context.Context, id string) error {
+	delete(f.dashboards, id)
+	return nil
+}
+
 // — helpers —
 
 func dashboardRouter(h *handlers.DashboardHandler) http.Handler {

@@ -72,6 +72,11 @@ func (m *mockDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Context) 
 	return args.Error(0)
 }
 
+func (m *mockDashboardRepo) Delete(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 type mockDashboardCache struct {
 	mock.Mock
 }

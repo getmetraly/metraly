@@ -16,6 +16,7 @@ import {
   TEMPLATE_WIDGETS,
   TEMPLATES,
   WIDGET_LIBRARY,
+  isFullWidthWidget,
 } from "../../dashboardEditor/catalog";
 import { DEFAULT_DASHBOARD_ICON } from "../dashboardIcons";
 
@@ -121,7 +122,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       i: widget.instanceId,
       x: 0,
       y: idx * 2,
-      w: widget.id === "dora-overview" || widget.id === "team-heatmap" || widget.id === "pr-queue" || widget.id === "failing-builds" || widget.id === "ai-summary" ? 12 : 6,
+      w: isFullWidthWidget(widget.id) ? 12 : 6,
       h: 2,
     }));
     set({
@@ -144,7 +145,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         i: widget.instanceId,
         x: existing?.x ?? 0,
         y: idx * 2,
-        w: existing?.w ?? (widget.id === "dora-overview" || widget.id === "team-heatmap" || widget.id === "pr-queue" || widget.id === "failing-builds" || widget.id === "ai-summary" ? 12 : 6),
+        w: existing?.w ?? (isFullWidthWidget(widget.id) ? 12 : 6),
         h: existing?.h ?? 2,
       };
     });

@@ -7,7 +7,7 @@ import {
   MetralyLogo,
 } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
-import { useDashboards } from "../hooks/useDashboards";
+import { useAppBootstrap } from "../hooks/AppBootstrapContext";
 import { sanitizeDashboardIcon } from "../features/dashboardWizard/dashboardIcons";
 
 interface AppSidebarProps {
@@ -46,7 +46,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
   const collapsed = false;
 
-  const { dashboards, isLoading: dashboardsLoading } = useDashboards();
+  const { dashboards, isLoading: dashboardsLoading } = useAppBootstrap();
   const dashboardNavItems: NavItem[] = dashboards.map((d) => ({
     id: d.id,
     label: d.name,

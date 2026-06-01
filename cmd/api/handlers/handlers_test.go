@@ -103,6 +103,10 @@ func (f *fakeDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Context) 
 	return nil
 }
 
+func (f *fakeDashboardRepo) Delete(ctx context.Context, id string) error {
+	return nil
+}
+
 func newTestDashboardHandler(repo *fakeDashboardRepo) *DashboardHandler {
 	return NewDashboardHandler(biz.NewDashboardSvc(repo, cache.NewNoopDashboardCache()))
 }

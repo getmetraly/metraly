@@ -5,15 +5,16 @@
 import React, { useEffect, useState } from "react";
 import { Icon, DraggableDashboardRenderer, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
-import { updateDashboard } from "../../api/client";
+import { updateDashboard, deleteDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
 import { WizardSidebar } from "../dashboardWizard/components/WizardSidebar";
 import {
-  createEditorStateFromDashboard,
+  type DashboardEditorState,
   toDashboardWidgetInstances,
 } from "../dashboardEditor/model";
 import { buildUpdateDashboardRequest } from "../dashboardEditor/payload";
-import { useWizardStore } from "../dashboardWizard/store/wizardStore";
+import { useDashboardEditor } from "../dashboardEditor/useDashboardEditor";
+import { useAppBootstrap } from "../../hooks/AppBootstrapContext";
 
 
 interface DashboardScreenProps {
@@ -26,20 +27,20 @@ interface DashboardScreenProps {
 
 function makeDraftDashboard(
   dashboard: Dashboard,
-  editor: ReturnType<typeof useWizardStore.getState>,
+  editorState: DashboardEditorState,
 ): Dashboard {
   return {
     ...dashboard,
-    name: editor.name,
-    description: editor.desc,
-    icon: editor.icon || dashboard.icon || "",
+    name: editorState.name,
+    description: editorState.desc,
+    icon: editorState.icon || dashboard.icon || "",
     defaultFilters: {
       ...dashboard.defaultFilters,
-      timeRange: editor.timeRange as Dashboard["defaultFilters"]["timeRange"],
-      team: editor.team as Dashboard["defaultFilters"]["team"],
+      timeRange: editorState.timeRange as Dashboard["defaultFilters"]["timeRange"],
+      team: editorState.team as Dashboard["defaultFilters"]["team"],
     },
-    widgets: toDashboardWidgetInstances(editor.widgets),
-    layout: editor.layout,
+    widgets: toDashboardWidgetInstances(editorState.widgets),
+    layout: editorState.layout,
   };
 }
 
@@ -55,6 +56,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [isWizardSidebarOpen, setWizardSidebarOpen] = useState(false);
   const [isSidebarPinned, setSidebarPinned] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     dashboard,
@@ -64,24 +66,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     refresh,
   } = useDashboard(dashboardId);
 
+  const { refresh: refreshBootstrap } = useAppBootstrap();
+
   const isEditMode = externalEditMode ?? internalEditMode;
 
-  const widgets = useWizardStore((s) => s.widgets);
-  const widgetSizes = useWizardStore((s) => s.widgetSizes);
-  const name = useWizardStore((s) => s.name);
-  const desc = useWizardStore((s) => s.desc);
-  const timeRange = useWizardStore((s) => s.timeRange);
-  const team = useWizardStore((s) => s.team);
-  const addWidget = useWizardStore((s) => s.addWidget);
-  const removeWidget = useWizardStore((s) => s.removeWidget);
-  const toggleWidgetSize = useWizardStore((s) => s.toggleWidgetSize);
-  const moveWidget = useWizardStore((s) => s.moveWidget);
-  const updateLayout = useWizardStore((s) => s.updateLayout);
-  const setName = useWizardStore((s) => s.setName);
-  const setDesc = useWizardStore((s) => s.setDesc);
-  const setTimeRange = useWizardStore((s) => s.setTimeRange);
-  const setTeam = useWizardStore((s) => s.setTeam);
-  const resetEditor = useWizardStore((s) => s.reset);
+  const editor = useDashboardEditor();
 
   useEffect(() => {
     setDashboardId(initialDashboard);
@@ -91,27 +80,21 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     if (!dashboard || !isEditMode) {
       return;
     }
-    useWizardStore.setState((current) => ({
-      ...current,
-      step: 0,
-      ...createEditorStateFromDashboard(dashboard),
-    }));
+    editor.initFromDashboard(dashboard);
     setWizardSidebarOpen(true);
-  }, [dashboard, isEditMode]);
+  }, [dashboard, isEditMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!dashboard) {
       return;
     }
     if (!isEditMode) {
-      resetEditor();
+      editor.reset();
     }
-  }, [dashboard, isEditMode, resetEditor]);
-
-  const selectedWidgets = widgets;
+  }, [dashboard, isEditMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draftDashboard = dashboard && isEditMode
-    ? makeDraftDashboard(dashboard, useWizardStore.getState())
+    ? makeDraftDashboard(dashboard, editor.state)
     : dashboard;
 
   const handleEnterEditMode = () => {
@@ -119,11 +102,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       return;
     }
     setSaveError("");
-    useWizardStore.setState((current) => ({
-      ...current,
-      step: 0,
-      ...createEditorStateFromDashboard(dashboard),
-    }));
+    editor.initFromDashboard(dashboard);
     setInternalEditMode(true);
     setWizardSidebarOpen(true);
     setSidebarPinned(true);
@@ -134,7 +113,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setInternalEditMode(false);
     setWizardSidebarOpen(false);
     setSidebarPinned(false);
-    resetEditor();
+    editor.reset();
   };
 
   const handleSaveLayout = async () => {
@@ -145,23 +124,46 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     try {
       await updateDashboard(
         dashboard.id,
-        buildUpdateDashboardRequest(useWizardStore.getState(), dashboard.version),
+        buildUpdateDashboardRequest(editor.state, dashboard.version),
       );
+      // Refresh bootstrap when name/icon changed (sidebar/title needs update)
+      const nameOrIconChanged = editor.state.name !== dashboard.name || editor.state.icon !== dashboard.icon;
+      if (nameOrIconChanged) { refreshBootstrap(); }
       await refresh();
       handleExitEditMode();
     } catch (error) {
-      console.error("Failed to save dashboard:", error);
-      setSaveError(error instanceof Error ? error.message : "Failed to save dashboard");
+      const msg = error instanceof Error ? error.message : "Failed to save dashboard";
+      // Version conflict UX (D9): show error with Reload latest action
+      if (msg.includes("VERSION_CONFLICT") || msg.includes("version is stale")) {
+        setSaveError("VERSION_CONFLICT");
+      } else {
+        setSaveError(msg);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!dashboard || isDeleting) { return; }
+    if (!window.confirm(`Delete "${dashboard.name}"? This cannot be undone.`)) { return; }
+    setIsDeleting(true);
+    try {
+      await deleteDashboard(dashboard.id);
+      refreshBootstrap();
+      handleExitEditMode();
+    } catch (err) {
+      console.error("Failed to delete dashboard:", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleToggleWidget = (id: string) => {
-    const selected = widgets.find((widget) => widget.instanceId === id);
+    const selected = editor.state.widgets.find((widget) => widget.instanceId === id);
     if (selected) {
-      removeWidget(selected.instanceId);
+      editor.removeWidget(selected.instanceId);
       return;
     }
-    addWidget(id);
+    editor.addWidget(id);
   };
 
   const renderDashboard = () => {
@@ -209,10 +211,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           dashboard={draftDashboard}
           widgetData={widgetData}
           isEditable={true}
-          onLayoutChange={updateLayout}
-          onRemoveWidget={removeWidget}
-          onToggleSize={toggleWidgetSize}
-          widgetSizes={widgetSizes}
+          onLayoutChange={editor.updateLayout}
+          onRemoveWidget={editor.removeWidget}
+          onToggleSize={editor.toggleWidgetSize}
+          widgetSizes={editor.state.widgetSizes}
         />
       );
     }
@@ -294,46 +296,37 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               isPinned={isSidebarPinned}
               onClose={() => setWizardSidebarOpen(false)}
               onTogglePin={() => setSidebarPinned(!isSidebarPinned)}
-              selectedWidgets={selectedWidgets}
-              widgetSizes={widgetSizes}
+              selectedWidgets={editor.state.widgets}
+              widgetSizes={editor.state.widgetSizes}
               onToggleWidget={handleToggleWidget}
-              onToggleSize={toggleWidgetSize}
-              onMoveWidget={moveWidget}
+              onToggleSize={editor.toggleWidgetSize}
+              onMoveWidget={editor.moveWidget}
               showDefaultFilters={false}
-              showDelete={false}
-              name={name}
-              desc={desc}
-              timeRange={timeRange}
-              team={team}
-              onNameChange={setName}
-              onDescChange={setDesc}
-              onTimeRangeChange={setTimeRange}
-              onTeamChange={setTeam}
-              onDelete={() => {
-                handleExitEditMode();
-              }}
+              showDelete={!!(dashboard?.sourceType !== "system-template")}
+              name={editor.state.name}
+              desc={editor.state.desc}
+              timeRange={editor.state.timeRange}
+              team={editor.state.team}
+              onNameChange={editor.setName}
+              onDescChange={editor.setDesc}
+              onTimeRangeChange={editor.setTimeRange}
+              onTeamChange={editor.setTeam}
+              onDelete={handleDelete}
             />
           </div>
         )}
         {saveError && (
-          <div
-            role="status"
-            aria-live="polite"
-            style={{
-              position: "fixed",
-              right: 24,
-              bottom: 24,
-              zIndex: 1100,
-              maxWidth: 360,
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "1px solid color-mix(in srgb, var(--m-err) 30%, transparent)",
-              background: "color-mix(in srgb, var(--m-err) 12%, transparent)",
-              color: "var(--m-err)",
-              fontSize: 13,
-            }}
-          >
-            {saveError}
+          <div role="status" aria-live="polite" style={{ position: "fixed", right: 24, bottom: 24, zIndex: 1100, maxWidth: 400, padding: "10px 12px", borderRadius: 8, border: "1px solid color-mix(in srgb, var(--m-err) 30%, transparent)", background: "color-mix(in srgb, var(--m-err) 12%, transparent)", color: "var(--m-err)", fontSize: 13, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ flex: 1 }}>
+              {saveError === "VERSION_CONFLICT"
+                ? "This dashboard was updated elsewhere. Reload to see the latest version."
+                : saveError}
+            </span>
+            {saveError === "VERSION_CONFLICT" && (
+              <MetralyButton type="button" variant="secondary" size="sm" onClick={() => { setSaveError(""); refresh(); }}>
+                Reload latest
+              </MetralyButton>
+            )}
           </div>
         )}
       </div>

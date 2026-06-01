@@ -26,6 +26,16 @@ func NewDashboardHandler(svc *biz.DashboardSvc) *DashboardHandler {
 	return &DashboardHandler{svc: svc}
 }
 
+// validateWidgetTypes returns an error message if any widget in the list has an unsupported type.
+func validateWidgetTypes(widgets []domain.WidgetInstance) string {
+	for _, w := range widgets {
+		if !SupportedWidgetTypes[w.WidgetType] {
+			return "unsupported widget type: " + w.WidgetType
+		}
+	}
+	return ""
+}
+
 func (h *DashboardHandler) List(w http.ResponseWriter, r *http.Request) {
 	if h == nil || h.svc == nil {
 		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
@@ -61,6 +71,11 @@ func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input domain.CreateDashboardInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respond.Error(w, http.StatusBadRequest, "INVALID_JSON", err.Error())
+		return
+	}
+
+	if msg := validateWidgetTypes(input.Widgets); msg != "" {
+		respond.Error(w, http.StatusBadRequest, "INVALID_WIDGET_TYPE", msg)
 		return
 	}
 
@@ -128,6 +143,11 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var input domain.UpdateDashboardInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respond.Error(w, http.StatusBadRequest, "INVALID_JSON", err.Error())
+		return
+	}
+
+	if msg := validateWidgetTypes(input.Widgets); msg != "" {
+		respond.Error(w, http.StatusBadRequest, "INVALID_WIDGET_TYPE", msg)
 		return
 	}
 
@@ -255,6 +275,33 @@ func (h *DashboardHandler) UpdateShare(w http.ResponseWriter, r *http.Request) {
 		"shareToken":  shareToken,
 		"dashboardId": chi.URLParam(r, "id"),
 	})
+}
+
+// Delete removes a dashboard owned by the caller. System-template dashboards cannot be deleted.
+func (h *DashboardHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	if h == nil || h.svc == nil {
+		respond.Error(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "dashboard service unavailable")
+		return
+	}
+	userID, ok := currentUserID(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if err := h.svc.DeleteForUser(r.Context(), id, userID); err != nil {
+		if errors.Is(err, biz.ErrDashboardNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(err, biz.ErrForbidden) {
+			respond.Error(w, http.StatusForbidden, "FORBIDDEN", "cannot delete this dashboard")
+			return
+		}
+		respond.Error(w, http.StatusInternalServerError, "DASHBOARD_DELETE_FAILED", "failed to delete dashboard")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // Fork creates a copy of a dashboard. Allowed for owner or public dashboards (P0-3).

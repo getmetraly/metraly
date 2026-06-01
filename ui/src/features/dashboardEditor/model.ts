@@ -4,6 +4,7 @@ import type { Dashboard, DashboardWidgetInstance } from "../../types/dashboard";
 import { TEMPLATE_WIDGETS, TEMPLATES, WIDGET_LIBRARY, getDefaultWidgetSize, getWidgetColor, isFullWidthWidget } from "./catalog";
 import { createDefaultWidgetConfig } from "./widgetConfig";
 import type { WidgetConfig } from "../../types/widgets";
+import { DESCRIPTOR_BY_LIBRARY_ID, libraryIdFromWidget } from "./widgetDescriptors";
 import { DEFAULT_DASHBOARD_ICON, sanitizeDashboardIcon } from "../dashboardWizard/dashboardIcons";
 
 export type DashboardEditorWidgetSize = "full" | "half";
@@ -212,15 +213,18 @@ export function createEditorStateFromTemplate(templateId: string): DashboardEdit
 
 export function createEditorStateFromDashboard(dashboard: Dashboard): DashboardEditorState {
   const widgets = dashboard.widgets.map((widget) => {
-    const definition = WIDGET_LIBRARY.find((item) => item.id === widget.widgetType);
+    // Reconstruct the editor library ID from the persisted runtime type + config fields.
+    const config = widget.config as unknown as Record<string, unknown>;
+    const libraryId = libraryIdFromWidget(widget.widgetType, config);
+    const descriptor = DESCRIPTOR_BY_LIBRARY_ID.get(libraryId);
     return {
-      id: widget.widgetType,
+      id: libraryId,
       instanceId: widget.instanceId,
-      type: widget.widgetType,
-      label: definition?.label || widget.widgetType,
-      icon: definition?.icon || "box",
-      color: getWidgetColor(definition?.cat || ""),
-      cat: definition?.cat || "Team",
+      type: libraryId,
+      label: descriptor?.label ?? widget.widgetType,
+      icon: descriptor?.icon ?? "box",
+      color: getWidgetColor(descriptor?.cat ?? ""),
+      cat: descriptor?.cat ?? "Team",
       config: widget.config,
     };
   });
@@ -241,7 +245,9 @@ export function createEditorStateFromDashboard(dashboard: Dashboard): DashboardE
 export function toDashboardWidgetInstances(widgets: DashboardEditorWidget[]): DashboardWidgetInstance[] {
   return widgets.map((widget) => ({
     instanceId: widget.instanceId,
-    widgetType: widget.type as DashboardWidgetInstance["widgetType"],
+    // Persist runtime type from config, NOT the catalog library ID stored in widget.type.
+    // This is the fix for P0-1: editor state uses library IDs; backend/renderer use runtime types.
+    widgetType: (widget.config.type as DashboardWidgetInstance["widgetType"]) ?? (widget.type as DashboardWidgetInstance["widgetType"]),
     config: widget.config,
   }));
 }
