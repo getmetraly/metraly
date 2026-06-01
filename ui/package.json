@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "ui:build-dep": "npm --prefix ../../brandbook/packages/ui install && npm --prefix ../../brandbook/packages/ui run build",
+    "predev": "npm run ui:build-dep",
     "dev": "vite",
+    "prebuild": "npm run ui:build-dep",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
