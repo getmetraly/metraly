@@ -53,7 +53,7 @@ export interface AppBootstrapContextValue {
   isLoading: boolean;
   error: string | null;
   /** Call after create/update/delete to re-fetch bootstrap and update all consumers. */
-  refresh: () => void;
+  refresh: () => Promise<AppBootstrap | null>;
 }
 
 const AppBootstrapContext = createContext<AppBootstrapContextValue>({
@@ -64,7 +64,7 @@ const AppBootstrapContext = createContext<AppBootstrapContextValue>({
   features: null,
   isLoading: true,
   error: null,
-  refresh: () => {},
+  refresh: async () => null,
 });
 
 export function AppBootstrapProvider({ children }: { children: React.ReactNode }) {
@@ -74,8 +74,8 @@ export function AppBootstrapProvider({ children }: { children: React.ReactNode }
   const [error, setError] = useState<string | null>(null);
   const fetchingRef = useRef(false);
 
-  const fetchFromNetwork = useCallback(async (silent = false) => {
-    if (fetchingRef.current) return;
+  const fetchFromNetwork = useCallback(async (silent = false): Promise<AppBootstrap | null> => {
+    if (fetchingRef.current) return bootstrap;
     fetchingRef.current = true;
     if (!silent) setIsLoading(true);
     try {
@@ -83,21 +83,23 @@ export function AppBootstrapProvider({ children }: { children: React.ReactNode }
       writeCache(data);
       setBootstrap(data);
       setError(null);
+      return data;
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load bootstrap';
       setError(msg);
+      return null;
     } finally {
       setIsLoading(false);
       fetchingRef.current = false;
     }
-  }, []);
+  }, [bootstrap]);
 
   useEffect(() => {
     void fetchFromNetwork(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refresh = useCallback(() => {
-    void fetchFromNetwork(true);
+  const refresh = useCallback(async () => {
+    return fetchFromNetwork(true);
   }, [fetchFromNetwork]);
 
   const value: AppBootstrapContextValue = {

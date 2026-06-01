@@ -24,7 +24,7 @@ interface DashboardScreenProps {
   isEditMode?: boolean;
   demoMode?: boolean;
   onConfigureSources?: () => void;
-  onDeleted?: () => void;
+  onDeleted?: (dashboards: { id: string }[]) => void;
 }
 
 function makeDraftDashboard(
@@ -131,7 +131,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       );
       // Refresh bootstrap when name/icon changed (sidebar/title needs update)
       const nameOrIconChanged = editor.state.name !== dashboard.name || editor.state.icon !== dashboard.icon;
-      if (nameOrIconChanged) { refreshBootstrap(); }
+      if (nameOrIconChanged) { await refreshBootstrap(); }
       await refresh();
       handleExitEditMode();
     } catch (error) {
@@ -151,9 +151,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setIsDeleting(true);
     try {
       await deleteDashboard(dashboard.id);
-      refreshBootstrap();
+      const refreshed = await refreshBootstrap();
+      const nextDashboards = refreshed?.dashboards ?? [];
       handleExitEditMode();
-      onDeleted?.();
+      onDeleted?.(nextDashboards);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete dashboard';
       setSaveError(msg);

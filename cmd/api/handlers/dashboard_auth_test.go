@@ -130,7 +130,7 @@ func withUserClaims(r *http.Request, userID string) *http.Request {
 }
 
 func newDashboardHandler(fr *fakeDashboardRepoAuth) *handlers.DashboardHandler {
-	return handlers.NewDashboardHandler(biz.NewDashboardSvc(fr, cache.NewNoopDashboardCache()))
+	return handlers.NewDashboardHandler(biz.NewDashboardSvc(fr, nil, cache.NewNoopDashboardCache()))
 }
 
 // seedPrivateDashboard inserts a private dashboard owned by dashboardOwner into the repo.

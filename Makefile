@@ -2,9 +2,9 @@
 	build run seed test lint health dashboard \
 	login bootstrap dashboard-view dashboard-crud-check connectors-check source-create-check source-test-check source-collect-check metric-query-check \
 	dashboard-delete-check dashboard-demo-edit-check dashboard-demo-delete-check dashboard-editor-runtime-check restore-demo \
+	dashboard-preview-contract-check dashboard-catalog-contract-check \
 	runtime-check \
 	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check
-
 API_PORT := 8000
 DOCKER_COMPOSE := docker compose
 RUN_DIR := .run
@@ -30,9 +30,11 @@ help:
 	@echo "  runtime-check        health + bootstrap + dashboard-view + connectors"
 	@echo "  dashboard-delete-check       Create temp dashboard, delete it, verify 204 + view 404"
 	@echo "  dashboard-demo-edit-check    Edit Demo dashboard (PUT), verify 200, restore"
-	@echo "  dashboard-demo-delete-check  Delete Demo, verify 204 + view 404, restore Demo"
+	@echo "  dashboard-demo-delete-check  Delete Demo, verify 204 + 404 + restart does not restore"
 	@echo "  dashboard-editor-runtime-check  Create+update+view dashboard, verify widgetErrors=0"
-	@echo "  restore-demo                 Recreate Demo dashboard if deleted"
+	@echo "  dashboard-preview-contract-check Validate preview data shapes"
+	@echo "  dashboard-catalog-contract-check Validate catalog/descriptors/templates contracts"
+	@echo "  restore-demo                 Explicitly recreate Demo dashboard and clear tombstone"
 	@echo "  api-test*            backend test suites"
 	@echo "  ui-check             ui typecheck + lint + test"
 	@echo "  brandbook-check      brandbook typecheck + build"
@@ -193,21 +195,29 @@ dashboard-demo-delete-check: login
 	VIEW_STATUS=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$(API_PORT)/api/v1/dashboards/sandbox-all-widgets/view \
 		-H "Authorization: Bearer $$TOKEN"); \
 	test "$$VIEW_STATUS" = "404" || { echo "view after delete returned $$VIEW_STATUS, want 404"; exit 1; }; \
-	$(MAKE) restore-demo; \
-	echo "dashboard-demo-delete-check: PASS (delete=204, view-after=404, demo restored)"
+	$(MAKE) restart; \
+	$(MAKE) login; \
+	TOKEN=$$(cat $(TOKEN_FILE)); \
+	AFTER_RESTART_STATUS=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$(API_PORT)/api/v1/dashboards/sandbox-all-widgets/view \
+		-H "Authorization: Bearer $$TOKEN"); \
+	test "$$AFTER_RESTART_STATUS" = "404" || { echo "demo silently restored after restart ($$AFTER_RESTART_STATUS)"; exit 1; }; \
+	echo "dashboard-demo-delete-check: PASS (delete=204, view-after=404, restart-kept-404)"
 
 dashboard-editor-runtime-check: login
 	@TOKEN=$$(cat $(TOKEN_FILE)); \
 	ID=$$(curl -s -X POST http://localhost:$(API_PORT)/api/v1/dashboards \
 		-H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
-		-d '{"name":"Editor Runtime Check","icon":"activity","widgets":[{"instanceId":"rt-1","widgetType":"stat-card","config":{"type":"stat-card","metricId":"deploy-freq"}}],"layout":[{"instanceId":"rt-1","x":0,"y":0,"w":6,"h":2}]}' \
+		-d '{"name":"Editor Runtime Check","icon":"activity","widgets":[{"instanceId":"rt-1","widgetType":"stat-card","config":{"type":"stat-card","metricId":"deploy-freq"}},{"instanceId":"rt-2","widgetType":"metric-chart","config":{"type":"metric-chart","metricId":"velocity"}},{"instanceId":"rt-3","widgetType":"health-gauge","config":{"type":"health-gauge","metricId":"health-score"}},{"instanceId":"rt-4","widgetType":"compare-bar-chart","config":{"type":"compare-bar-chart","metricId":"velocity"}},{"instanceId":"rt-5","widgetType":"recent-activity","config":{"type":"recent-activity","maxItems":8}}],"layout":[{"instanceId":"rt-1","x":0,"y":0,"w":4,"h":2},{"instanceId":"rt-2","x":4,"y":0,"w":4,"h":2},{"instanceId":"rt-3","x":8,"y":0,"w":4,"h":2},{"instanceId":"rt-4","x":0,"y":2,"w":6,"h":2},{"instanceId":"rt-5","x":6,"y":2,"w":6,"h":2}]}' \
 		| python3 -c 'import sys,json;print(json.load(sys.stdin).get("id",""))'); \
 	test -n "$$ID" || (echo "create failed"; exit 1); \
+	INITIAL_ERRORS=$$(curl -s http://localhost:$(API_PORT)/api/v1/dashboards/$$ID/view \
+		-H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;print(len(json.load(sys.stdin).get("widgetErrors",{})))'); \
+	test "$$INITIAL_ERRORS" = "0" || (echo "widgetErrors not empty after create"; curl -s -X DELETE http://localhost:$(API_PORT)/api/v1/dashboards/$$ID -H "Authorization: Bearer $$TOKEN" > /dev/null; exit 1); \
 	VER=$$(curl -s http://localhost:$(API_PORT)/api/v1/dashboards/$$ID \
 		-H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("version",1))'); \
 	UPD=$$(curl -s -X PUT http://localhost:$(API_PORT)/api/v1/dashboards/$$ID \
 		-H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
-		-d "{\"name\":\"Editor Runtime Updated\",\"icon\":\"activity\",\"version\":$$VER,\"widgets\":[{\"instanceId\":\"rt-1\",\"widgetType\":\"stat-card\",\"config\":{\"type\":\"stat-card\",\"metricId\":\"velocity\"}},{\"instanceId\":\"rt-2\",\"widgetType\":\"metric-chart\",\"config\":{\"type\":\"metric-chart\",\"metricId\":\"pr-cycle\"}}],\"layout\":[{\"instanceId\":\"rt-1\",\"x\":0,\"y\":0,\"w\":6,\"h\":2},{\"instanceId\":\"rt-2\",\"x\":6,\"y\":0,\"w\":6,\"h\":2}]}"); \
+		-d "{\"name\":\"Editor Runtime Updated\",\"icon\":\"activity\",\"version\":$$VER,\"widgets\":[{\"instanceId\":\"rt-1\",\"widgetType\":\"stat-card\",\"config\":{\"type\":\"stat-card\",\"metricId\":\"velocity\"}},{\"instanceId\":\"rt-2\",\"widgetType\":\"metric-chart\",\"config\":{\"type\":\"metric-chart\",\"metricId\":\"pr-cycle\"}},{\"instanceId\":\"rt-3\",\"widgetType\":\"health-gauge\",\"config\":{\"type\":\"health-gauge\",\"metricId\":\"health-score\"}},{\"instanceId\":\"rt-4\",\"widgetType\":\"compare-bar-chart\",\"config\":{\"type\":\"compare-bar-chart\",\"metricId\":\"velocity\"}},{\"instanceId\":\"rt-5\",\"widgetType\":\"recent-activity\",\"config\":{\"type\":\"recent-activity\",\"maxItems\":5}}],\"layout\":[{\"instanceId\":\"rt-1\",\"x\":0,\"y\":0,\"w\":4,\"h\":2},{\"instanceId\":\"rt-2\",\"x\":4,\"y\":0,\"w\":4,\"h\":2},{\"instanceId\":\"rt-3\",\"x\":8,\"y\":0,\"w\":4,\"h\":2},{\"instanceId\":\"rt-4\",\"x\":0,\"y\":2,\"w\":6,\"h\":2},{\"instanceId\":\"rt-5\",\"x\":6,\"y\":2,\"w\":6,\"h\":2}]}"); \
 	UPD_NAME=$$(echo "$$UPD" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("name",""))'); \
 	test "$$UPD_NAME" = "Editor Runtime Updated" || (echo "update failed: $$UPD"; curl -s -X DELETE http://localhost:$(API_PORT)/api/v1/dashboards/$$ID -H "Authorization: Bearer $$TOKEN" > /dev/null; exit 1); \
 	ERRORS=$$(curl -s http://localhost:$(API_PORT)/api/v1/dashboards/$$ID/view \
@@ -216,11 +226,19 @@ dashboard-editor-runtime-check: login
 	test "$$ERRORS" = "0" || (echo "widgetErrors not empty after update"; exit 1); \
 	echo "dashboard-editor-runtime-check: PASS (create+update+view: widgetErrors=0)"
 
-restore-demo:
-	@echo "Restoring Demo dashboard via seed…"
-	$(DOCKER_COMPOSE) exec api sh -c 'SEED_ONLY=true SEED_ON_START=true SEED_ADMIN_EMAIL=$$SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD=$$SEED_ADMIN_PASSWORD /app/api || true'
-	@echo "restore-demo: done (Demo will appear on next bootstrap)."
+restore-demo: login
+	@echo "Restoring Demo dashboard explicitly…"
+	$(DOCKER_COMPOSE) exec api sh -c 'SEED_ONLY=true SEED_ON_START=true SEED_RESTORE_DEMO=true SEED_ADMIN_EMAIL=$$SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD=$$SEED_ADMIN_PASSWORD /app/api'
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	STATUS=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$(API_PORT)/api/v1/dashboards/sandbox-all-widgets/view -H "Authorization: Bearer $$TOKEN"); \
+	test "$$STATUS" = "200" || (echo "restore-demo failed: view returned $$STATUS"; exit 1); \
+	echo "restore-demo: PASS"
 
+dashboard-preview-contract-check:
+	cd ui && npm run test -- src/components/dashboard/previewData.test.ts
+
+dashboard-catalog-contract-check:
+	cd ui && npm run test -- src/features/dashboardEditor/widgetCatalogContracts.test.ts
 runtime-check: health bootstrap dashboard-view connectors-check
 
 api-test:
@@ -253,4 +271,4 @@ brandbook-check: brandbook-typecheck brandbook-build
 
 check: api-test ui-check brandbook-check
 
-mvp-check: runtime-check dashboard-crud-check dashboard-create-render-check dashboard-delete-check dashboard-demo-edit-check dashboard-editor-runtime-check source-create-check source-test-check source-collect-check metric-query-check check
+mvp-check: runtime-check dashboard-crud-check dashboard-create-render-check dashboard-delete-check dashboard-demo-edit-check dashboard-demo-delete-check restore-demo dashboard-editor-runtime-check dashboard-preview-contract-check dashboard-catalog-contract-check source-create-check source-test-check source-collect-check metric-query-check check

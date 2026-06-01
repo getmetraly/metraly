@@ -108,7 +108,7 @@ func (f *fakeDashboardRepo) Delete(ctx context.Context, id string) error {
 }
 
 func newTestDashboardHandler(repo *fakeDashboardRepo) *DashboardHandler {
-	return NewDashboardHandler(biz.NewDashboardSvc(repo, cache.NewNoopDashboardCache()))
+	return NewDashboardHandler(biz.NewDashboardSvc(repo, nil, cache.NewNoopDashboardCache()))
 }
 
 func TestDashboardHandler_List(t *testing.T) {

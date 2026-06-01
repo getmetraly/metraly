@@ -30,9 +30,16 @@ var metricIDs = []string{
 	"throughput",
 }
 
+const (
+	DemoDashboardID           = "sandbox-all-widgets"
+	DemoDeletedTombstoneKey   = "demo_dashboard_deleted"
+	DemoDeletedTombstoneValue = "true"
+)
+
 type Runner struct {
 	users      repo.UserRepo
 	dashboards repo.DashboardRepo
+	seedState  repo.SeedStateRepo
 	plugins    repo.PluginRepo
 	insights   repo.AIInsightRepo
 	activity   repo.ActivityRepo
@@ -42,6 +49,7 @@ type Runner struct {
 func NewRunner(
 	users repo.UserRepo,
 	dashboards repo.DashboardRepo,
+	seedState repo.SeedStateRepo,
 	plugins repo.PluginRepo,
 	insights repo.AIInsightRepo,
 	activity repo.ActivityRepo,
@@ -50,6 +58,7 @@ func NewRunner(
 	return &Runner{
 		users:      users,
 		dashboards: dashboards,
+		seedState:  seedState,
 		plugins:    plugins,
 		insights:   insights,
 		activity:   activity,
@@ -101,15 +110,34 @@ func (r *Runner) seedAdmin(ctx context.Context, email, password string) error {
 }
 
 func (r *Runner) seedDashboards(ctx context.Context) error {
-	// Clean up old system-template dashboards from schema versions prior to user-created Demo.
 	if err := r.dashboards.DeleteSystemTemplateDashboards(ctx); err != nil {
 		return fmt.Errorf("delete old system dashboards: %w", err)
 	}
-	// Create Demo only if it does not exist — respects deletion by the user.
-	// A deleted Demo will be recreated on next startup (tombstone deferred to Phase 3).
 	existing, err := r.dashboards.GetByID(ctx, sandboxAllWidgets.ID)
 	if err == nil && existing != nil {
-		return nil // already exists; do not overwrite user edits
+		return nil
+	}
+	if r.seedState != nil {
+		value, exists, err := r.seedState.Get(ctx, DemoDeletedTombstoneKey)
+		if err != nil {
+			return fmt.Errorf("check demo tombstone: %w", err)
+		}
+		if exists && value == DemoDeletedTombstoneValue {
+			return nil
+		}
+	}
+	return r.dashboards.Create(ctx, sandboxAllWidgets)
+}
+
+func (r *Runner) RestoreDemo(ctx context.Context) error {
+	if r.seedState != nil {
+		if err := r.seedState.Delete(ctx, DemoDeletedTombstoneKey); err != nil {
+			return fmt.Errorf("clear demo tombstone: %w", err)
+		}
+	}
+	existing, err := r.dashboards.GetByID(ctx, DemoDashboardID)
+	if err == nil && existing != nil {
+		return nil
 	}
 	return r.dashboards.Create(ctx, sandboxAllWidgets)
 }
@@ -297,7 +325,7 @@ func stringPtr(s string) *string {
 }
 
 var sandboxAllWidgets = &domain.Dashboard{
-	ID:               "sandbox-all-widgets",
+	ID:               DemoDashboardID,
 	Name:             "Demo",
 	Description:      "All Metraly widgets with backend-generated demo data",
 	Icon:             "sparkles",

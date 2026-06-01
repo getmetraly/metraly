@@ -48,13 +48,9 @@ export const TEMPLATE_WIDGETS: Record<string, string[]> = {
   blank: [],
 };
 
-const FULL_WIDTH_WIDGET_IDS = new Set([
-  "dora-overview",
-  "team-heatmap",
-  "pr-queue",
-  "failing-builds",
-  "ai-summary",
-]);
+const FULL_WIDTH_WIDGET_IDS = new Set(
+  WIDGET_DESCRIPTORS.filter((d) => d.fullWidth).map((d) => d.libraryId),
+);
 
 export function getWidgetColor(cat: string): string {
   const colors: Record<string, string> = {
@@ -63,6 +59,7 @@ export function getWidgetColor(cat: string): string {
     PR: "var(--m-purple-500)",
     Sprint: "var(--m-warn)",
     Team: "var(--m-cyan-500)",
+    Activity: "var(--m-cyan-500)",
     AI: "var(--m-purple-500)",
   };
   return colors[cat] || "var(--m-cyan-500)";

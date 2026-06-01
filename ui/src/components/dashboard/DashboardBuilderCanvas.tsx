@@ -10,6 +10,7 @@ import { widgetRegistry } from "./widgetRegistry";
 // widgetData is Record<string, unknown> — individual widget components use their own type assertions
 import { DashboardWidget, DashboardDropZone, PulseMarker, MetralyButton } from "../../design-system";
 import { Icon } from "../shared/Icon";
+import { sampleWidgetData } from "./previewData";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -31,94 +32,6 @@ const WIDGET_TITLE: Record<string, string> = {
   "empty": "Empty Space",
 };
 
-/** Generate stub data for a widget type so preview mode renders without a backend. */
-function sampleWidgetData(widgetType: string, _config?: unknown): unknown {
-  switch (widgetType) {
-    case "stat-card":
-      return { currentValue: '4.2/d', currentValueRaw: 4.2, delta: '+12%', level: 'good', timeSeries: [30, 35, 38, 40, 42] };
-    case "metric-chart":
-      return {
-        current: { values: [10, 20, 30, 25, 35], labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], unit: '' },
-        previous: { values: [8, 18, 25, 22, 30], labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'], unit: '' },
-        summary: 'Preview metric chart',
-        metricId: 'preview',
-        label: 'Metric',
-      };
-    case "data-table":
-      return {
-        rows: [
-          { id: '1', title: 'PR #101: Fix auth flow', author: 'alice', status: 'Review', time: '2h' },
-          { id: '2', title: 'PR #102: Refactor pipeline', author: 'bob', status: 'Review', time: '4h' },
-        ],
-      };
-    case "heatmap":
-      return {
-        title: 'Team Activity',
-        xLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-        yLabels: ['Atlas', 'Beacon', 'Comet'],
-        cells: [[2, 5, 3, 7, 4], [1, 4, 6, 3, 5], [3, 2, 4, 5, 3]],
-        summary: 'Sample',
-      };
-    case "dora-overview":
-      return {
-        deployFrequency: { currentValue: '4.2/d', level: 'elite' },
-        leadTime: { currentValue: '2.1h', level: 'high' },
-        changeFailureRate: { currentValue: '3.1%', level: 'high' },
-        mttr: { currentValue: '28min', level: 'elite' },
-      };
-    case "leaderboard":
-      return [
-        { team: 'Beacon', value: '42 pts', valueRaw: 42 },
-        { team: 'Delta', value: '35 pts', valueRaw: 35 },
-        { team: 'Atlas', value: '32 pts', valueRaw: 32 },
-      ];
-    case "sprint-burndown":
-      return {
-        ideal: { values: [100, 80, 60, 40, 20, 0] },
-        actual: { values: [100, 90, 72, 55, 38, 20] },
-      };
-    case "ai-insight":
-      return {
-        title: 'Preview Insight',
-        body: 'Sample data mode — save the dashboard to load real AI insights from your connected sources.',
-        action: 'Connect sources',
-      };
-    case "anomaly-detector":
-      return {
-        status: 'healthy',
-        summary: 'All signals within normal range (preview)',
-        signalsChecked: 5,
-        lastChecked: 'now',
-        window: '30d',
-        thresholds: [
-          { name: 'Deploy Frequency', value: '4.2/d', status: 'ok' },
-          { name: 'CI Pass Rate', value: '94%', status: 'ok' },
-        ],
-        anomalies: [],
-      };
-    case "compare-bar-chart":
-      return {
-        labels: ['Atlas', 'Beacon', 'Comet', 'Delta', 'Echo'],
-        primary: { label: 'This sprint', values: [42, 58, 35, 28, 20] },
-        secondary: { label: 'Last sprint', values: [38, 52, 38, 30, 18] },
-        summary: 'Team velocity comparison',
-      };
-    case "recent-activity":
-      return {
-        activities: [
-          { id: '1', actor: 'Beacon CD', description: 'Deployment frequency improved', timestamp: '2h ago' },
-          { id: '2', actor: 'Atlas Bot', description: 'PR review queue exceeded threshold', timestamp: '6h ago' },
-          { id: '3', actor: 'Comet CI', description: 'Flaky test fixed in integration suite', timestamp: '10h ago' },
-        ],
-      };
-    case "health-gauge":
-      return { score: 82, label: 'Good', status: 'ok', summary: 'Preview health score' };
-    case "section-header":
-      return {};
-    default:
-      return {};
-  }
-}
 
 export type CanvasMode = "view" | "edit" | "preview";
 
@@ -272,73 +185,75 @@ export const DashboardBuilderCanvas: React.FC<DashboardBuilderCanvasProps> = ({
 
           if (!WidgetComponent) {
             return (
-              <DashboardWidget
-                key={widget.instanceId}
-                title="Unknown widget"
-                state="error"
-                stateTitle="Unknown widget type"
-                stateDescription={widget.widgetType}
-              />
+              <div key={widget.instanceId} style={{ width: "100%", height: "100%" }}>
+                <DashboardWidget
+                  title="Unknown widget"
+                  state="error"
+                  stateTitle="Unknown widget type"
+                  stateDescription={widget.widgetType}
+                />
+              </div>
             );
           }
 
           const resolvedData = isPreview
-            ? sampleWidgetData(widget.widgetType, widget.config)
+            ? sampleWidgetData(widget.widgetType)
             : widgetData[scopedInstanceId];
 
           if (isEditable || isPreview) {
             return (
-              <DashboardWidget
-                key={widget.instanceId}
-                id={widget.instanceId}
-                title={widgetTitle}
-                subtitle={widget.widgetType}
-                fullWidth={isFull}
-                dragging={draggingId === widget.instanceId}
-                onDragStart={() => {}}
-                onRemove={isEditable ? () => onRemoveWidget?.(widget.instanceId) : undefined}
-                footer={
-                  isEditable && !isEmpty ? (
-                    <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 8px 6px", gap: 4 }}>
-                      <MetralyButton
-                        type="button"
-                        size="sm"
-                        variant={isFull ? "secondary" : "ghost"}
-                        aria-label={isFull ? "Switch to flexible width" : "Switch to full width"}
-                        onClick={() => onToggleSize?.(widget.instanceId)}
-                        iconLeft={<Icon name={isFull ? "minimize2" : "maximize2"} size={12} />}
-                      >
-                        {isFull ? "Full" : "Flex"}
-                      </MetralyButton>
+              <div key={widget.instanceId} style={{ width: "100%", height: "100%" }}>
+                <DashboardWidget
+                  id={widget.instanceId}
+                  title={widgetTitle}
+                  subtitle={widget.widgetType}
+                  fullWidth={isFull}
+                  dragging={draggingId === widget.instanceId}
+                  onDragStart={() => {}}
+                  onRemove={isEditable ? () => onRemoveWidget?.(widget.instanceId) : undefined}
+                  footer={
+                    isEditable && !isEmpty ? (
+                      <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 8px 6px", gap: 4 }}>
+                        <MetralyButton
+                          type="button"
+                          size="sm"
+                          variant={isFull ? "secondary" : "ghost"}
+                          aria-label={isFull ? "Switch to flexible width" : "Switch to full width"}
+                          onClick={() => onToggleSize?.(widget.instanceId)}
+                          iconLeft={<Icon name={isFull ? "minimize2" : "maximize2"} size={12} />}
+                        >
+                          {isFull ? "Full" : "Flex"}
+                        </MetralyButton>
+                      </div>
+                    ) : undefined
+                  }
+                >
+                  {isEmpty ? (
+                    <div
+                      style={{
+                        height: "100%",
+                        minHeight: 60,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px dashed var(--m-line-strong)",
+                        borderRadius: 6,
+                        color: "var(--m-fg-2)",
+                        fontSize: 12,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      Layout spacer
                     </div>
-                  ) : undefined
-                }
-              >
-                {isEmpty ? (
-                  <div
-                    style={{
-                      height: "100%",
-                      minHeight: 60,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "1px dashed var(--m-line-strong)",
-                      borderRadius: 6,
-                      color: "var(--m-fg-2)",
-                      fontSize: 12,
-                      pointerEvents: "none",
-                    }}
-                  >
-                    Layout spacer
-                  </div>
-                ) : (
-                  <WidgetComponent
-                    config={widget.config}
-                    data={resolvedData}
-                    renderMode={isPreview ? "preview" : "edit"}
-                  />
-                )}
-              </DashboardWidget>
+                  ) : (
+                    <WidgetComponent
+                      config={widget.config}
+                      data={resolvedData}
+                      renderMode={isPreview ? "preview" : "edit"}
+                    />
+                  )}
+                </DashboardWidget>
+              </div>
             );
           }
 

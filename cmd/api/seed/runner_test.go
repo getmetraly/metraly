@@ -83,6 +83,31 @@ func (r *recordingDashboardRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+type recordingSeedStateRepo struct {
+	values map[string]string
+}
+
+func (r *recordingSeedStateRepo) Get(ctx context.Context, key string) (string, bool, error) {
+	if r.values == nil {
+		return "", false, nil
+	}
+	v, ok := r.values[key]
+	return v, ok, nil
+}
+
+func (r *recordingSeedStateRepo) Set(ctx context.Context, key, value string) error {
+	if r.values == nil {
+		r.values = map[string]string{}
+	}
+	r.values[key] = value
+	return nil
+}
+
+func (r *recordingSeedStateRepo) Delete(ctx context.Context, key string) error {
+	delete(r.values, key)
+	return nil
+}
+
 type recordingPluginRepo struct {
 	created []*domain.Plugin
 }
@@ -139,6 +164,7 @@ var _ repo.PluginRepo = (*recordingPluginRepo)(nil)
 var _ repo.AIInsightRepo = (*recordingInsightRepo)(nil)
 var _ repo.ActivityRepo = (*recordingActivityRepo)(nil)
 var _ repo.MetricRepo = (*recordingMetricRepo)(nil)
+var _ repo.SeedStateRepo = (*recordingSeedStateRepo)(nil)
 
 func TestRunnerSeedsSandboxIncData(t *testing.T) {
 	users := &recordingUserRepo{}
@@ -148,7 +174,7 @@ func TestRunnerSeedsSandboxIncData(t *testing.T) {
 	activity := &recordingActivityRepo{}
 	metrics := &recordingMetricRepo{}
 
-	runner := seed.NewRunner(users, dashboards, plugins, insights, activity, metrics)
+	runner := seed.NewRunner(users, dashboards, &recordingSeedStateRepo{}, plugins, insights, activity, metrics)
 	if err := runner.Run(context.Background(), "admin@sandbox.invalid", "password123"); err != nil {
 		t.Fatalf("runner failed: %v", err)
 	}
@@ -186,6 +212,59 @@ func TestRunnerSeedsSandboxIncData(t *testing.T) {
 	}
 }
 
+func TestRunner_DoesNotRecreateDemoWhenTombstoned(t *testing.T) {
+	users := &recordingUserRepo{}
+	dashboards := &recordingDashboardRepo{templateSeeded: true}
+	seedState := &recordingSeedStateRepo{
+		values: map[string]string{seed.DemoDeletedTombstoneKey: seed.DemoDeletedTombstoneValue},
+	}
+	plugins := &recordingPluginRepo{}
+	insights := &recordingInsightRepo{}
+	activity := &recordingActivityRepo{}
+	metrics := &recordingMetricRepo{}
+
+	runner := seed.NewRunner(users, dashboards, seedState, plugins, insights, activity, metrics)
+	if err := runner.Run(context.Background(), "admin@sandbox.invalid", "password123"); err != nil {
+		t.Fatalf("runner failed: %v", err)
+	}
+	for _, created := range dashboards.created {
+		if created.ID == seed.DemoDashboardID {
+			t.Fatalf("expected demo dashboard not to be recreated when tombstoned")
+		}
+	}
+}
+
+func TestRunner_RestoreDemoClearsTombstoneAndCreatesDashboard(t *testing.T) {
+	seedState := &recordingSeedStateRepo{
+		values: map[string]string{seed.DemoDeletedTombstoneKey: seed.DemoDeletedTombstoneValue},
+	}
+	dashboards := &recordingDashboardRepo{templateSeeded: true}
+	runner := seed.NewRunner(
+		&recordingUserRepo{},
+		dashboards,
+		seedState,
+		&recordingPluginRepo{},
+		&recordingInsightRepo{},
+		&recordingActivityRepo{},
+		&recordingMetricRepo{},
+	)
+
+	if err := runner.RestoreDemo(context.Background()); err != nil {
+		t.Fatalf("restore failed: %v", err)
+	}
+	if _, exists := seedState.values[seed.DemoDeletedTombstoneKey]; exists {
+		t.Fatalf("expected tombstone to be cleared")
+	}
+	found := false
+	for _, created := range dashboards.created {
+		if created.ID == seed.DemoDashboardID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected restore to create %s", seed.DemoDashboardID)
+	}
+}
 func seedMetricIDsForTest() []string {
 	return []string{
 		"deploy-freq",

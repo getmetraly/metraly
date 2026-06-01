@@ -13,13 +13,20 @@ import (
 	"github.com/getmetraly/metraly/cmd/api/repo"
 )
 
+const (
+	demoDashboardID         = "sandbox-all-widgets"
+	demoDeletedTombstoneKey = "demo_dashboard_deleted"
+	demoDeletedValue        = "true"
+)
+
 type DashboardSvc struct {
-	repo  repo.DashboardRepo
-	cache cache.DashboardCache
+	repo      repo.DashboardRepo
+	seedState repo.SeedStateRepo
+	cache     cache.DashboardCache
 }
 
-func NewDashboardSvc(r repo.DashboardRepo, c cache.DashboardCache) *DashboardSvc {
-	return &DashboardSvc{repo: r, cache: c}
+func NewDashboardSvc(r repo.DashboardRepo, seedState repo.SeedStateRepo, c cache.DashboardCache) *DashboardSvc {
+	return &DashboardSvc{repo: r, seedState: seedState, cache: c}
 }
 
 func (s *DashboardSvc) List(ctx context.Context, userID string) ([]*domain.Dashboard, error) {
@@ -129,6 +136,11 @@ func (s *DashboardSvc) DeleteForUser(ctx context.Context, id, userID string) err
 	}
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
+	}
+	if id == demoDashboardID && s.seedState != nil {
+		if err := s.seedState.Set(ctx, demoDeletedTombstoneKey, demoDeletedValue); err != nil {
+			return err
+		}
 	}
 	_ = s.cache.Delete(ctx, id)
 	return nil

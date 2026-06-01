@@ -66,6 +66,14 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
     localStorage.setItem("metraly-pinned", JSON.stringify(pinned));
   }, [pinned]);
 
+  useEffect(() => {
+    const ids = new Set(dashboardNavItems.map((item) => item.id));
+    setPinned((prev) => {
+      const filtered = prev.filter((id) => ids.has(id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [dashboardNavItems]);
+
   const togglePin = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setPinned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]));

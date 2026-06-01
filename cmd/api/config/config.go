@@ -27,10 +27,10 @@ type AppConfig struct {
 	SeedOnly           bool
 	SeedAdminEmail     string
 	SeedAdminPassword  string
+	SeedRestoreDemo    bool
 	MetricsCacheTTL    int
 	DashboardsCacheTTL int
 	TemplatesCacheTTL  int
-
 	// CORSAllowedOrigins is a comma-separated list of allowed origins.
 	// Empty means no cross-origin requests are allowed (safe default for production).
 	// Example: "https://metraly.io,https://app.metraly.io,http://localhost:3000"
@@ -99,6 +99,7 @@ func Load() AppConfig {
 		SeedOnly:           getEnv("SEED_ONLY", "false") == "true",
 		SeedAdminEmail:     getEnv("SEED_ADMIN_EMAIL", ""),
 		SeedAdminPassword:  getEnv("SEED_ADMIN_PASSWORD", ""),
+		SeedRestoreDemo:    getEnv("SEED_RESTORE_DEMO", "false") == "true",
 		MetricsCacheTTL:    getEnvInt("METRICS_CACHE_TTL", 300),
 		DashboardsCacheTTL: getEnvInt("DASHBOARDS_CACHE_TTL", 30),
 		TemplatesCacheTTL:  getEnvInt("TEMPLATES_CACHE_TTL", 3600),

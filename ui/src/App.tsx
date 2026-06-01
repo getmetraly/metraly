@@ -34,7 +34,7 @@ function renderDashboardScreen(
   setActive: (id: string) => void,
   firstRunMode: FirstRunMode,
   dashboards: { id: string }[],
-  onDeleted: () => void,
+  onDeleted: (dashboards: { id: string }[]) => void,
 ) {
   return (
     <DashboardScreen
@@ -54,11 +54,11 @@ function renderActiveScreen(
   title: string,
   onUseDemo: () => void,
   dashboards: { id: string }[],
-  refreshBootstrap: () => void,
+  refreshBootstrap: () => Promise<{ dashboards: { id: string }[] } | null>,
 ) {
   const renderers: Record<string, () => React.ReactNode> = {
     'dash-wizard': () => (
-      <DashboardWizardScreen onSave={(saved) => { refreshBootstrap(); setActive(saved?.id ?? getInitialDashboardIdFromCache() ?? 'dash-wizard'); }} onCancel={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')} />
+      <DashboardWizardScreen onSave={async (saved) => { const refreshed = await refreshBootstrap(); setActive(saved?.id ?? refreshed?.dashboards?.[0]?.id ?? getInitialDashboardIdFromCache() ?? 'dash-wizard'); }} onCancel={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')} />
     ),
     metrics: () => <MetricsScreen />,
     ai: () => <AIScreen />,
@@ -96,8 +96,8 @@ function renderActiveScreen(
     );
   }
 
-  return renderDashboardScreen(active, setActive, firstRunMode, dashboards, () => {
-    const remaining = dashboards.filter(d => d.id !== active);
+  return renderDashboardScreen(active, setActive, firstRunMode, dashboards, (nextDashboards) => {
+    const remaining = nextDashboards.filter(d => d.id !== active);
     if (remaining.length > 0) {
       setActive(remaining[0].id);
     } else {

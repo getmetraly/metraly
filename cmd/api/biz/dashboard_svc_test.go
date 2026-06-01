@@ -99,6 +99,25 @@ func (m *mockDashboardCache) Delete(ctx context.Context, id string) error {
 	return args.Error(0)
 }
 
+type mockSeedStateRepo struct {
+	mock.Mock
+}
+
+func (m *mockSeedStateRepo) Get(ctx context.Context, key string) (string, bool, error) {
+	args := m.Called(ctx, key)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *mockSeedStateRepo) Set(ctx context.Context, key, value string) error {
+	args := m.Called(ctx, key, value)
+	return args.Error(0)
+}
+
+func (m *mockSeedStateRepo) Delete(ctx context.Context, key string) error {
+	args := m.Called(ctx, key)
+	return args.Error(0)
+}
+
 func TestDashboardSvc_GetByID_CacheHit(t *testing.T) {
 	ctx := context.Background()
 	dashboardRepo := new(mockDashboardRepo)
@@ -115,7 +134,7 @@ func TestDashboardSvc_GetByID_CacheHit(t *testing.T) {
 
 	dashboardCache.On("Get", ctx, "dash-1").Return(cachedDashboard, nil)
 
-	svc := NewDashboardSvc(dashboardRepo, dashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, nil, dashboardCache)
 
 	d, err := svc.GetByID(ctx, "dash-1")
 
@@ -145,7 +164,7 @@ func TestDashboardSvc_GetByID_CacheMiss(t *testing.T) {
 	dashboardRepo.On("GetByID", ctx, "dash-2").Return(dashboard, nil)
 	dashboardCache.On("Set", ctx, dashboard).Return(nil)
 
-	svc := NewDashboardSvc(dashboardRepo, dashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, nil, dashboardCache)
 
 	d, err := svc.GetByID(ctx, "dash-2")
 
@@ -170,7 +189,7 @@ func TestDashboardSvc_Update_VersionConflict(t *testing.T) {
 
 	dashboardRepo.On("Update", ctx, dashboard).Return(false, nil)
 
-	svc := NewDashboardSvc(dashboardRepo, dashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, nil, dashboardCache)
 
 	updated, err := svc.Update(ctx, dashboard)
 
@@ -195,7 +214,7 @@ func TestDashboardSvc_Update_Success(t *testing.T) {
 	dashboardRepo.On("Update", ctx, dashboard).Return(true, nil)
 	dashboardCache.On("Set", ctx, dashboard).Return(nil)
 
-	svc := NewDashboardSvc(dashboardRepo, dashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, nil, dashboardCache)
 
 	updated, err := svc.Update(ctx, dashboard)
 
@@ -217,11 +236,54 @@ func TestDashboardSvc_List(t *testing.T) {
 
 	dashboardRepo.On("List", ctx, "user-1").Return(expectedDashboards, nil)
 
-	svc := NewDashboardSvc(dashboardRepo, dashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, nil, dashboardCache)
 
 	dashboards, err := svc.List(ctx, "user-1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedDashboards, dashboards)
 	dashboardRepo.AssertExpectations(t)
+}
+
+func TestDashboardSvc_DeleteForUser_DemoSetsTombstoneAndEvictsCache(t *testing.T) {
+	ctx := context.Background()
+	dashboardRepo := new(mockDashboardRepo)
+	seedState := new(mockSeedStateRepo)
+	dashboardCache := new(mockDashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, seedState, dashboardCache)
+
+	dashboardRepo.On("GetByID", ctx, "sandbox-all-widgets").Return(&domain.Dashboard{
+		ID:      "sandbox-all-widgets",
+		OwnerID: "user-1",
+	}, nil).Once()
+	dashboardRepo.On("Delete", ctx, "sandbox-all-widgets").Return(nil).Once()
+	seedState.On("Set", ctx, "demo_dashboard_deleted", "true").Return(nil).Once()
+	dashboardCache.On("Delete", ctx, "sandbox-all-widgets").Return(nil).Once()
+
+	err := svc.DeleteForUser(ctx, "sandbox-all-widgets", "user-1")
+	assert.NoError(t, err)
+	dashboardRepo.AssertExpectations(t)
+	seedState.AssertExpectations(t)
+	dashboardCache.AssertExpectations(t)
+}
+
+func TestDashboardSvc_DeleteForUser_NonDemoDoesNotSetTombstone(t *testing.T) {
+	ctx := context.Background()
+	dashboardRepo := new(mockDashboardRepo)
+	seedState := new(mockSeedStateRepo)
+	dashboardCache := new(mockDashboardCache)
+	svc := NewDashboardSvc(dashboardRepo, seedState, dashboardCache)
+
+	dashboardRepo.On("GetByID", ctx, "dash-1").Return(&domain.Dashboard{
+		ID:      "dash-1",
+		OwnerID: "user-1",
+	}, nil).Once()
+	dashboardRepo.On("Delete", ctx, "dash-1").Return(nil).Once()
+	dashboardCache.On("Delete", ctx, "dash-1").Return(nil).Once()
+
+	err := svc.DeleteForUser(ctx, "dash-1", "user-1")
+	assert.NoError(t, err)
+	dashboardRepo.AssertExpectations(t)
+	dashboardCache.AssertExpectations(t)
+	seedState.AssertNotCalled(t, "Set", mock.Anything, mock.Anything, mock.Anything)
 }

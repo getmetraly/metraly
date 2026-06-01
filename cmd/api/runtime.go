@@ -97,6 +97,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	insightRepo := repo.NewAIInsightRepo(pool)
 	activityRepo := repo.NewActivityRepo(pool)
 
+	seedStateRepo := repo.NewSeedStateRepo(pool)
 	redisAddr := cfg.RedisHost + ":" + cfg.RedisPort
 	rdb := newRedisClient(redisAddr)
 
@@ -147,7 +148,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 		pool:         pool,
 		redis:        rdb,
 		keyManager:   keyManager,
-		dashboardSvc: biz.NewDashboardSvc(dashboardRepo, dashboardCache),
+		dashboardSvc: biz.NewDashboardSvc(dashboardRepo, seedStateRepo, dashboardCache),
 		metricsSvc:   biz.NewMetricsSvc(metricRepo, metricsCache),
 		ingestionSvc: biz.NewIngestionSvc(activityRepo, metricRepo),
 		templateSvc:  biz.NewTemplateSvc(dashboardRepo, templateCache),
@@ -193,8 +194,13 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	}
 
 	if cfg.SeedOnStart {
-		runner := seed.NewRunner(userRepo, dashboardRepo, pluginRepo, insightRepo, activityRepo, metricRepo)
-		if err := runner.Run(ctx, cfg.SeedAdminEmail, cfg.SeedAdminPassword); err != nil {
+		runner := seed.NewRunner(userRepo, dashboardRepo, seedStateRepo, pluginRepo, insightRepo, activityRepo, metricRepo)
+		if cfg.SeedRestoreDemo {
+			if err := runner.RestoreDemo(ctx); err != nil {
+				deps.Close()
+				return nil, fmt.Errorf("restore demo: %w", err)
+			}
+		} else if err := runner.Run(ctx, cfg.SeedAdminEmail, cfg.SeedAdminPassword); err != nil {
 			deps.Close()
 			return nil, fmt.Errorf("seed data: %w", err)
 		}
