@@ -107,19 +107,8 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
   ].map((t) => ({ value: t, label: t }));
 
   return (
-    <div
-      style={{ flex: 1, display: "flex", overflow: "hidden", height: "100%" }}
-    >
-      <div
-        style={{
-          width: 400,
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          borderRight: "1px solid var(--m-line)",
-          overflow: "hidden",
-        }}
-      >
+    <div className="wizard-layout">
+      <div className="wizard-layout__panel">
         <div
           style={{
             padding: "20px 24px 16px",
@@ -369,45 +358,24 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                               gap: 1,
                             }}
                           >
-                            <button
+                            <MetralyButton
                               type="button"
+                              size="sm"
+                              variant="ghost"
                               aria-label={`Move ${w.label} up`}
                               onClick={() => moveWidget(idx, idx - 1)}
                               disabled={idx === 0}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: idx === 0 ? "default" : "pointer",
-                                color:
-                                  idx === 0 ? "var(--m-line)" : "var(--m-fg-2)",
-                                padding: "1px 3px",
-                                fontSize: 10,
-                              }}
-                            >
-                              ▲
-                            </button>
-                            <button
+                              iconLeft={<Icon name="chevronUp" size={12} />}
+                            />
+                            <MetralyButton
                               type="button"
+                              size="sm"
+                              variant="ghost"
                               aria-label={`Move ${w.label} down`}
                               onClick={() => moveWidget(idx, idx + 1)}
                               disabled={idx === widgets.length - 1}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor:
-                                  idx === widgets.length - 1
-                                    ? "default"
-                                    : "pointer",
-                                color:
-                                  idx === widgets.length - 1
-                                    ? "var(--m-line)"
-                                    : "var(--m-fg-2)",
-                                padding: "1px 3px",
-                                fontSize: 10,
-                              }}
-                            >
-                              ▼
-                            </button>
+                              iconLeft={<Icon name="chevronDown" size={12} />}
+                            />
                           </div>
                           <div
                             style={{
@@ -428,37 +396,25 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                           >
                             {w.label}
                           </div>
-                          <button
+                          <MetralyButton
                             type="button"
+                            size="sm"
+                            variant={isLg ? 'secondary' : 'ghost'}
                             aria-label={isLg ? `Make ${w.label} flexible width` : `Make ${w.label} full width`}
                             onClick={() => toggleWidgetSize(w.instanceId)}
-                            style={{
-                              padding: "3px 8px",
-                              borderRadius: 5,
-                              fontSize: 11,
-                              cursor: "pointer",
-                              border: `1px solid ${isLg ? "color-mix(in srgb, var(--m-cyan-500) 30%, transparent)" : "var(--m-line)"}`,
-                              background: isLg
-                                ? "color-mix(in srgb, var(--m-cyan-500) 8%, transparent)"
-                                : "transparent",
-                              color: isLg ? "var(--m-cyan-500)" : "var(--m-fg-2)",
-                            }}
+                            iconLeft={<Icon name={isLg ? 'minimize2' : 'maximize2'} size={12} />}
                           >
-                            {isLg ? "Full" : "Flex"}
-                          </button>
-                          <button
+                            {isLg ? 'Full' : 'Flex'}
+                          </MetralyButton>
+                          <MetralyButton
                             type="button"
+                            size="sm"
+                            variant="ghost"
                             aria-label={`Remove ${w.label}`}
                             onClick={() => removeWidget(w.instanceId)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              color: "var(--m-fg-2)",
-                            }}
                           >
                             <Icon name="x" size={13} />
-                          </button>
+                          </MetralyButton>
                         </div>
                       );
                     })}
@@ -515,7 +471,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+      <div className="wizard-layout__preview">
         <WizardPreviewGrid />
       </div>
     </div>

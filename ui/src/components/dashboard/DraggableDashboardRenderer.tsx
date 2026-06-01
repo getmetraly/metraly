@@ -34,8 +34,8 @@ const WIDGET_TITLE: Record<string, string> = {
   "leaderboard": "Leaderboard",
   "ai-insight": "AI Insight",
   "anomaly-detector": "Anomaly Detector",
-  "gauge": "Health Gauge",
-  "compare-bar": "Compare Bar",
+  "health-gauge": "Health Gauge",
+  "compare-bar-chart": "Compare Bar Chart",
   "section-header": "Section Header",
   "recent-activity": "Recent Activity",
   "empty": "Empty Space",
@@ -170,7 +170,7 @@ export const DraggableDashboardRenderer: React.FC<DraggableDashboardRendererProp
                     Layout spacer
                   </div>
                 ) : (
-                  <WidgetComponent config={widget.config} data={widgetData[scopedInstanceId]} />
+                  <WidgetComponent config={widget.config} data={widgetData[scopedInstanceId]} renderMode="edit" />
                 )}
               </DashboardWidget>
             );

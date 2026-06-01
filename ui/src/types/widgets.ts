@@ -116,3 +116,20 @@ export type WidgetConfig =
   | EmptyWidgetConfig;
 
 export type WidgetType = WidgetConfig['type'];
+
+export type HeatmapCellStatus = 'ok' | 'warning' | 'neutral' | 'error';
+
+export interface HeatmapCellDatum {
+  x: string;
+  y: string;
+  value: number;
+  status?: HeatmapCellStatus;
+}
+
+export interface HeatmapWidgetData {
+  title?: string;
+  xLabels: string[];
+  yLabels: string[];
+  cells: HeatmapCellDatum[];
+  summary?: string;
+}

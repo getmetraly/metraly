@@ -4,7 +4,7 @@
 
 // src/features/dashboardWizard/components/WizardSidebar.tsx
 import React from 'react';
-import { Icon } from '../../../design-system';
+import { Icon, MetralySegmentedControl } from '../../../design-system';
 import { WizardWidgetPicker } from './WizardWidgetPicker';
 import { WizardSettings } from './WizardSettings';
 import { WizardWidget } from '../store/wizardStore';
@@ -93,46 +93,16 @@ export const WizardSidebar: React.FC<WizardSidebarProps> = ({
           <Icon name="pin" size={18} color={isPinned ? 'var(--m-cyan-500)' : 'var(--m-fg-2)'} />
         </button>
 
-        <div style={{
-          display: 'flex',
-          background: 'var(--m-bg-0)',
-          borderRadius: 8,
-          padding: 3,
-          gap: 2,
-        }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab('widgets')}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              border: 'none',
-              background: activeTab === 'widgets' ? 'linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500))' : 'transparent',
-              color: activeTab === 'widgets' ? 'var(--m-fg-0)' : 'var(--m-fg-2)',
-            }}
-          >
-            Widgets
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('settings')}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              border: 'none',
-              background: activeTab === 'settings' ? 'linear-gradient(135deg, var(--m-cyan-500), var(--m-purple-500))' : 'transparent',
-              color: activeTab === 'settings' ? 'var(--m-fg-0)' : 'var(--m-fg-2)',
-            }}
-          >
-            Settings
-          </button>
-        </div>
+        <MetralySegmentedControl
+          options={[
+            { value: 'widgets', label: 'Widgets' },
+            { value: 'settings', label: 'Settings' },
+          ]}
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as 'widgets' | 'settings')}
+          size="sm"
+          ariaLabel="Sidebar tabs"
+        />
 
         {!isPinned && (
           <button

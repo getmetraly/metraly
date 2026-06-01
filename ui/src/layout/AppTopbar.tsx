@@ -6,14 +6,23 @@ import { useTweaks } from "../context/TweaksContext";
 interface AppTopbarProps {
   title?: string;
   subtitle?: string;
+  onOpenMobileNav?: () => void;
 }
 
-export function AppTopbar({ title, subtitle }: AppTopbarProps) {
+export function AppTopbar({ title, subtitle, onOpenMobileNav }: AppTopbarProps) {
   const { tweaks } = useTweaks();
   const density = tweaks.density as "compact" | "comfortable" | "spacious";
 
   const actions = (
     <>
+      <button
+        type="button"
+        className="metraly-app-icon-btn metraly-mobile-nav-btn"
+        aria-label="Open navigation"
+        onClick={onOpenMobileNav}
+      >
+        <Icon name="menu" size={18} />
+      </button>
       {/* Use brandbook CSS classes — metraly-app-topbar__search and metraly-app-icon-btn
           are defined in metraly-app-kit.css (imported via @metraly/ui/styles.css). */}
       <div className="metraly-app-topbar__search" role="search" aria-label="Quick search">

@@ -3,7 +3,7 @@ import React from "react";
 import { Icon, widgetRegistry, MetralyButton, DashboardWidget } from "../../../design-system";
 import { useWizardStore } from "../store/wizardStore";
 import { WizardWidget } from "../store/wizardStore";
-import { makeTimeSeries, makeHeatData } from "../../../utils/seeds";
+import { makeTimeSeries, makeHeatmapWidgetData } from "../../../utils/seeds";
 
 const WIDGET_TYPE_MAP: Record<string, string> = {
   "dora-overview": "dora-overview",
@@ -100,7 +100,7 @@ function createMockData(widgetId: string): unknown {
         actual: { values: [88, 80, 65, 55, 42, 30, 22, 15] },
       };
     case "team-heatmap":
-      return makeHeatData(3, 16, 0.4, 33);
+      return makeHeatmapWidgetData();
     case "leaderboard":
       return [
         { team: "Alex Kim", valueRaw: 42 },
@@ -159,7 +159,7 @@ export const WidgetPreviewCard: React.FC<{ widget: WizardWidget }> = ({
       }
     >
       {WidgetComponent ? (
-        <WidgetComponent config={widgetConfig as any} data={mockData} />
+        <WidgetComponent config={widgetConfig as any} data={mockData} renderMode="preview" />
       ) : (
         <div
           style={{

@@ -1,4 +1,4 @@
-import type { WidgetType, WidgetConfig } from '../../types/widgets';
+import type { WidgetType, WidgetConfig, HeatmapWidgetData } from '../../types/widgets';
 import React from 'react';
 import {
   MetralyTable,
@@ -17,7 +17,7 @@ import {
   ActivityFeed,
   MetralyButton,
 } from '../../design-system';
-import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig, HeatmapConfig } from '../../types/widgets';
+import type { StatCardConfig, LeaderboardConfig, DataTableConfig, MetricChartConfig } from '../../types/widgets';
 import { Icon } from '../shared/Icon';
 const IS_VITEST = import.meta.env.MODE === 'test';
 
@@ -134,16 +134,29 @@ const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "err
   low: 'error',
 };
 
-const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
+const StatCardWidget = ({ config, data, renderMode = 'view' }: { config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }) => {
   const cfg = config as StatCardConfig;
   if (!data) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} loading…`} />;
 
   const icon = iconMap[cfg.metricId] || 'activity';
   const color = colorMap[cfg.colorKey] || 'primary';
 
-  // Parse delta to get trend direction
   const trendDir = data.delta?.startsWith('+') ? 'up' : data.delta?.startsWith('-') ? 'down' : 'flat';
   const trendSentiment = trendDir === 'up' ? 'positive' : trendDir === 'down' ? 'negative' : 'neutral';
+
+  if (renderMode === 'edit' || renderMode === 'preview') {
+    return (
+      <div style={{ ...widgetStyle, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+        <div style={{ fontFamily: 'var(--m-font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--m-fg-0)', lineHeight: 1 }}>
+          {data?.value ?? '—'}
+        </div>
+        {data?.delta && (
+          <TrendBadge direction={trendDir} sentiment={trendSentiment} value={data.delta} size="sm" />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={widgetStyle}>
     <MetralyMetricCard
@@ -164,7 +177,7 @@ const StatCardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) 
   );
 };
 
-const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
+const MetricChartWidget = ({ config, data, renderMode = 'view' }: { config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }) => {
   const cfg = config as MetricChartConfig;
   if (!data) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} loading…`} />;
 
@@ -182,7 +195,6 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
     'mttr': 'MTTR',
   };
 
-
   const displayLabel = labelMap[cfg.metricId] || data.label || cfg.metricId;
   const isBar = chartVariant === 'bar' || chartVariant === 'bar-horizontal';
   const currentValue = currentValues[currentValues.length - 1] || 0;
@@ -195,6 +207,38 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
   }));
   const summary = `${displayLabel}: ${displayValue}${data.unit ?? ''}`;
 
+  const chartContent = IS_VITEST ? (
+    <TestChartFallback summary={summary} />
+  ) : isBar ? (
+    <MetralyBarChart
+      data={points}
+      xKey="label"
+      series={[
+        { dataKey: 'current', name: 'Current', tone: 'cyan' },
+        ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+      ]}
+      ariaLabel={`${displayLabel} bar chart`}
+      summary={summary}
+      height={140}
+    />
+  ) : (
+    <MetralyAreaChart
+      data={points}
+      xKey="label"
+      series={[
+        { dataKey: 'current', name: 'Current', tone: 'cyan' },
+        ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
+      ]}
+      ariaLabel={`${displayLabel} area chart`}
+      summary={summary}
+      height={140}
+    />
+  );
+
+  if (renderMode === 'edit' || renderMode === 'preview') {
+    return <div style={widgetStyle}>{chartContent}</div>;
+  }
+
   return (
     <div style={widgetStyle}>
       <MetralyChartCard
@@ -202,39 +246,13 @@ const MetricChartWidget = ({ config, data }: { config: WidgetConfig; data?: any 
         summary={summary}
         description={data.unit ? `Unit: ${data.unit}` : undefined}
       >
-        {IS_VITEST ? (
-          <TestChartFallback summary={summary} />
-        ) : isBar ? (
-          <MetralyBarChart
-            data={points}
-            xKey="label"
-            series={[
-              { dataKey: 'current', name: 'Current', tone: 'cyan' },
-              ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
-            ]}
-            ariaLabel={`${displayLabel} bar chart`}
-            summary={summary}
-            height={140}
-          />
-        ) : (
-          <MetralyAreaChart
-            data={points}
-            xKey="label"
-            series={[
-              { dataKey: 'current', name: 'Current', tone: 'cyan' },
-              ...(compareValues ? [{ dataKey: 'compare', name: 'Previous', tone: 'purple' as const }] : []),
-            ]}
-            ariaLabel={`${displayLabel} area chart`}
-            summary={summary}
-            height={140}
-          />
-        )}
+        {chartContent}
       </MetralyChartCard>
     </div>
   );
 };
 
-const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
+const LeaderboardWidget = ({ config, data, renderMode = 'view' }: { config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }) => {
   const cfg = config as LeaderboardConfig;
   if (!data || !Array.isArray(data)) return <LoadingWidget title={`${resolveLabel(cfg.metricId || '')} leaderboard loading…`} />;
 
@@ -277,7 +295,15 @@ const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any 
 
   const title = labelMap[cfg.metricId] || cfg.metricId;
   const unit = unitMap[cfg.metricId] || '';
-  const height = 60 + items.length * 30; // Dynamic height: title + items
+  const height = 60 + items.length * 30;
+
+  if (renderMode === 'edit' || renderMode === 'preview') {
+    return (
+      <div style={widgetStyle}>
+        <Leaderboard items={items} color="var(--m-cyan-500)" unit={unit} title={title} />
+      </div>
+    );
+  }
 
   return (
     <CardShell style={{...widgetStyle, height}} density="compact">
@@ -286,7 +312,7 @@ const LeaderboardWidget = ({ config, data }: { config: WidgetConfig; data?: any 
   );
 };
 
-const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
+const DataTableWidget = ({ config, data, renderMode = 'view' }: { config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }) => {
   const cfg = config as DataTableConfig;
   const titleMap: Record<string, string> = {
     'pr-queue': 'PR Review Queue',
@@ -317,27 +343,33 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
       meta: [r.author, r.blockedBy, r.time].filter(Boolean).join(' · '),
       status: r.status || 'Unknown',
     }));
+    const tableEl = (
+      <MetralyTable<{ id: string; title: string; meta: string; status: React.ReactNode }>
+        columns={[
+          { key: 'title', header: 'Title' },
+          { key: 'meta', header: 'Context' },
+          { key: 'status', header: 'Status', width: '96px' },
+        ]}
+        data={rows.map((row) => ({
+          ...row,
+          status: <StateBadge state={row.status === 'Failed' ? 'error' : row.status === 'Review' ? 'purple' : 'warning'} label={row.status} size="sm" />,
+        }))}
+        rowKey={(row) => row.id}
+        dense
+        mobilePresentation="stacked"
+        ariaLabel={title}
+      />
+    );
+    if (renderMode === 'edit' || renderMode === 'preview') {
+      return <div style={{...widgetStyle, overflow: 'auto'}}>{tableEl}</div>;
+    }
     return (
       <CardShell
         style={{...widgetStyle, overflow: 'auto'}}
         density="compact"
         title={title}
       >
-        <MetralyTable<{ id: string; title: string; meta: string; status: React.ReactNode }>
-          columns={[
-            { key: 'title', header: 'Title' },
-            { key: 'meta', header: 'Context' },
-            { key: 'status', header: 'Status', width: '96px' },
-          ]}
-          data={rows.map((row) => ({
-            ...row,
-            status: <StateBadge state={row.status === 'Failed' ? 'error' : row.status === 'Review' ? 'purple' : 'warning'} label={row.status} size="sm" />,
-          }))}
-          rowKey={(row) => row.id}
-          dense
-          mobilePresentation="stacked"
-          ariaLabel={title}
-        />
+        {tableEl}
       </CardShell>
     );
   }
@@ -347,19 +379,27 @@ const DataTableWidget = ({ config, data }: { config: WidgetConfig; data?: any })
     status: r.status || 'Unknown',
   }));
 
+  const simpleTable = (
+    <MetralyTable<{ title: string; status: string }>
+      columns={[
+        { key: 'title', header: 'Title' },
+        { key: 'status', header: 'Status' },
+      ]}
+      data={rows}
+      dense
+      mobilePresentation="stacked"
+      ariaLabel={title}
+      maxHeight={cfg.maxRows ? `${Math.max(220, cfg.maxRows * 44)}px` : undefined}
+    />
+  );
+
+  if (renderMode === 'edit' || renderMode === 'preview') {
+    return <div style={{...widgetStyle, overflow: 'auto'}}>{simpleTable}</div>;
+  }
+
   return (
     <CardShell style={{...widgetStyle, overflow: 'auto'}} density="compact" title={title}>
-      <MetralyTable<{ title: string; status: string }>
-        columns={[
-          { key: 'title', header: 'Title' },
-          { key: 'status', header: 'Status' },
-        ]}
-        data={rows}
-        dense
-        mobilePresentation="stacked"
-        ariaLabel={title}
-        maxHeight={cfg.maxRows ? `${Math.max(220, cfg.maxRows * 44)}px` : undefined}
-      />
+      {simpleTable}
     </CardShell>
   );
 };
@@ -403,30 +443,23 @@ const GaugeWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
 };
 
 
-const HeatmapWidget = ({ config, data }: { config: WidgetConfig; data?: any }) => {
-  if (!data) return <LoadingWidget title="Activity heatmap loading…" />;
+const HeatmapWidget = ({ config: _config, data }: { config: WidgetConfig; data?: HeatmapWidgetData | null }) => {
+  if (data === undefined) return <LoadingWidget title="Activity heatmap loading…" />;
 
-  const cfg = config as HeatmapConfig;
-  const rows = cfg.rowGroupBy === 'team' ? ['Platform', 'Backend', 'Frontend'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const cols = Array.from({ length: 16 }, (_, index) => `W${index + 1}`);
-  const cells = rows.flatMap((row) =>
-    cols.map((col) => {
-      const value = Math.floor(Math.random() * 6);
-      return {
-        x: col,
-        y: row,
-        value,
-        status: value >= 4 ? 'ok' as const : value >= 2 ? 'warning' as const : 'neutral' as const,
-      };
-    }),
-  );
+  const xLabels = data?.xLabels ?? [];
+  const yLabels = data?.yLabels ?? [];
+  const cells = data?.cells ?? [];
+
+  if (!cells.length || !xLabels.length || !yLabels.length) {
+    return <EmptyWidget title="No heatmap data" description="Activity data will appear after source sync." />;
+  }
 
   return (
     <div style={widgetStyle}>
       <MetralyHeatmap
-        title="Team Activity"
-        xLabels={cols}
-        yLabels={rows}
+        title={data?.title ?? 'Team Activity'}
+        xLabels={xLabels}
+        yLabels={yLabels}
         cells={cells}
         compact
         density="dashboard"
@@ -498,7 +531,7 @@ const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) =
   );
 };
 
-const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
+const CompareBarChartWidget = ({ data, renderMode = 'view' }: { config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }) => {
   if (!data) return <LoadingWidget title="Comparison chart loading…" />;
 
   const labels = data.labels ?? [];
@@ -512,24 +545,30 @@ const CompareBarChartWidget = ({ data }: { config: WidgetConfig; data?: any }) =
   const latest = Number(primary[primary.length - 1] ?? 0);
   const summary = `Compare: ${latest.toFixed(1)}%`;
 
+  const chartEl = IS_VITEST ? (
+    <TestChartFallback summary={summary} />
+  ) : (
+    <MetralyBarChart
+      data={points}
+      xKey="label"
+      series={[
+        { dataKey: 'primary', name: 'Primary', tone: 'cyan' },
+        { dataKey: 'secondary', name: 'Secondary', tone: 'purple' },
+      ]}
+      ariaLabel="Compare bar chart"
+      summary={summary}
+      height={140}
+    />
+  );
+
+  if (renderMode === 'edit' || renderMode === 'preview') {
+    return <div style={widgetStyle}>{chartEl}</div>;
+  }
+
   return (
     <div style={widgetStyle}>
       <MetralyChartCard title="Compare" summary={summary}>
-        {IS_VITEST ? (
-          <TestChartFallback summary={summary} />
-        ) : (
-          <MetralyBarChart
-            data={points}
-            xKey="label"
-            series={[
-              { dataKey: 'primary', name: 'Primary', tone: 'cyan' },
-              { dataKey: 'secondary', name: 'Secondary', tone: 'purple' },
-            ]}
-            ariaLabel="Compare bar chart"
-            summary={summary}
-            height={140}
-          />
-        )}
+        {chartEl}
       </MetralyChartCard>
     </div>
   );
@@ -573,7 +612,7 @@ const RecentActivityWidget = ({ data }: { config: WidgetConfig; data?: any }) =>
   );
 };
 
-export const widgetRegistry: Record<WidgetType, React.FC<{ config: WidgetConfig; data?: any }>> = {
+export const widgetRegistry: Record<WidgetType, React.FC<{ config: WidgetConfig; data?: any; renderMode?: 'view' | 'edit' | 'preview' }>> = {
   'metric-chart': MetricChartWidget,
   'stat-card': StatCardWidget,
   'health-gauge': GaugeWidget,

@@ -109,15 +109,14 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
               icon={<Icon name={item.icon} size={15} color="currentColor" />}
               label={item.label}
               meta={
-                <span
+                <button
+                  type="button"
                   aria-label="Unpin"
-                  role="button"
-                  tabIndex={-1}
-                  onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  style={{ cursor: "pointer", color: "var(--m-fg-3)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}
+                  onClick={(e) => togglePin(item.id, e)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
                 >
                   <Icon name="pinOff" size={13} color="currentColor" />
-                </span>
+                </button>
               }
               onClick={() => onNav?.(item.id)}
             />
@@ -132,19 +131,18 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
             active={active === item.id}
             icon={<Icon name={item.icon} size={15} color="currentColor" />}
             label={item.label}
-            meta={
-              !collapsed ? (
-                <span
-                  aria-label="Pin"
-                  role="button"
-                  tabIndex={-1}
-                  onClick={(e) => togglePin(item.id, e as unknown as React.MouseEvent)}
-                  style={{ cursor: "pointer", color: "var(--m-fg-3)", padding: "0 2px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}
-                >
-                  <Icon name="pin" size={13} color="currentColor" />
-                </span>
-              ) : undefined
-            }
+              meta={
+                !collapsed ? (
+                  <button
+                    type="button"
+                    aria-label="Pin"
+                    onClick={(e) => togglePin(item.id, e)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    <Icon name="pin" size={13} color="currentColor" />
+                  </button>
+                ) : undefined
+              }
             onClick={() => onNav?.(item.id)}
           />
         ))}

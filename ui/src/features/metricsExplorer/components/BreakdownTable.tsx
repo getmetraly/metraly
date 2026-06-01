@@ -15,10 +15,11 @@ type BreakdownRow = {
 };
 
 const DORA_LEVEL_STATE_MAP: Record<string, "success" | "live" | "warning" | "error" | "info"> = {
-  Elite: 'success',
-  High: 'live',
-  Med: 'warning',
-  Low: 'error',
+  elite: 'success',
+  high: 'live',
+  med: 'warning',
+  medium: 'warning',
+  low: 'error',
 };
 
 export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
@@ -52,7 +53,7 @@ export const BreakdownTable: React.FC<BreakdownTableProps> = ({ metricId }) => {
         name: r[0],
         team: r[1],
         value: <span style={{ fontFamily: 'var(--m-font-mono)', color: 'var(--m-fg-0)' }}>{r[2]}</span>,
-        level: <StateBadge state={DORA_LEVEL_STATE_MAP[r[3]] ?? 'info'} label={r[3]} />,
+        level: <StateBadge state={DORA_LEVEL_STATE_MAP[r[3].toLowerCase()] ?? 'info'} label={r[3]} />,
         delta: (
           <span
             style={{

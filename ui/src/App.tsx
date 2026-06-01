@@ -93,6 +93,7 @@ const App = () => {
     FIRST_RUN_MODE.demo,
   );
   const [title, subtitle] = titles[active] || ['Metraly', ''];
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const syncSession = () => setSession(loadSession());
@@ -106,6 +107,13 @@ const App = () => {
       document.documentElement.classList.remove('metraly-login-scroll');
     };
   }, [session]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNavOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
 
   const handleSignIn = async (email: string, password: string) => {
     await login(email, password);
@@ -210,20 +218,56 @@ const App = () => {
     return <>{renderFirstRunChoice()}</>;
   }
 
+  const handleMobileNavClose = () => setMobileNavOpen(false);
+  const handleMobileNav = (id: string) => {
+    setActive(id);
+    setMobileNavOpen(false);
+  };
+
+
   const shell = (
     <div className="metraly-app-shell">
       <div className="metraly-app-shell__sidebar">
         <Sidebar active={active} onNav={setActive} />
       </div>
       <div className="metraly-app-shell__topbar">
-        <Topbar title={title} subtitle={subtitle} />
+        <Topbar title={title} subtitle={subtitle} onOpenMobileNav={() => setMobileNavOpen(true)} />
       </div>
       <main className="metraly-app-shell__main metraly-app-shell__main--flush">
         {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
       </main>
 
+      {mobileNavOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+          style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex' }}
+        >
+          <div
+            aria-hidden="true"
+            onClick={handleMobileNavClose}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }}
+          />
+          <div
+            style={{
+              position: 'relative',
+              width: 280,
+              background: 'var(--m-bg-0)',
+              height: '100%',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Sidebar active={active} onNav={handleMobileNav} />
+          </div>
+        </div>
+      )}
     </div>
   );
   return <TweaksProvider>{shell}</TweaksProvider>;
 };
 export default App;
+// hmr test Mon Jun  1 12:24:12 MSK 2026
+// hmr-docker-test-v2 Mon Jun  1 12:25:01 MSK 2026

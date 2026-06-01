@@ -3,17 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "ui:build-dep": "npm --prefix ../../brandbook/packages/ui run build",
-    "predev": "npm run ui:build-dep",
     "dev": "vite",
-    "prebuild": "npm run ui:build-dep",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "pretest": "npm run ui:build-dep",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pretypecheck": "npm run ui:build-dep",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -34,8 +29,8 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/react-grid-layout": "^1.3.6",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
