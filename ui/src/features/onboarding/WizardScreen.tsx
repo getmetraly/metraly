@@ -10,24 +10,31 @@ import {
   CardShell,
   MetralyIcon,
   Icon,
+  StateBadge,
 } from '../../design-system';
 import type { ReviewPanelItem, WizardLayoutStep, MetralySelectOption } from '../../design-system';
+import {
+  createSource,
+  listCollectorRuns,
+  listSources,
+  testSource,
+  triggerCollect,
+  type CollectorRun,
+  type ConnectionTestResult,
+} from '../../api/client';
 
 interface Source {
   id: string;
   icon: string;
   name: string;
   desc: string;
-  cli: string;
 }
 
 const SOURCES: Source[] = [
-  { id: 'github', icon: 'github', name: 'GitHub', desc: 'Repos, PRs, CI workflows', cli: 'github --org my-org' },
-  { id: 'jira', icon: 'jira', name: 'Jira', desc: 'Issues, sprints, backlogs', cli: 'jira --url https://your-domain.atlassian.net' },
-  { id: 'gitlab', icon: 'gitlab', name: 'GitLab', desc: 'Merge requests & pipelines', cli: 'gitlab --host https://gitlab.com' },
-  { id: 'linear', icon: 'linear', name: 'Linear', desc: 'Projects, cycles & issues', cli: 'linear --api-key' },
-  { id: 'slack', icon: 'slack', name: 'Slack', desc: 'Team communications', cli: 'slack --token' },
-  { id: 'pagerduty', icon: 'pagerduty', name: 'PagerDuty', desc: 'Incidents & on-call', cli: 'pagerduty --integration-key' },
+  { id: 'github', icon: 'github', name: 'GitHub', desc: 'Repos, PRs, CI workflows' },
+  { id: 'jira', icon: 'jira', name: 'Jira', desc: 'Issues, sprints, backlogs' },
+  { id: 'gitlab', icon: 'gitlab', name: 'GitLab', desc: 'Merge requests & pipelines' },
+  { id: 'linear', icon: 'linear', name: 'Linear', desc: 'Projects, cycles & issues' },
 ];
 
 const STAGES = ['sources', 'auth', 'configure', 'review'] as const;
@@ -40,20 +47,32 @@ const STEP_LABELS: Record<Stage, string> = {
   review: 'Review',
 };
 
+interface SourceRuntimeState {
+  secret: string;
+  sourceId?: string;
+  createError?: string;
+  testResult?: ConnectionTestResult;
+  collectRun?: CollectorRun;
+  collectError?: string;
+  isCreating: boolean;
+  isTesting: boolean;
+  isCollecting: boolean;
+}
+
 interface WizardScreenProps {
   onUseDemo?: () => void;
   onFinish?: () => void;
 }
 
-
 export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish }) => {
   const [stage, setStage] = useState<Stage>('sources');
   const [selected, setSelected] = useState<string[]>(['github']);
-  const [connected, setConnected] = useState<Record<string, boolean>>({});
+  const [sourceState, setSourceState] = useState<Record<string, SourceRuntimeState>>({});
   const [syncInterval, setSyncInterval] = useState('Every 5 minutes');
   const [repos, setRepos] = useState('All repos in org');
   const [includeArchived, setIncludeArchived] = useState(false);
   const [backfill, setBackfill] = useState('90 days');
+  const [finishError, setFinishError] = useState('');
 
   const stageIdx = STAGES.indexOf(stage);
   const steps: WizardLayoutStep[] = useMemo(
@@ -62,7 +81,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
   );
 
   const selectedSources = SOURCES.filter((source) => selected.includes(source.id));
-  const allConnected = selectedSources.length > 0 && selectedSources.every((source) => connected[source.id]);
+  const allConnected = selectedSources.length > 0 && selectedSources.every((source) => sourceState[source.id]?.testResult?.status === 'ok');
 
   const canGoNext =
     stage === 'sources'
@@ -71,26 +90,109 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
         ? allConnected
         : true;
 
-  function goBack() {
-    if (stageIdx === 0) return;
-    setStage(STAGES[stageIdx - 1]);
+  function toggleSource(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   }
 
-  function goNext() {
+  function updateState(sourceKey: string, updater: (prev: SourceRuntimeState) => SourceRuntimeState) {
+    setSourceState((prev) => {
+      const current: SourceRuntimeState = prev[sourceKey] || {
+        secret: '',
+        isCreating: false,
+        isTesting: false,
+        isCollecting: false,
+      };
+      return { ...prev, [sourceKey]: updater(current) };
+    });
+  }
+
+  async function connectSource(source: Source) {
+    const state = sourceState[source.id];
+    const secret = (state?.secret || '').trim();
+    if (!secret) {
+      updateState(source.id, (prev) => ({ ...prev, createError: 'Secret/token is required.' }));
+      return;
+    }
+
+    updateState(source.id, (prev) => ({ ...prev, isCreating: true, createError: '', collectError: '' }));
+
+    try {
+      const created = await createSource({
+        sourceType: source.id,
+        displayName: source.name,
+        secret,
+        config: {
+          syncInterval,
+          repoScope: repos,
+          includeArchived: includeArchived ? 'true' : 'false',
+          backfill,
+          org: 'metraly-demo',
+        },
+      });
+      updateState(source.id, (prev) => ({ ...prev, sourceId: created.source.id, isCreating: false, isTesting: true }));
+      const test = await testSource(created.source.id);
+      updateState(source.id, (prev) => ({ ...prev, isTesting: false, testResult: test }));
+    } catch (error) {
+      updateState(source.id, (prev) => ({
+        ...prev,
+        isCreating: false,
+        isTesting: false,
+        createError: error instanceof Error ? error.message : 'Failed to connect source',
+      }));
+    }
+  }
+
+  async function triggerCollectForAll() {
+    setFinishError('');
+    for (const source of selectedSources) {
+      const state = sourceState[source.id];
+      if (!state?.sourceId || state?.testResult?.status !== 'ok') {
+        continue;
+      }
+      updateState(source.id, (prev) => ({ ...prev, isCollecting: true, collectError: '' }));
+      try {
+        const run = await triggerCollect(state.sourceId);
+        const runs = await listCollectorRuns(state.sourceId, 1);
+        const latest = runs.runs?.[0] || run;
+        updateState(source.id, (prev) => ({ ...prev, collectRun: latest, isCollecting: false }));
+      } catch (error) {
+        updateState(source.id, (prev) => ({
+          ...prev,
+          isCollecting: false,
+          collectError: error instanceof Error ? error.message : 'Failed to trigger collection',
+        }));
+      }
+    }
+  }
+
+  async function goNext() {
     if (!canGoNext) return;
     if (stageIdx < STAGES.length - 1) {
       setStage(STAGES[stageIdx + 1]);
       return;
     }
-    if (onFinish) {
-      onFinish();
-      return;
+    try {
+      await triggerCollectForAll();
+      await listSources();
+      onFinish?.();
+    } catch (error) {
+      setFinishError(error instanceof Error ? error.message : 'Failed to complete source setup');
     }
-    window.location.href = '/';
   }
 
-  function toggleSource(id: string) {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  function goBack() {
+    if (stageIdx === 0) return;
+    setStage(STAGES[stageIdx - 1]);
+  }
+
+  function renderSourceStatus(source: Source) {
+    const s = sourceState[source.id];
+    if (!s) return <StateBadge state="noData" label="Not connected" />;
+    if (s.isCreating || s.isTesting) return <StateBadge state="info" label="Connecting…" />;
+    if (s.testResult?.status === 'ok') return <StateBadge state="ok" label="Connected" />;
+    if (s.testResult) return <StateBadge state="warning" label={s.testResult.status} />;
+    if (s.createError) return <StateBadge state="error" label="Failed" />;
+    return <StateBadge state="noData" label="Not connected" />;
   }
 
   function renderStageBody() {
@@ -131,46 +233,45 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
     }
 
     if (stage === 'auth') {
-      const cliSource = selectedSources[0] ?? SOURCES[0];
       return (
         <div style={{ display: 'grid', gap: 12 }}>
-          {selectedSources.map((source) => (
-            <div
-              key={source.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                borderRadius: 10,
-                border: '1px solid var(--m-line)',
-                background: 'var(--m-bg-1)',
-                padding: '14px 16px',
-              }}
-            >
-              <Icon name={source.icon} size={16} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0)' }}>{source.name}</div>
-                <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>{source.desc}</div>
+          {selectedSources.map((source) => {
+            const runtime = sourceState[source.id] || { secret: '', isCreating: false, isTesting: false, isCollecting: false };
+            return (
+              <div key={source.id} style={{ borderRadius: 10, border: '1px solid var(--m-line)', background: 'var(--m-bg-1)', padding: '14px 16px', display: 'grid', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Icon name={source.icon} size={16} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 'var(--m-fs-12, 12px)', fontWeight: 700, color: 'var(--m-fg-0)' }}>{source.name}</div>
+                    <div style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>{source.desc}</div>
+                  </div>
+                  {renderSourceStatus(source)}
+                </div>
+                <MetralyInput
+                  type="password"
+                  value={runtime.secret}
+                  onChange={(e) => updateState(source.id, (prev) => ({ ...prev, secret: e.target.value }))}
+                  placeholder="Paste token / API secret"
+                  fullWidth
+                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <MetralyButton
+                    type="button"
+                    variant={runtime.testResult?.status === 'ok' ? 'neutral' : 'primary'}
+                    size="sm"
+                    disabled={runtime.isCreating || runtime.isTesting}
+                    onClick={() => connectSource(source)}
+                  >
+                    {runtime.isCreating || runtime.isTesting ? 'Connecting…' : runtime.testResult?.status === 'ok' ? 'Re-test' : 'Connect'}
+                  </MetralyButton>
+                  {runtime.createError ? <span style={{ color: 'var(--m-err)', fontSize: 'var(--m-fs-10, 10px)' }}>{runtime.createError}</span> : null}
+                  {runtime.testResult && runtime.testResult.status !== 'ok' ? (
+                    <span style={{ color: 'var(--m-warn)', fontSize: 'var(--m-fs-10, 10px)' }}>{runtime.testResult.message}</span>
+                  ) : null}
+                </div>
               </div>
-              <MetralyButton
-                type="button"
-                variant={connected[source.id] ? 'neutral' : 'primary'}
-                size="sm"
-                disabled={!!connected[source.id]}
-                onClick={() => setConnected((prev) => ({ ...prev, [source.id]: true }))}
-              >
-                {connected[source.id] ? 'Connected' : 'Connect'}
-              </MetralyButton>
-            </div>
-          ))}
-          <div style={{ borderRadius: 10, border: '1px solid var(--m-line)', background: 'var(--m-bg-2)', padding: '10px 12px' }}>
-            <div style={{ fontFamily: 'var(--m-font-mono)', fontSize: 'var(--m-fs-11, 11px)', color: 'var(--m-fg-2)' }}>
-              $ metraly auth {cliSource.cli}
-            </div>
-            <div style={{ marginTop: 4, fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-ok)' }}>
-              Waiting for OAuth callback on localhost:7842…
-            </div>
-          </div>
+            );
+          })}
         </div>
       );
     }
@@ -219,11 +320,28 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
     ];
 
     return (
-      <ReviewPanel
-        title="Review connection setup"
-        description="Metraly will start indexing after activation."
-        items={reviewItems}
-      />
+      <div style={{ display: 'grid', gap: 12 }}>
+        <ReviewPanel
+          title="Review connection setup"
+          description="Metraly will start indexing after activation."
+          items={reviewItems}
+        />
+        {selectedSources.map((source) => {
+          const runtime = sourceState[source.id];
+          return (
+            <div key={source.id} style={{ borderRadius: 10, border: '1px solid var(--m-line)', background: 'var(--m-bg-1)', padding: '12px 14px', display: 'grid', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name={source.icon} size={14} />
+                <strong style={{ fontSize: 'var(--m-fs-11, 11px)' }}>{source.name}</strong>
+                {runtime?.collectRun ? <StateBadge state={runtime.collectRun.status === 'succeeded' ? 'success' : runtime.collectRun.status === 'failed' ? 'error' : 'info'} label={runtime.collectRun.status} /> : null}
+              </div>
+              {runtime?.collectError ? <span style={{ color: 'var(--m-err)', fontSize: 'var(--m-fs-10, 10px)' }}>{runtime.collectError}</span> : null}
+              {runtime?.collectRun ? <span style={{ color: 'var(--m-fg-2)', fontSize: 'var(--m-fs-10, 10px)' }}>raw events: {runtime.collectRun.rawEventCount}</span> : null}
+            </div>
+          );
+        })}
+        {finishError ? <span style={{ color: 'var(--m-err)', fontSize: 'var(--m-fs-10, 10px)' }}>{finishError}</span> : null}
+      </div>
     );
   }
 
@@ -255,7 +373,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
         footer={
           <StickyWizardFooter
             back={<MetralyButton type="button" variant="ghost" size="md" disabled={stageIdx === 0} onClick={goBack}>Back</MetralyButton>}
-            primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={goNext}>{stage === 'review' ? 'Go to Dashboard' : 'Continue'}</MetralyButton>}
+            primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={goNext}>{stage === 'review' ? 'Activate & Continue' : 'Continue'}</MetralyButton>}
             status={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>Step {stageIdx + 1} / {STAGES.length}</span>}
           />
         }

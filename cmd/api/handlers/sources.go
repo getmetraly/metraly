@@ -55,7 +55,7 @@ func (h *SourceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	sc, cred, err := h.svc.CreateSource(r.Context(), wsID, input)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "SOURCE_CREATE_FAILED", "failed to create source")
+		respond.Error(w, http.StatusInternalServerError, "SOURCE_CREATE_FAILED", err.Error())
 		return
 	}
 	respond.JSON(w, http.StatusCreated, map[string]any{"source": sc, "credential": cred})

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, SystemTemplate, WidgetLayout } from '../types/dashboard';
 import type { CreateDashboardRequest, ForkDashboardRequest, ShareDashboardRequest, ShareDashboardResponse, UpdateDashboardRequest, UpdateLayoutRequest } from '../types/api';
+import { sanitizeDashboardIcon } from '../features/dashboardWizard/dashboardIcons';
 import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricBreakdownItem as UiMetricBreakdownItem, MetricTimeSeries } from '../types/metrics';
 import type { ActivityEvent, MeResponse } from '../types/user';
 
@@ -72,6 +73,49 @@ type ShareDashboardApiResponse = {
   dashboardId: string;
 };
 
+
+type ApiBootstrapResponse = {
+  user: { id: string; name: string; email: string };
+  workspace: { id: string; name: string };
+  dashboards: {
+    id: string;
+    name: string;
+    description?: string;
+    icon?: string;
+    sourceType: Dashboard['sourceType'];
+    sourceTemplateId?: Dashboard['sourceTemplateId'] | null;
+    widgetCount: number;
+    updatedAt: string;
+  }[];
+  selectedDashboardId: string;
+  iconOptions: { id: string; label: string; icon: string }[];
+  features: {
+    dashboardCreate: boolean;
+    dashboardEdit: boolean;
+    dashboardIconPicker: boolean;
+    sourceSetup: boolean;
+    sourceCollect: boolean;
+  };
+  sourceSummary: {
+    connectedCount: number;
+    hasRealSources: boolean;
+    demoMode: boolean;
+  };
+  fetchedAt: string;
+};
+
+type ApiDashboardViewResponse = {
+  dashboard: ApiDashboard;
+  widgetData: Record<string, unknown>;
+  widgetErrors: Record<string, string>;
+  sourceContext: {
+    mode: 'demo' | 'mixed' | 'live';
+    hasRealSources: boolean;
+    message: string;
+  };
+  fetchedAt: string;
+  viewVersion: number;
+};
 const rawClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: false,
@@ -243,6 +287,19 @@ function mapLayoutFromApi(layout: ApiWidgetLayout[]): WidgetLayout[] {
   }));
 }
 
+function mapBootstrapDashboardIndex(dashboard: ApiBootstrapResponse['dashboards'][number]): DashboardIndexEntry {
+  return {
+    id: dashboard.id,
+    name: dashboard.name,
+    description: dashboard.description || undefined,
+    icon: sanitizeDashboardIcon(dashboard.icon),
+    sourceType: dashboard.sourceType || 'user-created',
+    sourceTemplateId: dashboard.sourceTemplateId || undefined,
+    visibility: 'org',
+    updatedAt: dashboard.updatedAt,
+    hasDraft: false,
+  };
+}
 function mapLayoutToApi(layout: WidgetLayout[]): ApiWidgetLayout[] {
   return layout.map(({ i, ...item }) => ({
     ...item,
@@ -255,7 +312,7 @@ function mapDashboard(dashboard: ApiDashboard): Dashboard {
     id: dashboard.id,
     name: dashboard.name,
     description: dashboard.description || '',
-    icon: dashboard.icon || '',
+    icon: sanitizeDashboardIcon(dashboard.icon),
     sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
     sourceTemplateId: dashboard.sourceTemplateId || undefined,
     forkedFromId: dashboard.forkedFromId || undefined,
@@ -276,7 +333,7 @@ function mapDashboardIndex(dashboard: ApiDashboard): DashboardIndexEntry {
     id: dashboard.id,
     name: dashboard.name,
     description: dashboard.description || undefined,
-    icon: dashboard.icon || undefined,
+    icon: sanitizeDashboardIcon(dashboard.icon),
     sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
     sourceTemplateId: dashboard.sourceTemplateId || undefined,
     visibility: dashboard.isPublic ? 'org' : 'private',
@@ -317,7 +374,7 @@ function createDashboardPayload(input: CreateDashboardRequest): {
   return {
     name: input.name,
     description: input.description,
-    icon: input.icon ?? '',
+    icon: sanitizeDashboardIcon(input.icon),
     widgets: input.widgets,
     layout: mapLayoutToApi(input.layout),
   };
@@ -334,7 +391,7 @@ function updateDashboardPayload(input: UpdateDashboardRequest): {
   return {
     name: input.name ?? '',
     description: input.description,
-    icon: input.icon ?? '',
+    icon: sanitizeDashboardIcon(input.icon),
     widgets: input.widgets,
     layout: input.layout ? mapLayoutToApi(input.layout) : undefined,
     version: input.version,
@@ -391,6 +448,69 @@ function mapMetricSeries(points: { time: string; value: number }[], unit: string
   };
 }
 
+export interface AppBootstrap {
+  user: { id: string; name: string; email: string };
+  workspace: { id: string; name: string };
+  dashboards: DashboardIndexEntry[];
+  selectedDashboardId: string;
+  iconOptions: { id: string; label: string; icon: string }[];
+  features: {
+    dashboardCreate: boolean;
+    dashboardEdit: boolean;
+    dashboardIconPicker: boolean;
+    sourceSetup: boolean;
+    sourceCollect: boolean;
+  };
+  sourceSummary: {
+    connectedCount: number;
+    hasRealSources: boolean;
+    demoMode: boolean;
+  };
+  fetchedAt: string;
+}
+
+export interface DashboardView {
+  dashboard: Dashboard;
+  widgetData: Record<string, unknown>;
+  widgetErrors: Record<string, string>;
+  sourceContext: {
+    mode: 'demo' | 'mixed' | 'live';
+    hasRealSources: boolean;
+    message: string;
+  };
+  fetchedAt: string;
+  viewVersion: number;
+}
+
+export async function getAppBootstrap(): Promise<AppBootstrap> {
+  const res = await client.get<ApiBootstrapResponse>('/app/bootstrap');
+  return {
+    user: res.data.user,
+    workspace: res.data.workspace,
+    dashboards: res.data.dashboards.map(mapBootstrapDashboardIndex),
+    selectedDashboardId: res.data.selectedDashboardId,
+    iconOptions: res.data.iconOptions.map((option) => ({
+      ...option,
+      icon: sanitizeDashboardIcon(option.icon),
+    })),
+    features: res.data.features,
+    sourceSummary: res.data.sourceSummary,
+    fetchedAt: res.data.fetchedAt,
+  };
+}
+
+export async function getDashboardView(dashboardId: string): Promise<DashboardView> {
+  const res = await client.get<ApiDashboardViewResponse>(`/dashboards/${resolveDashboardApiId(dashboardId)}/view`);
+  const dashboard = mapDashboard(res.data.dashboard);
+  return {
+    dashboard,
+    widgetData: res.data.widgetData || {},
+    widgetErrors: res.data.widgetErrors || {},
+    sourceContext: res.data.sourceContext,
+    fetchedAt: res.data.fetchedAt,
+    viewVersion: res.data.viewVersion,
+  };
+}
 export async function getDashboardList(): Promise<DashboardIndexEntry[]> {
   const res = await client.get<ApiDashboard[]>('/dashboards');
   return res.data.map(mapDashboardIndex);
@@ -522,6 +642,74 @@ async function getDORADetail(metricId: string, timeRange: string, team: string, 
     benchmarkNote: 'Backend-backed preview data',
     timeSeries: metric.current,
   };
+}
+
+export interface SourceConnection {
+  id: string;
+  workspaceId: string;
+  sourceType: string;
+  displayName: string;
+  status: string;
+  config: Record<string, string>;
+  credentialId: string;
+  lastTestedAt?: string;
+  lastSyncedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectionTestResult {
+  status: 'ok' | 'invalid_credentials' | 'permission_denied' | 'rate_limited' | 'network_error' | 'unsupported_source' | 'unknown';
+  message: string;
+  scopesFound?: string[];
+  scopesMissing?: string[];
+  testedAt: string;
+  latencyMs: number;
+}
+
+export interface CollectorRun {
+  id: string;
+  sourceConnectionId: string;
+  collectorType: string;
+  status: 'started' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+  startedAt: string;
+  finishedAt?: string;
+  cursor: string;
+  rawEventCount: number;
+  errorCategory?: string;
+  errorMessage?: string;
+  rateLimitState: 'ok' | 'throttled' | 'cooldown';
+  retryAfter?: string;
+}
+
+export async function listSources(): Promise<SourceConnection[]> {
+  const res = await client.get<SourceConnection[]>('/sources');
+  return res.data;
+}
+
+export async function createSource(input: {
+  sourceType: string;
+  displayName: string;
+  config?: Record<string, string>;
+  secret: string;
+}): Promise<{ source: SourceConnection }> {
+  const res = await client.post<{ source: SourceConnection; credential: unknown }>('/sources', input);
+  return { source: res.data.source };
+}
+
+export async function testSource(sourceId: string): Promise<ConnectionTestResult> {
+  const res = await client.post<ConnectionTestResult>(`/sources/${sourceId}/test`);
+  return res.data;
+}
+
+export async function triggerCollect(sourceId: string): Promise<CollectorRun> {
+  const res = await client.post<CollectorRun>(`/sources/${sourceId}/collect`);
+  return res.data;
+}
+
+export async function listCollectorRuns(sourceId: string, limit = 20): Promise<{ runs: CollectorRun[] }> {
+  const res = await client.get<{ runs: CollectorRun[] }>(`/sources/${sourceId}/collector-runs`, { params: { limit } });
+  return res.data;
 }
 
 export { client };

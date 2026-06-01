@@ -17,6 +17,7 @@ import {
   TEMPLATES,
   WIDGET_LIBRARY,
 } from "../../dashboardEditor/catalog";
+import { DEFAULT_DASHBOARD_ICON } from "../dashboardIcons";
 
 export type WizardWidget = DashboardEditorWidget;
 
@@ -32,6 +33,7 @@ interface WizardState extends DashboardEditorState {
   setDesc: (d: string) => void;
   setTimeRange: (t: string) => void;
   setTeam: (t: string) => void;
+  setIcon: (icon: string) => void;
   setWidgets: (widgets: DashboardEditorWidget[]) => void;
   moveWidget: (fromIndex: number, toIndex: number) => void;
   reset: () => void;
@@ -46,7 +48,7 @@ const createInitialState = (): DashboardEditorState => ({
   desc: "",
   timeRange: "30d",
   team: "All teams",
-  icon: "",
+  icon: DEFAULT_DASHBOARD_ICON,
 });
 
 export const useWizardStore = create<WizardState>((set, get) => ({
@@ -112,6 +114,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   setDesc: (desc) => set({ desc }),
   setTimeRange: (timeRange) => set({ timeRange }),
   setTeam: (team) => set({ team }),
+  setIcon: (icon) => set({ icon }),
 
   setWidgets: (newWidgets) => {
     const layout = newWidgets.map((widget, idx) => ({

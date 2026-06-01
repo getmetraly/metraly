@@ -15,6 +15,8 @@ import { createDashboard } from "../../api/client";
 import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
 import { WizardPreviewGrid } from "./components/WizardPreviewGrid";
+import { DASHBOARD_ICON_OPTIONS, sanitizeDashboardIcon } from "./dashboardIcons";
+import { useDashboards } from "../../hooks/useDashboards";
 
 const CATS = ["All", "DORA", "CI/CD", "PR", "Sprint", "Team", "AI"];
 
@@ -39,6 +41,9 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
   const setTimeRange = useWizardStore((s) => s.setTimeRange);
   const team = useWizardStore((s) => s.team);
   const setTeam = useWizardStore((s) => s.setTeam);
+  const icon = useWizardStore((s) => s.icon);
+  const setIcon = useWizardStore((s) => s.setIcon);
+  const { iconOptions } = useDashboards();
   const widgets = useWizardStore((s) => s.widgets);
   const addWidget = useWizardStore((s) => s.addWidget);
   const removeWidget = useWizardStore((s) => s.removeWidget);
@@ -271,6 +276,36 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
                   placeholder="Optional - visible to teammates"
                   fullWidth
                 />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--m-fg-2)",
+                    display: "block",
+                    marginBottom: 8,
+                  }}
+                >
+                  Dashboard icon
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {(iconOptions.length > 0 ? iconOptions.map((option) => option.icon) : DASHBOARD_ICON_OPTIONS).map((iconName) => {
+                    const selected = sanitizeDashboardIcon(icon) === iconName;
+                    return (
+                      <MetralyButton
+                        key={iconName}
+                        type="button"
+                        size="sm"
+                        variant={selected ? "secondary" : "ghost"}
+                        aria-label={`Use ${iconName} icon`}
+                        onClick={() => setIcon(iconName)}
+                        iconLeft={<Icon name={iconName} size={13} />}
+                      >
+                        {iconName}
+                      </MetralyButton>
+                    );
+                  })}
+                </div>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <div

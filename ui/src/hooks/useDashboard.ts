@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { getDashboard as fetchDashboard, getDashboardData as fetchDashboardData } from "../api/client";
+import { getDashboardView as fetchDashboardView } from "../api/client";
 import type { Dashboard } from "../types/dashboard";
 
 interface UseDashboardResult {
@@ -26,85 +26,54 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     dashboardIdRef.current = dashboardId;
   }, [dashboardId]);
 
+  const load = async (requestId: string) => {
+    try {
+      setIsWidgetDataLoading(true);
+      const view = await fetchDashboardView(requestId);
+      if (dashboardIdRef.current !== requestId) return;
+
+      setDashboard(view.dashboard);
+      const dataMap: Record<string, any> = {};
+      Object.entries(view.widgetData || {}).forEach(([instanceId, value]) => {
+        dataMap[`${view.dashboard.id}-${instanceId}`] = value;
+      });
+      setWidgetData(dataMap);
+      setIsDashboardLoading(false);
+      setIsWidgetDataLoading(false);
+      setError(null);
+    } catch (err) {
+      if (dashboardIdRef.current === requestId) {
+        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+        setIsDashboardLoading(false);
+        setIsWidgetDataLoading(false);
+      }
+    } finally {
+      if (dashboardIdRef.current === requestId) {
+        setIsLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     const requestId = dashboardIdRef.current;
-
     setDashboard(null);
     setWidgetData({});
     setIsLoading(true);
     setIsDashboardLoading(true);
     setIsWidgetDataLoading(false);
     setError(null);
-
-    async function fetchData() {
-      try {
-        const dash = await fetchDashboard(requestId);
-        if (dashboardIdRef.current !== requestId) return;
-        setDashboard(dash);
-        setIsDashboardLoading(false);
-        setIsWidgetDataLoading(true);
-
-        const dataResponse = await fetchDashboardData(requestId);
-        if (dashboardIdRef.current !== requestId) return;
-
-        const dataMap: Record<string, any> = {};
-        dataResponse.widgets.forEach((item) => {
-          dataMap[`${dash.id}-${item.instanceId}`] = item.data;
-        });
-        setWidgetData(dataMap);
-        setIsWidgetDataLoading(false);
-      } catch (err) {
-        if (dashboardIdRef.current === requestId) {
-          setError(err instanceof Error ? err.message : "Failed to load dashboard");
-        }
-      } finally {
-        if (dashboardIdRef.current === requestId) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchData();
+    load(requestId);
   }, [dashboardId]);
 
   const refresh = () => {
+    const requestId = dashboardId;
     setDashboard(null);
     setWidgetData({});
     setIsLoading(true);
     setIsDashboardLoading(true);
     setIsWidgetDataLoading(false);
     setError(null);
-
-    const requestId = dashboardId;
-    async function fetchRefresh() {
-      try {
-        const dash = await fetchDashboard(requestId);
-        if (dashboardIdRef.current !== requestId) return;
-        setDashboard(dash);
-        setIsDashboardLoading(false);
-        setIsWidgetDataLoading(true);
-
-        const dataResponse = await fetchDashboardData(requestId);
-        if (dashboardIdRef.current !== requestId) return;
-
-        const dataMap: Record<string, any> = {};
-        dataResponse.widgets.forEach((item) => {
-          dataMap[`${dash.id}-${item.instanceId}`] = item.data;
-        });
-        setWidgetData(dataMap);
-        setIsWidgetDataLoading(false);
-      } catch (err) {
-        if (dashboardIdRef.current === requestId) {
-          setError(err instanceof Error ? err.message : "Failed to load dashboard");
-        }
-      } finally {
-        if (dashboardIdRef.current === requestId) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchRefresh();
+    load(requestId);
   };
 
   return {

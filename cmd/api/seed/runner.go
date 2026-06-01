@@ -291,9 +291,9 @@ func stringPtr(s string) *string {
 
 var sandboxAllWidgets = &domain.Dashboard{
 	ID:               "sandbox-all-widgets",
-	Name:             "Metraly Demo Dashboard",
-	Description:      "All Metraly widgets with seeded data",
-	Icon:             "dashboard",
+	Name:             "Demo",
+	Description:      "All Metraly widgets with backend-generated demo data",
+	Icon:             "sparkles",
 	OwnerID:          "admin-seed",
 	IsPublic:         true,
 	SourceType:       domain.DashboardSourceSystemTemplate,

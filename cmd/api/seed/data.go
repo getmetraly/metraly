@@ -61,9 +61,9 @@ var seedInsights = []*domain.AIInsight{
 var seedTemplates = []*domain.DashboardTemplate{
 	{
 		ID:          "all-widgets",
-		Name:        "Metraly Demo Dashboard",
-		Description: "All Metraly widgets with seeded data",
-		Icon:        "dashboard",
+		Name:        "Demo",
+		Description: "All Metraly widgets with backend-generated demo data",
+		Icon:        "sparkles",
 		Category:    "Demo",
 		Widgets:     sandboxAllWidgets.Widgets,
 		Layout:      sandboxAllWidgets.Layout,

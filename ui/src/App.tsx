@@ -102,7 +102,7 @@ const App = () => {
     if (cached && firstRunMode !== FIRST_RUN_MODE.undecided) return cached;
     return getInitialScreen(firstRunMode);
   });
-  const { dashboards } = useDashboards();
+  const { dashboards, selectedDashboardId, isLoading: dashboardsLoading } = useDashboards();
   const selectedDashboard = dashboards.find(d => d.id === active);
   const [title, subtitle] = selectedDashboard
     ? [selectedDashboard.name, selectedDashboard.description ?? '']
@@ -133,10 +133,11 @@ const App = () => {
   }, [mobileNavOpen]);
 
   useEffect(() => {
+    if (dashboardsLoading) return;
     if (dashboards.length === 0) return;
     const isDashboardId = dashboards.some(d => d.id === active);
     if (!NON_DASH_SCREENS.has(active) && !isDashboardId) {
-      setActive(dashboards[0].id);
+      setActive(selectedDashboardId ?? dashboards[0].id);
     }
   }, [dashboards]); // eslint-disable-line react-hooks/exhaustive-deps -- active intentionally excluded to prevent infinite loop
 
@@ -144,13 +145,13 @@ const App = () => {
     await login(email, password);
     setSession(loadSession());
     // Use first backend dashboard if available, otherwise fall through to legacy default
-    setActive(dashboards[0]?.id ?? getInitialScreen(firstRunMode));
+    setActive(selectedDashboardId ?? dashboards[0]?.id ?? getInitialScreen(firstRunMode));
   };
 
   const handleShowDemo = () => {
     setFirstRunMode(FIRST_RUN_MODE.demo);
     // Prefer loaded dashboard > cached id > 'first-run' (redirect effect will fix it)
-    setActive(dashboards[0]?.id ?? getInitialDashboardId() ?? 'first-run');
+    setActive(selectedDashboardId ?? dashboards[0]?.id ?? getInitialDashboardId() ?? 'first-run');
   };
 
   const handleSkipDemo = () => {
@@ -296,4 +297,3 @@ const App = () => {
   return shell;
 };
 export default App;
-// hmr test Mon Jun  1 12:24:12 MSK 2026

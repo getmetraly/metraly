@@ -8,6 +8,7 @@ import {
 } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
 import { useDashboards } from "../hooks/useDashboards";
+import { sanitizeDashboardIcon } from "../features/dashboardWizard/dashboardIcons";
 
 interface AppSidebarProps {
   active?: string;
@@ -46,11 +47,10 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
   const collapsed = false;
 
   const { dashboards, isLoading: dashboardsLoading } = useDashboards();
-
-  const dashboardNavItems = dashboards.map((d) => ({
+  const dashboardNavItems: NavItem[] = dashboards.map((d) => ({
     id: d.id,
     label: d.name,
-    icon: d.icon || 'dashboard',
+    icon: sanitizeDashboardIcon(d.icon),
   }));
 
   const [pinned, setPinned] = useState<string[]>(() => {
@@ -105,9 +105,12 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
               meta={
                 <button
                   type="button"
-                  aria-label="Unpin"
-                  onClick={(e) => togglePin(item.id, e)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+                  className="metraly-sidebar-pin-action"
+                  aria-label="Unpin dashboard"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    togglePin(item.id, e);
+                  }}
                 >
                   <Icon name="pinOff" size={13} color="currentColor" />
                 </button>
@@ -134,9 +137,12 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
               meta={
                 <button
                   type="button"
-                  aria-label="Pin"
-                  onClick={(e) => togglePin(item.id, e)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+                  className="metraly-sidebar-pin-action"
+                  aria-label="Pin dashboard"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    togglePin(item.id, e);
+                  }}
                 >
                   <Icon name="pin" size={13} color="currentColor" />
                 </button>

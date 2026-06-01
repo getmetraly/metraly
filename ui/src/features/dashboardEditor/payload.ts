@@ -1,6 +1,7 @@
 import type { CreateDashboardRequest, UpdateDashboardRequest } from "../../types/api";
 import type { DashboardEditorState } from "./model";
 import { toDashboardWidgetInstances } from "./model";
+import { sanitizeDashboardIcon } from "../dashboardWizard/dashboardIcons";
 
 function maybeText(value: string): string | undefined {
   const trimmed = value.trim();
@@ -11,7 +12,7 @@ export function buildCreateDashboardRequest(state: DashboardEditorState): Create
   return {
     name: state.name.trim(),
     description: maybeText(state.desc),
-    icon: state.icon || "",
+    icon: sanitizeDashboardIcon(state.icon),
     sourceType: state.selectedTemplate && state.selectedTemplate !== "blank" ? "forked" : "user-created",
     sourceTemplateId: state.selectedTemplate && state.selectedTemplate !== "blank" ? (state.selectedTemplate as CreateDashboardRequest["sourceTemplateId"]) : undefined,
     visibility: "private",
@@ -32,7 +33,7 @@ export function buildUpdateDashboardRequest(
   return {
     name: state.name.trim(),
     description: maybeText(state.desc),
-    icon: state.icon || "",
+    icon: sanitizeDashboardIcon(state.icon),
     visibility: "private",
     defaultFilters: {
       timeRange: state.timeRange as UpdateDashboardRequest["defaultFilters"]["timeRange"],

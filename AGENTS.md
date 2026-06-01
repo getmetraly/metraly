@@ -1,131 +1,79 @@
-# AGENTS.md
+# Metraly Agent Instructions
 
-This file documents agent-specific information for this project.
+## Current stage
 
-## Worktrees
+Metraly is in a pre-MVP phase. Runtime dashboard APIs, frontend hooks, seed data, dashboard contracts and connector setup flows may change if that helps produce a working MVP faster.
 
-All feature work should be done in a **project‑local Git worktree** located under the hidden `.worktrees/` directory. Example workflow:
+Do not preserve legacy compatibility by default. Remove obsolete role dashboards, mappings, preview-only flows and compatibility shims unless they are clearly useful.
 
-```bash
-# Create a new worktree for a feature branch
-git worktree add .worktrees/feature‑xyz feature/xyz
-cd .worktrees/feature‑xyz
-```
+## Current phase
 
-The worktree stays isolated from the main workspace, making it safe to run `make docker-restart` or other heavy commands without affecting other branches.
+Current work is **Phase 2.5 — Dashboard Runtime MVP and Source Setup Bridge**.
 
-## Project Context
+Phase 1 is complete.
+Phase 2 UI/brandbook cutover is complete or treated as complete enough for runtime work.
+Phase 3 source runtime is next, but this phase should only implement the minimum source connector bridge needed for a working MVP.
 
-- **Name**: Metraly — Team Engineering Metrics API
-- **Language**: Go (backend), React (frontend)
-- **Database**: PostgreSQL + TimescaleDB
-- **Cache**: Redis
+## Architecture direction
 
-## Phase Planning Rule
+Dashboard runtime must be backend-driven.
 
-Before starting any phase-planning work, read the relevant documentation under `../docs/` first. Treat `../docs/STATUS.md` and the supporting status/product/architecture files there as the source of truth for planning inputs, and only then move into roadmap or plan generation.
+Use BFF-style endpoints inside the existing Go API.
+Do not create a separate BFF service.
 
-## Issue Tracker
+Main app runtime should use:
+- `GET /api/v1/app/bootstrap`
+- `GET /api/v1/dashboards/{id}/view`
 
-- **Type**: Markdown files in ../docs/
-- **Labels**: Plans, Specs
-- **Format**: YYYY-MM-DD-{name}-{type}.md
+Frontend must not generate runtime dashboard widget values.
+Frontend may use preview mocks only for wizard preview.
 
+## Dashboard MVP
 
-## Common Commands
+There must be one canonical Demo dashboard:
+- id: `sandbox-all-widgets`
+- name: `Demo`
+- sourceTemplateId: `all-widgets`
+- icon: valid existing icon, preferably `sparkles`
 
-```bash
-# Development
-make build              # Build API
-make test               # Run tests
-make lint               # Run linter
-make run                # Run locally
+Demo dashboard must contain all supported visual widgets.
+Every visual widget must receive backend-generated data and render meaningful content.
 
-# Docker
-make docker-up          # Start services
-make docker-down        # Stop services
-make docker-restart     # Restart services
+## Dashboard editing
 
-# Debugging
-make health             # Check API health
-make dashboard          # Check dashboard data
-make docker-logs         # View logsa
+Dashboard creation, settings, widget configuration, drag/drop, resize, reorder and save must work against backend persistence.
 
-# Data
-make docker-test-data   # Insert test data
+No local-only saved dashboard state as the source of truth.
 
-## Testing Strategy
+## Source connector bridge
 
-- Unit tests in *_test.go files next to implementation
-- Mock interfaces for dependencies
-- Run: `make test` (19 tests)
+Connector setup must begin using real backend source APIs:
+- create source
+- test source
+- trigger collect
+- display status/error/loading state
 
-## Code Style
+Do not claim full Phase 3 source health unless durable sync state and health endpoints are implemented and verified.
 
-- Go: idiomatic, interfaces for dependencies, context.Context for all I/O
-- Tests: table-driven where appropriate, clear mock implementations
+## Brandbook
 
-## UI Design Notes
+Brandbook is the source of truth for UI primitives.
+Use `app/ui/src/design-system` as the app import boundary unless there is a documented exception.
+Do not create a second local design system.
 
-- For onboarding and first-run choice screens, prefer the `DashboardWizardScreen` selection pattern over native radio controls.
-- Selection rows should be compact card-like items with left icon, center text, and a right-side selected indicator.
-- Keep hover behavior restrained: change border/background only, avoid vertical movement on selectable rows.
-- Put explanatory badges or microcopy inside the selectable row when they describe that specific option.
-- Place primary continuation actions below the option container unless the screen explicitly mirrors an existing wizard footer.
-- Use `WizardScreen`, `DashboardWizardScreen`, `PluginScreen`, and `AIInsightCard` as local style references before introducing new interaction patterns.
+## Makefile-first workflow
 
-## Domain Mapping Rule
+Use Makefile targets for all common operations.
+If a required operation has no target, add it.
+Do not use raw docker/npm/go commands as the primary workflow when a Makefile target exists.
 
-- Do not encode metric metadata, units, labels, or similar domain catalog data in large `switch` blocks.
-- Prefer a registry or descriptor table with small resolver helpers, or a strategy object when behavior varies by metric.
-- Keep fallback formatting in a single helper so new metric IDs can be added without editing multiple branches.
+## Verification
 
-## Dispatch Rule
+All runtime verification must be done with containers running.
+Do not write PASS unless the command was actually run.
+Do not write APPROVE if any visual widget is empty or if dashboard create/edit/save is not verified.
 
-- For large `switch`/`case` blocks that select behavior, handlers, processors, commands, or strategies, prefer a Factory/Registry wrapper over a map.
-- Keep small `switch` statements with up to 5 simple cases when they are clearer than a registry.
-- Do not refactor dispatch mechanically; only replace it when extensibility, testability, or separation of concerns clearly improves.
-- Always handle unsupported keys or types explicitly, with an error or a domain-specific fallback.
-- Keep registry registration centralized, predictable, and testable.
-- In Go, protect runtime registry mutation with `sync.RWMutex` or use immutable startup registration.
-- In TypeScript, prefer immutable startup registration and avoid hidden mutation during request handling.
+## Docs
 
-## Local Auth Rule
-
-- For local compose and preview environments, prefer a seeded admin account plus a real login gate over client-side 401 bypasses.
-- If auth is required for preview data, the fallback should be an explicit sign-in screen or seeded local session, not hidden API mocking.
-
-## License Requirements
-
-- **License**: GNU AGPLv3 – every Go source file must start with the SPDX‑AGPL‑3.0‑or‑later header.
-- **Header text (exactly as required):**
-  ```go
-  // SPDX-License-Identifier: AGPL-3.0-or-later
-  // Metraly - Team Engineering Metrics API
-  // Copyright (C) 2026 Metraly Contributors
-  ```
-- **When adding a new `.go` file** – insert the header at the very top of the file before the `package` clause.
-- **Existing files** – must already contain the header; if any are missing, add it.
-- **Swagger docs** – include the license line `// @license AGPL-3.0-or-later` in `cmd/api/main.go`.
-
-
-<claude-mem-context>
-# Memory Context
-
-# [app] recent context, 2026-05-06 9:32pm GMT+3
-
-Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
-Format: ID TIME TYPE TITLE
-Fetch details: get_observations([IDs]) | Search: mem-search skill
-
-Stats: 5 obs (2,554t read) | 137,577t work | 98% savings
-
-### May 6, 2026
-112 7:27p 🔵 Metraly Project Planning Structure Discovered
-113 7:28p 🔵 Metraly Project State: HANDOFF.json Is Stale — Phases 2, 3, 4 All Complete
-114 " 🔵 Metraly docs/STATUS.md Refactored Into Modular Status Files
-115 7:31p 🔵 Metraly Phase 4 Target: UI Uses mockApi for Dashboard Saves, API Client for Reads
-116 " 🔵 All Go Backend Tests Pass; Remaining mockApi Calls Identified for Phase 4
-
-Access 138k tokens of past work via get_observations([IDs]) or mem-search skill.
-</claude-mem-context>
+Update docs only after code/runtime verification.
+When docs and code disagree, trust code, then update docs.

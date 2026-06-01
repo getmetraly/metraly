@@ -123,6 +123,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 
 	dashboardHandler := handlers.NewDashboardHandler(deps.DashboardSvc)
 	previewHandler := handlers.NewPreviewHandler(deps.DashboardSvc, deps.TemplateSvc, deps.MetricsSvc, deps.ActivityRepo, deps.InsightRepo)
+	runtimeBFFHandler := handlers.NewRuntimeBFFHandler(deps.DashboardSvc, deps.SourceSvc, previewHandler)
 	ingestionHandler := handlers.NewIngestionHandler(deps.IngestionSvc)
 
 	// Protected routes — all require authentication.
@@ -141,6 +142,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			// @Router /api/v1/role/{role} [get]
 			r.Get("/api/v1/role/{role}", roleHandler)
 
+			r.Get("/api/v1/app/bootstrap", runtimeBFFHandler.AppBootstrap)
 			r.Get("/api/v1/dashboards", dashboardHandler.List)
 			r.Post("/api/v1/dashboards", dashboardHandler.Create)
 			r.Get("/api/v1/dashboards/{id}", dashboardHandler.Get)
@@ -149,6 +151,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Put("/api/v1/dashboards/{id}/layout", dashboardHandler.UpdateLayout)
 			r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
 			r.Get("/api/v1/dashboards/{id}/data", previewHandler.DashboardData)
+			r.Get("/api/v1/dashboards/{id}/view", runtimeBFFHandler.DashboardView)
 			r.Post("/api/v1/widgets/data", previewHandler.WidgetsData)
 			r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
 			r.Post("/api/v1/ingest/pm", ingestionHandler.PM)

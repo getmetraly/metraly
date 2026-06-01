@@ -1,163 +1,165 @@
-.PHONY: build run seed stop clean test lint up down dev logs ps ui-run health dashboard help start-db wait-db
+.PHONY: help ps up down restart rebuild logs-api logs-ui logs-db logs-redis clean-vite-cache \
+	build run seed test lint health dashboard \
+	login bootstrap dashboard-view dashboard-crud-check connectors-check source-create-check source-test-check source-collect-check metric-query-check runtime-check \
+	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check
 
-# Defaults
-APP_NAME := metraly
 API_PORT := 8000
-UI_PORT := 3000
-
-# Go
-GO := go
-GOFLAGS := -v
-
-# Docker
-DOCKER := docker
 DOCKER_COMPOSE := docker compose
-
-# Runtime state
 RUN_DIR := .run
-API_PID_FILE := $(RUN_DIR)/api.pid
-UI_PID_FILE := $(RUN_DIR)/ui.pid
-API_LOG := $(RUN_DIR)/api.log
-UI_LOG := $(RUN_DIR)/ui.log
-LOCAL_SEED_ENV := POSTGRES_DSN=postgres://metraly:metraly@localhost:5432/metraly?sslmode=disable REDIS_HOST=localhost REDIS_PORT=6379
-LOCAL_SEED_ONLY_ENV := SEED_ONLY=true SEED_ON_START=true SEED_ADMIN_EMAIL=admin@metraly.local SEED_ADMIN_PASSWORD=admin123
+TOKEN_FILE := $(RUN_DIR)/token
 
-HOST_REDIS_CONTAINER := metraly-redis-host
-HOST_POSTGRES_CONTAINER := metraly-postgres-host
-
-DB_READY_CMD_COMPOSE := [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q postgres)")" = healthy ] && [ "$$(docker inspect -f '{{.State.Health.Status}}' "$$(docker compose ps -q redis)")" = healthy ]
-DB_READY_CMD_HOST := docker exec $(HOST_REDIS_CONTAINER) redis-cli ping >/dev/null 2>&1 && docker exec $(HOST_POSTGRES_CONTAINER) pg_isready -U metraly -d metraly >/dev/null 2>&1
-
-# Start local database services (compose first, host-network fallback)
-start-db:
-	@echo "Starting database services..."
-	@set -e; \
-	if $(DOCKER_COMPOSE) up -d redis postgres; then \
-		echo "Using docker compose database services."; \
-	else \
-		echo "Docker bridge network unavailable, using host-network fallback containers..."; \
-		docker rm -f $(HOST_REDIS_CONTAINER) $(HOST_POSTGRES_CONTAINER) >/dev/null 2>&1 || true; \
-		docker run -d --name $(HOST_REDIS_CONTAINER) --network host redis:7-alpine >/dev/null; \
-		docker run -d --name $(HOST_POSTGRES_CONTAINER) --network host \
-			-e POSTGRES_USER=metraly \
-			-e POSTGRES_PASSWORD=metraly \
-			-e POSTGRES_DB=metraly \
-			timescale/timescaledb:latest-pg16 >/dev/null; \
-	fi
-
-# Wait until local database services are ready
-wait-db:
-	@echo "Waiting for database services to become healthy..."
-	@set -e; \
-	if [ -n "$$(docker compose ps -q postgres 2>/dev/null)" ] && [ -n "$$(docker compose ps -q redis 2>/dev/null)" ]; then \
-		until $(DB_READY_CMD_COMPOSE); do sleep 1; done; \
-	else \
-		until $(DB_READY_CMD_HOST); do sleep 1; done; \
-	fi
-
-# Build API
-build:
-	@echo "Building API..."
-	$(GO) build $(GOFLAGS) -o bin/api ./cmd/api/
-
-# Run API locally
-run: build
-	@echo "Starting API on port $(API_PORT)..."
-	env $(LOCAL_SEED_ENV) ./bin/api
-
-# Seed local database
-seed: build start-db wait-db
-	@echo "Seeding local database..."
-	@env $(LOCAL_SEED_ONLY_ENV) $(LOCAL_SEED_ENV) ./bin/api
-
-# Run UI locally
-ui-run:
-	@echo "Starting UI on port $(UI_PORT)..."
-	cd ui && npm run dev
-
-# Run tests
-test:
-	@echo "Running tests..."
-	$(GO) test $(GOFLAGS) ./...
-
-# Run linter
-lint:
-	@echo "Running linter..."
-	$(GO) vet ./...
-	@which staticcheck > /dev/null && staticcheck ./... || echo "staticcheck not installed"
-
-# Canonical local start command
-# Canonical local start command
-up: start-db wait-db
-	@mkdir -p $(RUN_DIR)
-	@touch $(API_LOG) $(UI_LOG)
-	@echo "Building API..."
-	$(MAKE) build
-	@echo "Starting API..."
-	@nohup env $(LOCAL_SEED_ENV) ./bin/api > $(API_LOG) 2>&1 & echo $$! > $(API_PID_FILE)
-	@echo "Starting UI..."
-	@nohup sh -c 'cd ui && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev -- --host 0.0.0.0 --port 3000' > $(UI_LOG) 2>&1 & echo $$! > $(UI_PID_FILE)
-
-	@echo "Project is running."
-
-# Canonical local stop command
-down:
-	@echo "Stopping services..."
-	@if [ -f $(UI_PID_FILE) ]; then kill "$$(cat $(UI_PID_FILE))" || true; rm -f $(UI_PID_FILE); fi
-	@if [ -f $(API_PID_FILE) ]; then kill "$$(cat $(API_PID_FILE))" || true; rm -f $(API_PID_FILE); fi
-	@docker rm -f $(HOST_REDIS_CONTAINER) $(HOST_POSTGRES_CONTAINER) >/dev/null 2>&1 || true
-	$(DOCKER_COMPOSE) down
-# Alias for one-shot local startup
-dev: up
-
-# Canonical local logs command
-logs:
-	@tail -f $(API_LOG) $(UI_LOG)
-
-# Canonical local status command
-ps:
-	@$(DOCKER_COMPOSE) ps
-	@for pidfile in $(API_PID_FILE) $(UI_PID_FILE); do \
-		if [ -f "$$pidfile" ]; then \
-			printf '%s: ' "$$pidfile"; \
-			cat "$$pidfile"; \
-		else \
-			printf '%s: not running\n' "$$pidfile"; \
-		fi; \
-	done
-
-# Health check
-health:
-	@echo "Checking API health..."
-	@curl -s http://localhost:$(API_PORT)/api/v1/health | python3 -m json.tool 2>/dev/null || curl -s http://localhost:$(API_PORT)/api/v1/health
-
-# Dashboard check
-dashboard:
-	@echo "Checking dashboard..."
-	@curl -s http://localhost:$(API_PORT)/api/v1/dashboard | python3 -m json.tool 2>/dev/null || curl -s http://localhost:$(API_PORT)/api/v1/dashboard
-
-# Clean build artifacts
-clean:
-	@echo "Cleaning..."
-	rm -rf bin/ $(RUN_DIR)/
-	$(DOCKER) system prune -f --filter "label=com.docker.compose.project=$(APP_NAME)" 2>/dev/null || true
-
-# Show help
 help:
-	@echo "Metraly - Team Engineering Metrics API"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  up                 - Start all local services (canonical quick start)"
-	@echo "  down               - Stop all local services"
-	@echo "  logs               - Show local service logs"
-	@echo "  ps                 - Show local service status"
-	@echo "  build              - Build Go API"
-	@echo "  run                - Run API locally"
-	@echo "  seed               - Seed local database"
-	@echo "  ui-run             - Run UI locally"
-	@echo "  test               - Run tests"
-	@echo "  lint               - Run linter"
-	@echo "  dev                - Alias for up"
-	@echo "  health             - Check API health"
-	@echo "  dashboard          - Check dashboard data"
-	@echo "  clean              - Clean build artifacts"
+	@echo "Metraly Make targets"
+	@echo "  up/down/restart      Start/stop/restart compose stack"
+	@echo "  rebuild              Rebuild api/ui images"
+	@echo "  ps                   Show compose status"
+	@echo "  logs-api/ui/db/redis Show service logs"
+	@echo "  clean-vite-cache     Remove Vite cache in ui container"
+	@echo "  health               GET /api/v1/health"
+	@echo "  login                Seed admin login and persist bearer token"
+	@echo "  bootstrap            GET /api/v1/app/bootstrap"
+	@echo "  dashboard-view       GET /api/v1/dashboards/sandbox-all-widgets/view"
+	@echo "  dashboard-crud-check Validate dashboard view endpoint for active dashboard"
+	@echo "  connectors-check     GET /api/v1/sources"
+	@echo "  source-create-check  POST /api/v1/sources (github demo source)"
+	@echo "  source-test-check    POST /api/v1/sources/{id}/test"
+	@echo "  source-collect-check POST /api/v1/sources/{id}/collect"
+	@echo "  metric-query-check   POST /api/v1/metrics/query"
+	@echo "  runtime-check        health + bootstrap + dashboard-view + connectors"
+	@echo "  api-test*            backend test suites"
+	@echo "  ui-check             ui typecheck + lint + test"
+	@echo "  brandbook-check      brandbook typecheck + build"
+	@echo "  check                api + ui + brandbook"
+	@echo "  mvp-check            runtime checks + quality gates"
+
+ps:
+	$(DOCKER_COMPOSE) ps
+
+up:
+	$(DOCKER_COMPOSE) up -d
+
+down:
+	$(DOCKER_COMPOSE) down
+
+restart: down up
+
+rebuild:
+	$(DOCKER_COMPOSE) build api ui
+
+logs-api:
+	$(DOCKER_COMPOSE) logs --tail=120 api
+
+logs-ui:
+	$(DOCKER_COMPOSE) logs --tail=120 ui
+
+logs-db:
+	$(DOCKER_COMPOSE) logs --tail=120 postgres
+
+logs-redis:
+	$(DOCKER_COMPOSE) logs --tail=120 redis
+
+clean-vite-cache:
+	$(DOCKER_COMPOSE) exec -u root ui rm -rf /workspace/ui/node_modules/.vite
+
+build:
+	go build -v -o bin/api ./cmd/api/
+
+run: build
+	./bin/api
+
+seed: build
+	SEED_ONLY=true SEED_ON_START=true SEED_ADMIN_EMAIL=admin@metraly.local SEED_ADMIN_PASSWORD=admin123 ./bin/api
+
+test:
+	go test -v ./...
+
+lint:
+	go vet ./...
+
+health:
+	@curl -s http://localhost:$(API_PORT)/api/v1/health | python3 -m json.tool
+
+login:
+	@mkdir -p $(RUN_DIR)
+	@curl -s http://localhost:$(API_PORT)/api/v1/auth/login \
+		-H 'Content-Type: application/json' \
+		-d '{"email":"admin@metraly.local","password":"admin123"}' \
+		| python3 -c 'import sys,json;print(json.load(sys.stdin).get("access_token",""))' > $(TOKEN_FILE)
+	@test -s $(TOKEN_FILE) || (echo "login failed"; exit 1)
+	@echo "token written to $(TOKEN_FILE)"
+
+bootstrap: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	curl -s http://localhost:$(API_PORT)/api/v1/app/bootstrap -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
+
+dashboard-view: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	curl -s http://localhost:$(API_PORT)/api/v1/dashboards/sandbox-all-widgets/view -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
+
+dashboard-crud-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/dashboards -H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d[0]["id"] if d else "")'); \
+	test -n "$$ID"; \
+	curl -s http://localhost:$(API_PORT)/api/v1/dashboards/$$ID/view -H "Authorization: Bearer $$TOKEN" > /dev/null; \
+	echo "dashboard view check ok for $$ID"
+
+connectors-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
+
+source-create-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
+		-d '{"sourceType":"github","displayName":"MVP GitHub","secret":"ghp_demo_token","config":{"syncInterval":"Every 5 minutes","repoScope":"All repos in org","includeArchived":"false","backfill":"90 days","org":"metraly-demo"}}' | python3 -m json.tool
+
+source-test-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;d=json.load(sys.stdin) or [];print(d[-1]["id"] if d else "")'); \
+	test -n "$$SOURCE_ID"; \
+	curl -s -X POST http://localhost:$(API_PORT)/api/v1/sources/$$SOURCE_ID/test -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
+
+source-collect-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;d=json.load(sys.stdin) or [];print(d[-1]["id"] if d else "")'); \
+	test -n "$$SOURCE_ID"; \
+	curl -s -X POST http://localhost:$(API_PORT)/api/v1/sources/$$SOURCE_ID/collect -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
+
+metric-query-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	curl -s -X POST http://localhost:$(API_PORT)/api/v1/metrics/query \
+		-H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
+		-d '{"metricId":"pr_count","start":"2026-05-01T00:00:00Z","end":"2026-06-01T00:00:00Z","granularity":"day","groupBy":[],"filters":{}}' | python3 -m json.tool
+
+runtime-check: health bootstrap dashboard-view connectors-check
+
+api-test:
+	go test ./...
+
+api-test-handlers:
+	go test ./cmd/api/handlers/...
+
+api-test-seed:
+	go test ./cmd/api/seed/...
+
+ui-typecheck:
+	cd ui && npm run typecheck
+
+ui-lint:
+	cd ui && npm run lint
+
+ui-test:
+	cd ui && npm run test
+
+ui-check: ui-typecheck ui-lint ui-test
+
+brandbook-typecheck:
+	cd ../brandbook/packages/ui && npm run typecheck
+
+brandbook-build:
+	cd ../brandbook/packages/ui && npm run build
+
+brandbook-check: brandbook-typecheck brandbook-build
+
+check: api-test ui-check brandbook-check
+
+mvp-check: runtime-check dashboard-crud-check source-create-check source-test-check source-collect-check metric-query-check check

@@ -1,31 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
-import { getDashboardList } from '../api/client';
+import { getAppBootstrap, type AppBootstrap } from '../api/client';
 import type { DashboardIndexEntry } from '../types/dashboard';
 
 const CACHE_KEY = 'metraly.dashboards.v1';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 3;
 
 interface DashboardsCache {
-  dashboards: DashboardIndexEntry[];
+  bootstrap: AppBootstrap;
   fetchedAt: string;
   schemaVersion: number;
 }
 
-function readCache(): DashboardIndexEntry[] | null {
+function readCache(): AppBootstrap | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cache = JSON.parse(raw) as DashboardsCache;
     if (cache.schemaVersion !== SCHEMA_VERSION) return null;
-    return cache.dashboards;
+    return cache.bootstrap;
   } catch {
     return null;
   }
 }
 
-function writeCache(dashboards: DashboardIndexEntry[]) {
+function writeCache(bootstrap: AppBootstrap) {
   try {
-    const cache: DashboardsCache = { dashboards, fetchedAt: new Date().toISOString(), schemaVersion: SCHEMA_VERSION };
+    const cache: DashboardsCache = {
+      bootstrap,
+      fetchedAt: new Date().toISOString(),
+      schemaVersion: SCHEMA_VERSION,
+    };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
   } catch {
     // localStorage unavailable — ignore
@@ -34,11 +38,15 @@ function writeCache(dashboards: DashboardIndexEntry[]) {
 
 export function getInitialDashboardId(): string | null {
   const cached = readCache();
-  return cached?.[0]?.id ?? null;
+  return cached?.selectedDashboardId ?? cached?.dashboards?.[0]?.id ?? null;
 }
 
 export interface UseDashboardsResult {
   dashboards: DashboardIndexEntry[];
+  selectedDashboardId: string | null;
+  iconOptions: { id: string; label: string; icon: string }[];
+  sourceSummary: AppBootstrap['sourceSummary'] | null;
+  features: AppBootstrap['features'] | null;
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
@@ -48,7 +56,7 @@ export interface UseDashboardsResult {
 
 export function useDashboards(): UseDashboardsResult {
   const cached = readCache();
-  const [dashboards, setDashboards] = useState<DashboardIndexEntry[]>(cached ?? []);
+  const [bootstrap, setBootstrap] = useState<AppBootstrap | null>(cached);
   const [isLoading, setIsLoading] = useState(cached === null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +71,9 @@ export function useDashboards(): UseDashboardsResult {
       setError(null);
     }
     try {
-      const list = await getDashboardList();
-      writeCache(list);
-      setDashboards(list);
+      const next = await getAppBootstrap();
+      writeCache(next);
+      setBootstrap(next);
       setSource('network');
       setError(null);
     } catch (err) {
@@ -83,8 +91,8 @@ export function useDashboards(): UseDashboardsResult {
   };
 
   useEffect(() => {
-    const hasCachedData = cached !== null && cached.length > 0;
-    fetchFromNetwork(!hasCachedData ? false : true);
+    const hasCachedData = cached !== null && (cached.dashboards?.length ?? 0) > 0;
+    fetchFromNetwork(hasCachedData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,5 +101,16 @@ export function useDashboards(): UseDashboardsResult {
     fetchFromNetwork(false);
   };
 
-  return { dashboards, isLoading, isRefreshing, error, source, refresh };
+  return {
+    dashboards: bootstrap?.dashboards ?? [],
+    selectedDashboardId: bootstrap?.selectedDashboardId ?? null,
+    iconOptions: bootstrap?.iconOptions ?? [],
+    sourceSummary: bootstrap?.sourceSummary ?? null,
+    features: bootstrap?.features ?? null,
+    isLoading,
+    isRefreshing,
+    error,
+    source,
+    refresh,
+  };
 }

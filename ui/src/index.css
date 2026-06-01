@@ -281,3 +281,45 @@ button, input, select, textarea {
 .metraly-mobile-nav-btn { display: none; }
 @media (max-width: 767px) { .metraly-mobile-nav-btn { display: flex; } }
 
+
+.metraly-sidebar .metraly-navigation-item-frame-row {
+  border-radius: var(--m-r-2);
+}
+
+.metraly-sidebar .metraly-navigation-item-frame-row > .metraly-navigation-item-frame__meta {
+  margin-left: -28px;
+  padding-right: 6px;
+  z-index: 1;
+}
+
+.metraly-sidebar-pin-action {
+  border: 0;
+  background: transparent;
+  color: var(--m-fg-3);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--m-dur-2) var(--m-ease), color var(--m-dur-2) var(--m-ease), background var(--m-dur-2) var(--m-ease);
+}
+
+.metraly-sidebar .metraly-navigation-item-frame-row:hover .metraly-sidebar-pin-action,
+.metraly-sidebar .metraly-navigation-item-frame-row:focus-within .metraly-sidebar-pin-action,
+.metraly-sidebar .metraly-navigation-item-frame-row .metraly-sidebar-pin-action[aria-label^="Unpin"] {
+  opacity: 1;
+}
+
+.metraly-sidebar-pin-action:hover {
+  background: var(--m-bg-2);
+  color: var(--m-fg-1);
+}
+
+.metraly-sidebar-pin-action:focus-visible {
+  outline: none;
+  box-shadow: var(--m-glow-focus);
+  opacity: 1;
+}

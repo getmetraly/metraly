@@ -81,7 +81,7 @@ func (s *SourceSvc) CreateSource(ctx context.Context, workspaceID string, input 
 		SourceType:  input.SourceType,
 		Kind:        credentialKindFor(input.SourceType),
 		Hint:        hint,
-		Scopes:      nil,
+		Scopes:      []string{},
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}

@@ -19,7 +19,7 @@ export interface WidgetLayout {
   static?: boolean;
 }
 
-export type SystemTemplateId = 'cto' | 'vp' | 'tl' | 'devops' | 'ic' | 'overview';
+export type SystemTemplateId = 'all-widgets' | 'cto' | 'vp' | 'tl' | 'devops' | 'ic' | 'overview';
 
 export type DashboardSourceType =
   | 'system-template'

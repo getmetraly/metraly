@@ -73,7 +73,7 @@ func (h *DashboardHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ID:               newDashboardID(),
 		Name:             input.Name,
 		Description:      input.Description,
-		Icon:             input.Icon,
+		Icon:             sanitizeDashboardIcon(input.Icon),
 		OwnerID:          userID, // always from JWT claims; never from body
 		IsPublic:         false,
 		SourceType:       sourceType,
@@ -142,7 +142,7 @@ func (h *DashboardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ID:               current.ID,
 		Name:             input.Name,
 		Description:      input.Description,
-		Icon:             input.Icon,
+		Icon:             sanitizeDashboardIcon(input.Icon),
 		OwnerID:          current.OwnerID, // preserve — never accept ownerID from body
 		IsPublic:         current.IsPublic,
 		SourceType:       current.SourceType,

@@ -2,6 +2,7 @@ import React from "react";
 
 const iconPaths: Record<string, string> = {
   zap: "M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 L13 2 Z",
+  dashboard: "M4 4h16v16H4z M4 10h16 M10 4v16",
   home: "M3 9 l9-7 9 7 v11 a2 2 0 0 1-2 2 H5 a2 2 0 0 1-2-2 Z M9 22 L9 12 L15 12 L15 22",
   bar2: "M18 20 L18 10 M12 20 L12 4 M6 20 L6 14",
   gitPR:

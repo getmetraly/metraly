@@ -327,6 +327,7 @@ func (h *PreviewHandler) statCardData(ctx context.Context, metricID string) (any
 	if err != nil {
 		return nil, err
 	}
+	snapshot.Data = ensureMetricPoints(metricID, snapshot.Data)
 	return buildStatCardData(metricID, snapshot), nil
 }
 
@@ -335,6 +336,7 @@ func (h *PreviewHandler) metricChartData(ctx context.Context, metricID string) (
 	if err != nil {
 		return nil, err
 	}
+	snapshot.Data = ensureMetricPoints(metricID, snapshot.Data)
 	return buildMetricChartData(metricID, snapshot), nil
 }
 
@@ -342,6 +344,9 @@ func (h *PreviewHandler) leaderboardData(ctx context.Context, metricID string) (
 	items, err := h.metricsSvc.GetBreakdown(ctx, metricID, "30d")
 	if err != nil {
 		return nil, err
+	}
+	if len(items) == 0 {
+		return demoLeaderboardRows(metricID), nil
 	}
 	rows := make([]map[string]any, 0, len(items))
 	for _, item := range items {
@@ -376,6 +381,9 @@ func (h *PreviewHandler) tableData(ctx context.Context, tableType string) (any, 
 				"author": item.User.Name,
 			})
 		}
+		if len(rows) == 0 {
+			rows = demoTableRows()
+		}
 		return map[string]any{"rows": rows}, nil
 	}
 }
@@ -385,10 +393,11 @@ func (h *PreviewHandler) sprintBurndownData(ctx context.Context) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	ideal := make([]float64, 0, len(snapshot.Data))
-	actual := make([]float64, 0, len(snapshot.Data))
-	for i := range snapshot.Data {
-		base := float64(len(snapshot.Data) - i)
+	points := ensureMetricPoints("velocity", snapshot.Data)
+	ideal := make([]float64, 0, len(points))
+	actual := make([]float64, 0, len(points))
+	for i := range points {
+		base := float64(len(points) - i)
 		ideal = append(ideal, base)
 		actual = append(actual, base*0.9)
 	}
@@ -403,11 +412,18 @@ func (h *PreviewHandler) compareBarData(ctx context.Context, metricID string) (a
 	if err != nil {
 		return nil, err
 	}
-	current := seriesFromSnapshot(snapshot.Data, 1.0)
-	compare := seriesFromSnapshot(snapshot.Data, 0.92)
+	points := ensureMetricPoints(metricID, snapshot.Data)
+	current := seriesFromSnapshot(points, 1.0)
+	secondary := seriesFromSnapshot(points, 0.92)
+	descriptor := metricDescriptorFor(metricID)
 	return map[string]any{
-		"primary": map[string]any{"values": current},
-		"compare": map[string]any{"values": compare},
+		"metricId":  metricID,
+		"label":     descriptor.Label,
+		"unit":      descriptor.Unit,
+		"labels":    labelsFrom(points),
+		"primary":   map[string]any{"label": "Current", "values": current},
+		"secondary": map[string]any{"label": "Previous", "values": secondary},
+		"summary":   descriptor.Label + " vs previous period",
 	}, nil
 }
 
@@ -456,6 +472,9 @@ func (h *PreviewHandler) activityData(ctx context.Context) (any, error) {
 			"relativeTime": humanizeRelative(item.Timestamp),
 			"color":        "var(--cyan)",
 		})
+	}
+	if len(activities) == 0 {
+		activities = demoActivities()
 	}
 	return map[string]any{"activities": activities}, nil
 }
@@ -540,8 +559,9 @@ func buildMetricChartData(metricID string, resp *domain.MetricResponse) map[stri
 }
 
 func buildDORADetail(metricID string, resp *domain.MetricResponse) doraDetail {
-	values := make([]float64, 0, len(resp.Data))
-	for _, p := range resp.Data {
+	points := ensureMetricPoints(metricID, resp.Data)
+	values := make([]float64, 0, len(points))
+	for _, p := range points {
 		values = append(values, p.Value)
 	}
 	current := 0.0
@@ -563,7 +583,7 @@ func buildDORADetail(metricID string, resp *domain.MetricResponse) doraDetail {
 		BenchmarkNote:   "Backend-backed preview data",
 		TimeSeries: map[string]any{
 			"values": values,
-			"labels": labelsFrom(resp.Data),
+			"labels": labelsFrom(points),
 			"unit":   desc.Unit,
 		},
 	}
@@ -583,6 +603,76 @@ func seriesFromSnapshot(points []domain.MetricDataPoint, scale float64) []float6
 		values = append(values, p.Value*scale)
 	}
 	return values
+}
+
+func ensureMetricPoints(metricID string, points []domain.MetricDataPoint) []domain.MetricDataPoint {
+	if len(points) > 0 {
+		return points
+	}
+	now := time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC)
+	pattern := map[string][]float64{
+		"deploy-freq": {2.8, 2.9, 3.1, 3.2, 3.3, 3.2, 3.4, 3.6, 3.7, 3.6, 3.8, 4.0},
+		"lead-time":   {18.2, 17.9, 17.5, 17.1, 16.9, 16.7, 16.5, 16.2, 16.1, 15.9, 15.7, 15.4},
+		"cfr":         {11.8, 11.3, 11.1, 10.8, 10.6, 10.4, 10.1, 9.9, 9.8, 9.6, 9.3, 9.1},
+		"mttr":        {62, 59, 57, 55, 53, 51, 48, 46, 45, 43, 41, 39},
+		"pr-cycle":    {42, 41, 39, 38, 37, 36, 35, 35, 34, 33, 32, 31},
+		"velocity":    {61, 63, 64, 66, 68, 67, 69, 71, 72, 73, 74, 75},
+	}
+	series, ok := pattern[metricID]
+	if !ok {
+		series = []float64{10, 11, 12, 13, 14, 15, 16, 16.5, 17, 18, 18.5, 19}
+	}
+	start := now.AddDate(0, 0, -(len(series) - 1))
+	result := make([]domain.MetricDataPoint, 0, len(series))
+	for i, value := range series {
+		result = append(result, domain.MetricDataPoint{
+			Time:  start.AddDate(0, 0, i),
+			Value: value,
+		})
+	}
+	return result
+}
+
+func demoLeaderboardRows(metricID string) []map[string]any {
+	values := map[string][]float64{
+		"velocity": {75, 72, 68, 64, 61},
+		"pr-cycle": {31, 33, 35, 37, 39},
+	}
+	series, ok := values[metricID]
+	if !ok {
+		series = []float64{68, 64, 61, 58, 55}
+	}
+	teams := []string{"Atlas", "Beacon", "Comet", "Delta", "Echo"}
+	rows := make([]map[string]any, 0, len(teams))
+	for i, team := range teams {
+		rows = append(rows, map[string]any{
+			"team":     team,
+			"name":     team,
+			"value":    series[i],
+			"valueRaw": series[i],
+		})
+	}
+	return rows
+}
+
+func demoTableRows() []map[string]any {
+	return []map[string]any{
+		{"title": "PR-1842 optimize ingestion queue", "status": "Review", "time": "09:12", "author": "Nadia"},
+		{"title": "PR-1838 harden auth middleware", "status": "Blocked", "time": "10:03", "author": "Marco"},
+		{"title": "PR-1832 fix flaky burndown calc", "status": "Review", "time": "10:38", "author": "Lea"},
+		{"title": "PR-1829 add ai insight guardrails", "status": "Ready", "time": "11:05", "author": "Arun"},
+		{"title": "PR-1823 reduce query fanout", "status": "Review", "time": "11:42", "author": "Ira"},
+	}
+}
+
+func demoActivities() []map[string]any {
+	return []map[string]any{
+		{"actor": "Nadia", "description": "Merged PR-1842 into main", "relativeTime": "12m ago", "color": "var(--cyan)"},
+		{"actor": "Marco", "description": "Flagged deploy risk on service-api", "relativeTime": "24m ago", "color": "var(--cyan)"},
+		{"actor": "Lea", "description": "Completed sprint burndown recalculation", "relativeTime": "38m ago", "color": "var(--cyan)"},
+		{"actor": "Arun", "description": "Published AI insight safety checklist", "relativeTime": "52m ago", "color": "var(--cyan)"},
+		{"actor": "Ira", "description": "Reduced metric query latency by 14%", "relativeTime": "1h ago", "color": "var(--cyan)"},
+	}
 }
 
 func parseWidgetMetric(raw json.RawMessage, fallback string) string {

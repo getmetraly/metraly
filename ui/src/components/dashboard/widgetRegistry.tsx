@@ -519,14 +519,27 @@ const AIInsightWidget = ({ config: _config, data }: { config: WidgetConfig; data
 const AnomalyDetectorWidget = ({ data }: { config: WidgetConfig; data?: any }) => {
   if (!data) return <LoadingWidget title="Anomaly detector loading…" />;
 
+  const anomalies = Array.isArray(data.anomalies) ? data.anomalies : [];
+  const thresholds = Array.isArray(data.thresholds) ? data.thresholds : [];
+  const healthy = anomalies.length === 0;
   return (
-    <CardShell style={widgetStyle} density="compact" title="Anomaly Detector" tone={data.anomalies?.length > 0 ? 'danger' : 'success'}>
-      <StateBlock
-        variant={data.anomalies?.length > 0 ? 'error' : 'empty'}
-        title={data.anomalies?.length > 0 ? `${data.anomalies.length} anomalies detected` : 'No anomalies'}
-        description={data.anomalies?.length > 0 ? 'Review the affected metrics before the next release window.' : 'Signals are within expected thresholds.'}
-        density="compact"
-      />
+    <CardShell style={widgetStyle} density="compact" title="Anomaly Detector" tone={healthy ? 'success' : 'danger'}>
+      <div style={{ display: 'grid', gap: 8 }}>
+        <StateBadge state={healthy ? 'ok' : 'error'} label={data.status || (healthy ? 'healthy' : 'anomaly')} />
+        <div style={{ fontSize: 12, color: 'var(--m-fg-1)' }}>{data.summary || 'Signals monitored'}</div>
+        <div style={{ fontSize: 11, color: 'var(--m-fg-2)' }}>
+          Signals checked: {data.signalsChecked ?? thresholds.length} · Window: {data.window || '30d'}
+        </div>
+        {thresholds.length > 0 && (
+          <ul style={{ margin: 0, paddingLeft: 16, color: 'var(--m-fg-2)', fontSize: 11, display: 'grid', gap: 4 }}>
+            {thresholds.map((item: any, index: number) => (
+              <li key={`${item.name || 'threshold'}-${index}`}>
+                <strong style={{ color: 'var(--m-fg-1)' }}>{item.name || 'Signal'}:</strong> {item.value || 'n/a'} ({item.status || 'ok'})
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </CardShell>
   );
 };

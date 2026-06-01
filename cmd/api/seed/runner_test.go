@@ -155,6 +155,19 @@ func TestRunnerSeedsSandboxIncData(t *testing.T) {
 	if got := len(dashboards.created); got != 1 {
 		t.Fatalf("expected exactly 1 seeded dashboard (sandbox-all-widgets), got %d", got)
 	}
+	seeded := dashboards.created[0]
+	if seeded.ID != "sandbox-all-widgets" {
+		t.Fatalf("expected dashboard id sandbox-all-widgets, got %q", seeded.ID)
+	}
+	if seeded.Name != "Demo" {
+		t.Fatalf("expected dashboard name Demo, got %q", seeded.Name)
+	}
+	if seeded.Icon != "sparkles" {
+		t.Fatalf("expected dashboard icon sparkles, got %q", seeded.Icon)
+	}
+	if got := len(seeded.Widgets); got != 16 {
+		t.Fatalf("expected 16 widgets in seeded dashboard, got %d", got)
+	}
 	if got := len(plugins.created); got == 0 {
 		t.Fatal("expected seeded plugins")
 	}

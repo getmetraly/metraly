@@ -4,6 +4,7 @@ import type { Dashboard, DashboardWidgetInstance } from "../../types/dashboard";
 import { TEMPLATE_WIDGETS, TEMPLATES, WIDGET_LIBRARY, getDefaultWidgetSize, getWidgetColor, isFullWidthWidget } from "./catalog";
 import { createDefaultWidgetConfig } from "./widgetConfig";
 import type { WidgetConfig } from "../../types/widgets";
+import { DEFAULT_DASHBOARD_ICON, sanitizeDashboardIcon } from "../dashboardWizard/dashboardIcons";
 
 export type DashboardEditorWidgetSize = "full" | "half";
 
@@ -205,7 +206,7 @@ export function createEditorStateFromTemplate(templateId: string): DashboardEdit
     desc: "",
     timeRange: "30d",
     team: "All teams",
-    icon: TEMPLATES.find((template) => template.id === templateId)?.icon || "plus",
+    icon: sanitizeDashboardIcon(TEMPLATES.find((template) => template.id === templateId)?.icon || DEFAULT_DASHBOARD_ICON),
   };
 }
 
@@ -233,7 +234,7 @@ export function createEditorStateFromDashboard(dashboard: Dashboard): DashboardE
     desc: dashboard.description || "",
     timeRange: dashboard.defaultFilters?.timeRange || "30d",
     team: dashboard.defaultFilters?.team || "All teams",
-    icon: dashboard.icon || "plus",
+    icon: sanitizeDashboardIcon(dashboard.icon || DEFAULT_DASHBOARD_ICON),
   };
 }
 

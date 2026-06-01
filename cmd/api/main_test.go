@@ -78,6 +78,25 @@ func TestNewRouterWithAuth(t *testing.T) {
 	}
 }
 
+func TestNewRouter_RuntimeBFFRoutesRequireAuth(t *testing.T) {
+	km, _ := auth.NewKeyManager("", true)
+	r := NewRouter(RouterDeps{KeyManager: km})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/app/bootstrap", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for bootstrap without auth, got %d", w.Code)
+	}
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/v1/dashboards/sandbox-all-widgets/view", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for dashboard view without auth, got %d", w.Code)
+	}
+}
+
 func TestNewRouterIngestionRouteRequiresAuth(t *testing.T) {
 	km, _ := auth.NewKeyManager("", true)
 	r := NewRouter(RouterDeps{KeyManager: km})

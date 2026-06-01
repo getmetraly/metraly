@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
 )
@@ -52,7 +53,20 @@ func newWidgetProcessorRegistry(h *PreviewHandler) *widgetProcessorRegistry {
 		return h.insightData(ctx, parseTopicHint(config))
 	})
 	r.register("anomaly-detector", func(context.Context, string, json.RawMessage, *domain.Dashboard) (any, error) {
-		return map[string]any{"anomalies": []map[string]any{}}, nil
+		return map[string]any{
+			"status":         "healthy",
+			"summary":        "12 signals monitored · no critical anomalies",
+			"signalsChecked": 12,
+			"lastChecked":    time.Now().UTC().Format(time.RFC3339),
+			"window":         "30d",
+			"thresholds": []map[string]any{
+				{"name": "Deploy Frequency", "value": "4.0/week", "status": "ok"},
+				{"name": "Lead Time", "value": "15.4h", "status": "ok"},
+				{"name": "Change Failure Rate", "value": "9.1%", "status": "ok"},
+				{"name": "MTTR", "value": "39m", "status": "ok"},
+			},
+			"anomalies": []map[string]any{},
+		}, nil
 	})
 	r.register("compare-bar-chart", func(ctx context.Context, _ string, config json.RawMessage, _ *domain.Dashboard) (any, error) {
 		return h.compareBarData(ctx, parseWidgetMetric(config, "velocity"))
