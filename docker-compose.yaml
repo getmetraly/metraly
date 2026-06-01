@@ -72,7 +72,11 @@ services:
       CHOKIDAR_INTERVAL: "300"
     volumes:
       - ./ui:/workspace/ui
+      - ui_node_modules:/workspace/ui/node_modules
       - ../brandbook/packages/ui:/brandbook/packages/ui
+    command: >
+      sh -c "if [ ! -x /workspace/ui/node_modules/.bin/vite ] || [ ! -d /workspace/ui/node_modules/@metraly/ui ]; then npm install --ignore-scripts; fi &&
+             node /workspace/ui/node_modules/.bin/vite --host 0.0.0.0 --port 3000"
     depends_on:
       api:
         condition: service_healthy
@@ -82,6 +86,7 @@ services:
 volumes:
   redis_data:
   postgres_data:
+  ui_node_modules:
 
 networks:
   metraly:

@@ -63,17 +63,38 @@ Do not create a second local design system.
 
 ## Makefile-first workflow
 
-Use Makefile targets for all common operations.
-If a required operation has no target, add it.
-Do not use raw docker/npm/go commands as the primary workflow when a Makefile target exists.
+Use Makefile targets first.
+If a Make target exists for an operation, do not run raw `docker`, `npm`, or `go` commands instead of that target.
+Add/update a Make target when common workflow coverage is missing.
 
+## Brandbook build boundary
+
+App consumes built `@metraly/ui` artifacts.
+Do not patch brandbook internals from app/docs.
+Do not claim app integration of brandbook changes until those changes are built and validated in the brandbook repository.
+
+## Build and dependency order
+
+For UI integration checks, build/update brandbook artifacts first, then run app UI checks.
+Do not claim app UI integration success against stale `@metraly/ui` artifacts.
+`make dev-preflight` is required before `make up`/`make dev-up`.
+If `../brandbook/packages/ui/dist` is missing, build it before claiming UI runtime health.
+
+## Source import boundary
+
+App UI must consume brandbook through `app/ui/src/design-system` and published package entrypoints only.
+Do not add direct relative imports from app into `../brandbook/packages/ui/src` or other brandbook source internals.
+Do not import `@metraly/ui` source files directly (`../brandbook/packages/ui/src/*`) from app code.
 ## Verification
 
 All runtime verification must be done with containers running.
 Do not write PASS unless the command was actually run.
 Do not write APPROVE if any visual widget is empty or if dashboard create/edit/save is not verified.
+Do not mark PASS for docker/UI workflow unless `make docker-ui-deps-check` and `make docker-brandbook-dist-check` were run.
 
 ## Docs
+## Docs-code truth precedence
 
+When changing `docker-compose.yaml`, `ui/Dockerfile`, or Makefile workflow, update dev-workflow docs in `../docs` in the same change.
 Update docs only after code/runtime verification.
-When docs and code disagree, trust code, then update docs.
+When docs and code disagree, code/runtime is the source of truth; update docs to match implementation.

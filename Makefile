@@ -1,15 +1,20 @@
 .PHONY: help ps up down restart rebuild logs-api logs-ui logs-db logs-redis clean-vite-cache \
 	build run seed test lint health dashboard \
-	login bootstrap dashboard-view dashboard-crud-check connectors-check source-create-check source-test-check source-collect-check metric-query-check \
+	login bootstrap dashboard-view dashboard-crud-check connectors-check source-id-check source-create-check source-test-check source-collect-check metric-query-check \
 	dashboard-delete-check dashboard-demo-edit-check dashboard-demo-delete-check dashboard-editor-runtime-check restore-demo \
 	dashboard-preview-contract-check dashboard-catalog-contract-check \
 	runtime-check \
-	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check
+	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check \
+	brandbook-install brandbook-dist-check brandbook-watch ui-install ui-deps-check docker-ui-deps-check docker-brandbook-dist-check \
+	dev-preflight dev-up dev-rebuild dev-reset-ui dev-check
 API_PORT := 8000
 DOCKER_COMPOSE := docker compose
 RUN_DIR := .run
 TOKEN_FILE := $(RUN_DIR)/token
 
+BRANDBOOK_UI_DIR := ../brandbook/packages/ui
+BRANDBOOK_UI_DIST := $(BRANDBOOK_UI_DIR)/dist
+MVP_SOURCE_ID_CMD := python3 -c 'import sys,json; d=json.load(sys.stdin) or []; m=next((s for s in d if s.get("sourceType")=="github" and s.get("displayName")=="MVP GitHub"), None); print(m.get("id","") if m else "")'
 help:
 	@echo "Metraly Make targets"
 	@echo "  up/down/restart      Start/stop/restart compose stack"
@@ -17,15 +22,15 @@ help:
 	@echo "  ps                   Show compose status"
 	@echo "  logs-api/ui/db/redis Show service logs"
 	@echo "  clean-vite-cache     Remove Vite cache in ui container"
-	@echo "  health               GET /api/v1/health"
+	@echo "  dev-preflight        Validate/build brandbook ui dist + check UI deps"
 	@echo "  login                Seed admin login and persist bearer token"
 	@echo "  bootstrap            GET /api/v1/app/bootstrap"
 	@echo "  dashboard-view       GET /api/v1/dashboards/sandbox-all-widgets/view"
 	@echo "  dashboard-crud-check Validate dashboard view endpoint for active dashboard"
 	@echo "  connectors-check     GET /api/v1/sources"
-	@echo "  source-create-check  POST /api/v1/sources (github demo source)"
-	@echo "  source-test-check    POST /api/v1/sources/{id}/test"
-	@echo "  source-collect-check POST /api/v1/sources/{id}/collect"
+	@echo "  source-id-check      Resolve existing MVP GitHub source id"
+	@echo "  source-create-check  Create or reuse MVP GitHub source id"
+	@echo "  source-test-check    POST /api/v1/sources/{id}/test (create/reuse MVP source)"
 	@echo "  metric-query-check   POST /api/v1/metrics/query"
 	@echo "  runtime-check        health + bootstrap + dashboard-view + connectors"
 	@echo "  dashboard-delete-check       Create temp dashboard, delete it, verify 204 + view 404"
@@ -36,8 +41,18 @@ help:
 	@echo "  dashboard-catalog-contract-check Validate catalog/descriptors/templates contracts"
 	@echo "  restore-demo                 Explicitly recreate Demo dashboard and clear tombstone"
 	@echo "  api-test*            backend test suites"
-	@echo "  ui-check             ui typecheck + lint + test"
-	@echo "  brandbook-check      brandbook typecheck + build"
+	@echo "  ui-install           npm install in app/ui"
+	@echo "  ui-deps-check        verify app/ui node_modules exists"
+	@echo "  docker-ui-deps-check verify /workspace/ui/node_modules in ui container"
+	@echo "  brandbook-install    npm install in brandbook/packages/ui"
+	@echo "  brandbook-build      build brandbook ui dist"
+	@echo "  brandbook-dist-check verify brandbook/packages/ui/dist exists"
+	@echo "  docker-brandbook-dist-check verify /brandbook/packages/ui/dist in ui container"
+	@echo "  brandbook-watch      watch build for brandbook ui package"
+	@echo "  dev-up               dev-preflight + compose up + dependency checks"
+	@echo "  dev-rebuild          dev-preflight + rebuild + dev-up"
+	@echo "  dev-reset-ui         recreate ui service and clear vite cache"
+	@echo "  dev-check            runtime-check + dependency checks"
 	@echo "  check                api + ui + brandbook"
 	@echo "  mvp-check            runtime checks + quality gates"
 
@@ -69,6 +84,47 @@ logs-redis:
 
 clean-vite-cache:
 	$(DOCKER_COMPOSE) exec -u root ui rm -rf /workspace/ui/node_modules/.vite
+
+ui-install:
+	cd ui && npm install
+
+ui-deps-check:
+	@test -d ui/node_modules || (echo "missing ui/node_modules (run: make ui-install)"; exit 1)
+docker-ui-deps-check:
+	@$(DOCKER_COMPOSE) exec ui sh -c 'test -x /workspace/ui/node_modules/.bin/vite && test -d /workspace/ui/node_modules/@metraly/ui' || \
+		($(DOCKER_COMPOSE) exec ui npm install --ignore-scripts && $(DOCKER_COMPOSE) exec ui sh -c 'test -x /workspace/ui/node_modules/.bin/vite && test -d /workspace/ui/node_modules/@metraly/ui')
+
+brandbook-install:
+	cd $(BRANDBOOK_UI_DIR) && npm install
+
+brandbook-dist-check:
+	@test -d $(BRANDBOOK_UI_DIST) || (echo "missing $(BRANDBOOK_UI_DIST) (run: make brandbook-build)"; exit 1)
+docker-brandbook-dist-check:
+	@$(DOCKER_COMPOSE) exec ui test -d /brandbook/packages/ui/dist || \
+		(echo "missing /brandbook/packages/ui/dist in ui container (run: make brandbook-build)" && exit 1)
+
+brandbook-watch:
+	cd $(BRANDBOOK_UI_DIR) && npm run build -- --watch
+
+dev-preflight:
+	@test -d $(BRANDBOOK_UI_DIR) || (echo "missing $(BRANDBOOK_UI_DIR)"; exit 1)
+	@test -f ui/package.json || (echo "missing ui/package.json"; exit 1)
+	@if [ ! -d ui/node_modules ]; then $(MAKE) ui-install; fi
+	@if [ ! -d $(BRANDBOOK_UI_DIST) ]; then $(MAKE) brandbook-build; fi
+	@$(MAKE) brandbook-dist-check
+
+dev-up: dev-preflight up docker-ui-deps-check docker-brandbook-dist-check
+
+dev-rebuild: dev-preflight rebuild dev-up
+
+dev-reset-ui:
+	$(DOCKER_COMPOSE) rm -sf ui
+	$(DOCKER_COMPOSE) up -d --no-deps ui
+	$(MAKE) clean-vite-cache
+	$(MAKE) docker-ui-deps-check
+	$(MAKE) docker-brandbook-dist-check
+
+dev-check: runtime-check ui-deps-check docker-ui-deps-check brandbook-dist-check docker-brandbook-dist-check
 
 build:
 	go build -v -o bin/api ./cmd/api/
@@ -116,21 +172,35 @@ connectors-check: login
 	@TOKEN=$$(cat $(TOKEN_FILE)); \
 	curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
 
+source-id-check: login
+	@TOKEN=$$(cat $(TOKEN_FILE)); \
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | $(MVP_SOURCE_ID_CMD)); \
+	if [ -n "$$SOURCE_ID" ]; then \
+		echo "$$SOURCE_ID"; \
+	else \
+		echo ""; \
+	fi
+
 source-create-check: login
 	@TOKEN=$$(cat $(TOKEN_FILE)); \
-	curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
-		-d '{"sourceType":"github","displayName":"MVP GitHub","secret":"ghp_demo_token","config":{"syncInterval":"Every 5 minutes","repoScope":"All repos in org","includeArchived":"false","backfill":"90 days","org":"metraly-demo"}}' | python3 -m json.tool
-
-source-test-check: login
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | $(MVP_SOURCE_ID_CMD)); \
+	if [ -z "$$SOURCE_ID" ]; then \
+		SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
+			-d '{"sourceType":"github","displayName":"MVP GitHub","secret":"ghp_demo_token","config":{"syncInterval":"Every 5 minutes","repoScope":"All repos in org","includeArchived":"false","backfill":"90 days","org":"metraly-demo"}}' \
+			| python3 -c 'import sys,json; print(json.load(sys.stdin).get("id",""))'); \
+		test -n "$$SOURCE_ID" || (echo "failed to create MVP GitHub source"; exit 1); \
+		echo "Created MVP GitHub source: $$SOURCE_ID"; \
+	else \
+		echo "Reusing existing MVP GitHub source: $$SOURCE_ID"; \
+	fi
+source-test-check: source-create-check
 	@TOKEN=$$(cat $(TOKEN_FILE)); \
-	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;d=json.load(sys.stdin) or [];print(d[-1]["id"] if d else "")'); \
-	test -n "$$SOURCE_ID"; \
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | $(MVP_SOURCE_ID_CMD)); \
 	curl -s -X POST http://localhost:$(API_PORT)/api/v1/sources/$$SOURCE_ID/test -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
 
-source-collect-check: login
+source-collect-check: source-create-check
 	@TOKEN=$$(cat $(TOKEN_FILE)); \
-	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | python3 -c 'import sys,json;d=json.load(sys.stdin) or [];print(d[-1]["id"] if d else "")'); \
-	test -n "$$SOURCE_ID"; \
+	SOURCE_ID=$$(curl -s http://localhost:$(API_PORT)/api/v1/sources -H "Authorization: Bearer $$TOKEN" | $(MVP_SOURCE_ID_CMD)); \
 	curl -s -X POST http://localhost:$(API_PORT)/api/v1/sources/$$SOURCE_ID/collect -H "Authorization: Bearer $$TOKEN" | python3 -m json.tool
 
 metric-query-check: login

@@ -18,12 +18,13 @@ WORKDIR /workspace/ui
 # in brandbook/packages/ui before running docker compose.
 COPY brandbook/packages/ui /brandbook/packages/ui
 COPY app/ui/package.json app/ui/package-lock.json ./
-RUN npm install --ignore-scripts
+RUN npm ci --ignore-scripts
 
 # ── dev: Vite dev server with HMR ────────────────────────────────────────────
 FROM deps AS dev
 # Source files are overridden at runtime by docker-compose volume mounts:
 #   ./ui                     → /workspace/ui
+#   ui_node_modules          → /workspace/ui/node_modules (named volume, avoids bind-mount masking)
 #   ../brandbook/packages/ui → /brandbook/packages/ui  (live dist/ for HMR)
 COPY app/ui/ .
 EXPOSE 3000
