@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import React, { useEffect, useState } from "react";
-import { Icon, DraggableDashboardRenderer, MetralyTabs, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
+import { Icon, DraggableDashboardRenderer, MetralyButton, CardShell, MetralyIcon, StateBlock } from "../../design-system";
 import { useDashboard } from "../../hooks/useDashboard";
 import { updateDashboard } from "../../api/client";
 import type { Dashboard } from "../../types/dashboard";
@@ -15,19 +15,10 @@ import {
 import { buildUpdateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore } from "../dashboardWizard/store/wizardStore";
 
-const DASHBOARDS = [
-  { id: "overview", label: "Overview", icon: "home", navId: "dashboard" },
-  { id: "cto", label: "CTO", icon: "trendingUp", navId: "dash-cto" },
-  { id: "vp", label: "VP Eng", icon: "users", navId: "dash-vp" },
-  { id: "tl", label: "Tech Lead", icon: "gitPR", navId: "dash-tl" },
-  { id: "devops", label: "DevOps", icon: "cpu", navId: "dash-devops" },
-  { id: "ic", label: "My View", icon: "activity", navId: "dash-ic" },
-];
 
 interface DashboardScreenProps {
   initialDashboard?: string;
   onNewDashboard?: () => void;
-  onNavigate?: (navId: string) => void;
   isEditMode?: boolean;
   demoMode?: boolean;
   onConfigureSources?: () => void;
@@ -53,9 +44,8 @@ function makeDraftDashboard(
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
-  initialDashboard = "overview",
+  initialDashboard = "",
   onNewDashboard,
-  onNavigate,
   isEditMode: externalEditMode,
   demoMode = false,
   onConfigureSources,
@@ -69,7 +59,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const {
     dashboard,
     widgetData,
-    isLoading,
+    isDashboardLoading,
     error,
     refresh,
   } = useDashboard(dashboardId);
@@ -124,17 +114,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     ? makeDraftDashboard(dashboard, useWizardStore.getState())
     : dashboard;
 
-  const handleDashboardChange = (newDashboard: string) => {
-    setInternalEditMode(false);
-    setWizardSidebarOpen(false);
-    resetEditor();
-    setDashboardId(newDashboard);
-    const selected = DASHBOARDS.find((r) => r.id === newDashboard);
-    if (selected && onNavigate) {
-      onNavigate(selected.navId);
-    }
-  };
-
   const handleEnterEditMode = () => {
     if (!dashboard) {
       return;
@@ -186,7 +165,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   const renderDashboard = () => {
-    if (isLoading) {
+    if (isDashboardLoading) {
       return (
         <div className="metraly-dashboard-state">
           <StateBlock
@@ -241,48 +220,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return <DraggableDashboardRenderer dashboard={draftDashboard} widgetData={widgetData} />;
   };
 
-  const tabItems = DASHBOARDS.map((r) => ({
-    value: r.id,
-    label: r.label,
-    icon: <Icon name={r.icon} size={13} color="currentColor" />,
-  }));
-
-  const TabBar = () => (
-    <div style={{ display: "flex", alignItems: "center", padding: "0 16px 0 24px", borderBottom: "1px solid var(--m-line)", flexShrink: 0, gap: 8 }}>
-      <MetralyTabs
-        items={tabItems}
-        value={dashboardId}
-        onValueChange={handleDashboardChange}
-        ariaLabel="Dashboard tabs"
-      />
-      <div style={{ flex: 1 }} />
-      {isEditMode ? (
-        <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
-          <MetralyButton variant="neutral" size="sm" onClick={handleExitEditMode}>
-            Cancel
-          </MetralyButton>
-          <MetralyButton variant="primary" size="sm" iconLeft={<Icon name="check" size={13} color="currentColor" />} onClick={handleSaveLayout}>
-            Apply
-          </MetralyButton>
-        </div>
-      ) : (
-        <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
-          <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="sliders" size={13} color="currentColor" />} onClick={handleEnterEditMode}>
-            Customize
-          </MetralyButton>
-          {onNewDashboard && (
-            <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="plus" size={13} color="currentColor" />} onClick={onNewDashboard}>
-              New Dashboard
-            </MetralyButton>
-          )}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
-      <TabBar />
+      <div style={{ display: "flex", alignItems: "center", padding: "0 16px 0 24px", borderBottom: "1px solid var(--m-line)", flexShrink: 0, gap: 8 }}>
+        <div style={{ flex: 1 }} />
+        {isEditMode ? (
+          <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
+            <MetralyButton variant="neutral" size="sm" onClick={handleExitEditMode}>
+              Cancel
+            </MetralyButton>
+            <MetralyButton variant="primary" size="sm" iconLeft={<Icon name="check" size={13} color="currentColor" />} onClick={handleSaveLayout}>
+              Apply
+            </MetralyButton>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 6, padding: "6px 0" }}>
+            <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="sliders" size={13} color="currentColor" />} onClick={handleEnterEditMode}>
+              Customize
+            </MetralyButton>
+            {onNewDashboard && (
+              <MetralyButton variant="secondary" size="sm" iconLeft={<Icon name="plus" size={13} color="currentColor" />} onClick={onNewDashboard}>
+                New Dashboard
+              </MetralyButton>
+            )}
+          </div>
+        )}
+      </div>
       {demoMode && (
         <div style={{ margin: "16px 24px 0" }}>
           <CardShell

@@ -7,7 +7,7 @@ import {
   MetralyLogo,
 } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
-import { useTweaks } from "../context/TweaksContext";
+import { useDashboards } from "../hooks/useDashboards";
 
 interface AppSidebarProps {
   active?: string;
@@ -21,50 +21,44 @@ interface NavItem {
   badge?: boolean;
 }
 
-const SECTIONS: Array<{ label: string; items: NavItem[] }> = [
+const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
-    label: "Dashboards",
+    label: 'Intelligence',
     items: [
-      { id: "overview", icon: "home", label: "Overview" },
-      { id: "dash-cto", icon: "bar2", label: "CTO" },
-      { id: "dash-vp", icon: "users", label: "VP Eng" },
-      { id: "dash-tl", icon: "gitPR", label: "Tech Lead" },
-      { id: "dash-devops", icon: "activity", label: "DevOps / SRE" },
-      { id: "dash-ic", icon: "clock", label: "IC" },
+      { id: 'metrics', icon: 'chart', label: 'Metrics Explorer' },
+      { id: 'ai', icon: 'brain', label: 'AI Workspace', badge: true },
     ],
   },
   {
-    label: "Intelligence",
-    items: [
-      { id: "metrics", icon: "chart", label: "Metrics Explorer" },
-      { id: "ai", icon: "brain", label: "AI Workspace", badge: true },
-    ],
+    label: 'Ecosystem',
+    items: [{ id: 'plugins', icon: 'puzzle', label: 'Plugins' }],
   },
   {
-    label: "Ecosystem",
-    items: [{ id: "plugins", icon: "puzzle", label: "Plugins" }],
-  },
-  {
-    label: "Setup",
+    label: 'Setup',
     items: [
-      { id: "wizard", icon: "database", label: "Connectors" },
-      { id: "settings", icon: "settings", label: "Settings" },
+      { id: 'wizard', icon: 'database', label: 'Connectors' },
+      { id: 'settings', icon: 'settings', label: 'Settings' },
     ],
   },
 ];
 
-const DASHBOARD_ITEMS = SECTIONS[0].items;
-
 export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
-  const { tweaks } = useTweaks();
-  const collapsed = tweaks.sidebarCollapsed as boolean;
+  const collapsed = false;
+
+  const { dashboards, isLoading: dashboardsLoading } = useDashboards();
+
+  const dashboardNavItems = dashboards.map((d) => ({
+    id: d.id,
+    label: d.name,
+    icon: d.icon || 'dashboard',
+  }));
 
   const [pinned, setPinned] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("metraly-pinned");
-      return raw ? JSON.parse(raw) : ["overview"];
+      return raw ? JSON.parse(raw) : [];
     } catch {
-      return ["overview"];
+      return [];
     }
   });
 
@@ -78,17 +72,17 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
   };
 
   const pinnedItems = pinned
-    .map((id) => DASHBOARD_ITEMS.find((it) => it.id === id))
+    .map((id) => dashboardNavItems.find((it) => it.id === id))
     .filter((it): it is NavItem => it !== undefined);
-  const unpinnedDashboardItems = DASHBOARD_ITEMS.filter((it) => !pinned.includes(it.id));
+  const unpinnedDashboardItems = dashboardNavItems.filter((it) => !pinned.includes(it.id));
 
   const header = (
-    <div style={{ padding: collapsed ? "14px 12px" : "18px 16px 14px", display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start" }}>
-      <MetralyLogo variant={collapsed ? "mark" : "horizontal"} />
+    <div style={{ padding: "18px 16px 14px", display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
+      <MetralyLogo variant="horizontal" />
     </div>
   );
 
-  const footer = !collapsed ? (
+  const footer = (
     <div style={{ padding: "12px 10px", display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--m-bg-1)", border: "1px solid var(--m-line)", display: "grid", placeItems: "center", fontSize: 12 }}>AZ</div>
       <div style={{ minWidth: 0 }}>
@@ -96,11 +90,11 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
         <div style={{ fontSize: 11, color: "var(--m-fg-2)", fontFamily: "var(--m-font-mono)" }}>Owner</div>
       </div>
     </div>
-  ) : undefined;
+  );
 
   return (
     <MetralySidebar collapsed={collapsed} header={header} footer={footer}>
-      {!collapsed && pinnedItems.length > 0 && (
+      {pinnedItems.length > 0 && (
         <MetralySidebarSection label="Pinned">
           {pinnedItems.map((item) => (
             <MetralySidebarItem
@@ -124,48 +118,51 @@ export function AppSidebar({ active = "", onNav }: AppSidebarProps) {
         </MetralySidebarSection>
       )}
 
-      <MetralySidebarSection label={collapsed ? undefined : "Dashboards"}>
-        {unpinnedDashboardItems.map((item) => (
-          <MetralySidebarItem
-            key={item.id}
-            active={active === item.id}
-            icon={<Icon name={item.icon} size={15} color="currentColor" />}
-            label={item.label}
+      <MetralySidebarSection label="Dashboards">
+        {dashboardsLoading ? (
+          <>
+            <div style={{ height: 32, borderRadius: 6, background: 'var(--m-bg-2)', margin: '2px 8px' }} />
+            <div style={{ height: 32, borderRadius: 6, background: 'var(--m-bg-2)', margin: '2px 8px' }} />
+          </>
+        ) : (
+          unpinnedDashboardItems.map((item) => (
+            <MetralySidebarItem
+              key={item.id}
+              active={active === item.id}
+              icon={<Icon name={item.icon} size={15} color="currentColor" />}
+              label={item.label}
               meta={
-                !collapsed ? (
-                  <button
-                    type="button"
-                    aria-label="Pin"
-                    onClick={(e) => togglePin(item.id, e)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
-                  >
-                    <Icon name="pin" size={13} color="currentColor" />
-                  </button>
-                ) : undefined
+                <button
+                  type="button"
+                  aria-label="Pin"
+                  onClick={(e) => togglePin(item.id, e)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--m-fg-3)', padding: '0 2px', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+                >
+                  <Icon name="pin" size={13} color="currentColor" />
+                </button>
               }
-            onClick={() => onNav?.(item.id)}
-          />
-        ))}
-        {!collapsed && (
-          <MetralySidebarItem
-            active={active === "dash-wizard"}
-            variant="accent"
-            icon={<Icon name="plus" size={15} color="currentColor" />}
-            label="New Dashboard"
-            onClick={() => onNav?.("dash-wizard")}
-          />
+              onClick={() => onNav?.(item.id)}
+            />
+          ))
         )}
+        <MetralySidebarItem
+          active={active === "dash-wizard"}
+          variant="accent"
+          icon={<Icon name="plus" size={15} color="currentColor" />}
+          label="New Dashboard"
+          onClick={() => onNav?.("dash-wizard")}
+        />
       </MetralySidebarSection>
 
-      {SECTIONS.slice(1).map((sec) => (
-        <MetralySidebarSection key={sec.label} label={collapsed ? undefined : sec.label}>
+      {NAV_SECTIONS.map((sec) => (
+        <MetralySidebarSection key={sec.label} label={sec.label}>
           {sec.items.map((item) => (
             <MetralySidebarItem
               key={item.id}
               active={active === item.id}
               icon={<Icon name={item.icon} size={15} color="currentColor" />}
               label={item.label}
-              meta={item.badge && !collapsed ? <StateBadge state="new" label="NEW" size="sm" /> : undefined}
+              meta={item.badge ? <StateBadge state="new" label="NEW" size="sm" /> : undefined}
               onClick={() => onNav?.(item.id)}
             />
           ))}

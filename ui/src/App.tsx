@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sidebar, Topbar, MetralyButton, MetralyEmptyState, CardShell, MetralyBadge } from './design-system';
+import { Sidebar, Topbar, MetralyButton, MetralyEmptyState, CardShell, MetralyBadge, StateBlock } from './design-system';
 import { DashboardScreen  } from './features/dashboard';
 import { DashboardWizardScreen } from './features/dashboardWizard/DashboardWizardScreen';
 import { MetricsScreen } from './features/metricsExplorer/MetricsScreen';
@@ -7,7 +7,7 @@ import { AIScreen } from './features/ai-workspace/AIScreen';
 import { PluginScreen } from './features/plugins/PluginScreen';
 import { WizardScreen } from './features/onboarding/WizardScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
-import { TweaksProvider } from './context/TweaksContext';
+import { useDashboards, getInitialDashboardId } from './hooks/useDashboards';
 import { Icon } from './design-system';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
@@ -18,13 +18,9 @@ import {
 } from './features/onboarding/firstRun';
 import { loadSession, login } from './api/client';
 
-const titles = {
-  overview: ['Overview', 'Last updated 2 min ago'],
-  'dash-cto': ['CTO Dashboard', 'Strategic health, DORA trends, team velocity'],
-  'dash-vp': ['VP Engineering', 'Delivery health & team performance'],
-  'dash-tl': ['Tech Lead', 'CI health, PR queue & sprint progress'],
-  'dash-devops': ['DevOps / SRE', 'Deploy frequency, MTTR & incidents'],
-  'dash-ic': ['My Dashboard', 'Personal metrics & sprint tasks'],
+const NON_DASH_SCREENS = new Set(['metrics', 'ai', 'plugins', 'wizard', 'settings', 'first-run', 'dash-wizard', 'dashboard', 'login']);
+
+const titles: Record<string, [string, string]> = {
   'dash-wizard': ['New Dashboard', 'Build a custom dashboard'],
   metrics: ['Metrics Explorer', 'DORA, CI/CD, PR & custom metrics'],
   ai: ['AI Workspace', 'Private · On-premise inference'],
@@ -33,29 +29,28 @@ const titles = {
   settings: ['Settings', 'Platform configuration'],
 };
 
-function renderDashboardScreen(initialDashboard, setActive, firstRunMode) {
+function renderDashboardScreen(initialDashboard: string, setActive: (id: string) => void, firstRunMode: FirstRunMode) {
   return (
     <DashboardScreen
       initialDashboard={initialDashboard}
-      onNewDashboard={() => setActive('dash-wizard')}
-      onNavigate={setActive}
       demoMode={firstRunMode === FIRST_RUN_MODE.demo}
       onConfigureSources={() => setActive('wizard')}
+      onNewDashboard={() => setActive('dash-wizard')}
     />
   );
 }
 
-function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
-  const renderers = {
-    dashboard: () => renderDashboardScreen('overview', setActive, firstRunMode),
-    overview: () => renderDashboardScreen('overview', setActive, firstRunMode),
-    'dash-cto': () => renderDashboardScreen('cto', setActive, firstRunMode),
-    'dash-vp': () => renderDashboardScreen('vp', setActive, firstRunMode),
-    'dash-tl': () => renderDashboardScreen('tl', setActive, firstRunMode),
-    'dash-devops': () => renderDashboardScreen('devops', setActive, firstRunMode),
-    'dash-ic': () => renderDashboardScreen('ic', setActive, firstRunMode),
+function renderActiveScreen(
+  active: string,
+  setActive: (id: string) => void,
+  firstRunMode: FirstRunMode,
+  title: string,
+  onUseDemo: () => void,
+  dashboards: { id: string }[],
+) {
+  const renderers: Record<string, () => React.ReactNode> = {
     'dash-wizard': () => (
-      <DashboardWizardScreen onSave={() => setActive('overview')} onCancel={() => setActive('overview')} />
+      <DashboardWizardScreen onSave={() => setActive(getInitialDashboardId() ?? 'dash-wizard')} onCancel={() => setActive(getInitialDashboardId() ?? 'dash-wizard')} />
     ),
     metrics: () => <MetricsScreen />,
     ai: () => <AIScreen />,
@@ -63,7 +58,7 @@ function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
     wizard: () => (
       <WizardScreen
         onUseDemo={onUseDemo}
-        onFinish={() => setActive('overview')}
+        onFinish={() => setActive(getInitialDashboardId() ?? 'dash-wizard')}
       />
     ),
     settings: () => (
@@ -79,7 +74,21 @@ function renderActiveScreen(active, setActive, firstRunMode, title, onUseDemo) {
     ),
   };
 
-  return renderers[active] ? renderers[active]() : <MetralyEmptyState title={title} description="This screen is not available yet." variant="default" />;
+  if (renderers[active]) return renderers[active]();
+
+  // Fallback: treat active as a dashboard ID.
+  // If the backend dashboard list is still empty (loading), show a placeholder to
+  // avoid a 404 flash — the useEffect in App will redirect active once the list arrives.
+  const isKnownDashboard = dashboards.some(d => d.id === active);
+  if (!isKnownDashboard && dashboards.length === 0) {
+    return (
+      <div className="metraly-dashboard-state">
+        <StateBlock variant="loading" title="Loading dashboard…" description="Connecting to backend." density="compact" />
+      </div>
+    );
+  }
+
+  return renderDashboardScreen(active, setActive, firstRunMode);
 }
 
 const App = () => {
@@ -88,12 +97,20 @@ const App = () => {
     'metraly.first-run-mode',
     FIRST_RUN_MODE.undecided,
   );
-  const [active, setActive] = useState(getInitialScreen(firstRunMode));
+  const [active, setActive] = useState(() => {
+    const cached = getInitialDashboardId();
+    if (cached && firstRunMode !== FIRST_RUN_MODE.undecided) return cached;
+    return getInitialScreen(firstRunMode);
+  });
+  const { dashboards } = useDashboards();
+  const selectedDashboard = dashboards.find(d => d.id === active);
+  const [title, subtitle] = selectedDashboard
+    ? [selectedDashboard.name, selectedDashboard.description ?? '']
+    : (titles[active] || ['Metraly', '']);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [firstRunSelection, setFirstRunSelection] = useState<FirstRunMode>(
     FIRST_RUN_MODE.demo,
   );
-  const [title, subtitle] = titles[active] || ['Metraly', ''];
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const syncSession = () => setSession(loadSession());
@@ -115,15 +132,25 @@ const App = () => {
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileNavOpen]);
 
+  useEffect(() => {
+    if (dashboards.length === 0) return;
+    const isDashboardId = dashboards.some(d => d.id === active);
+    if (!NON_DASH_SCREENS.has(active) && !isDashboardId) {
+      setActive(dashboards[0].id);
+    }
+  }, [dashboards]); // eslint-disable-line react-hooks/exhaustive-deps -- active intentionally excluded to prevent infinite loop
+
   const handleSignIn = async (email: string, password: string) => {
     await login(email, password);
     setSession(loadSession());
-    setActive(getInitialScreen(firstRunMode));
+    // Use first backend dashboard if available, otherwise fall through to legacy default
+    setActive(dashboards[0]?.id ?? getInitialScreen(firstRunMode));
   };
 
   const handleShowDemo = () => {
     setFirstRunMode(FIRST_RUN_MODE.demo);
-    setActive('overview');
+    // Prefer loaded dashboard > cached id > 'first-run' (redirect effect will fix it)
+    setActive(dashboards[0]?.id ?? getInitialDashboardId() ?? 'first-run');
   };
 
   const handleSkipDemo = () => {
@@ -234,7 +261,7 @@ const App = () => {
         <Topbar title={title} subtitle={subtitle} onOpenMobileNav={() => setMobileNavOpen(true)} />
       </div>
       <main className="metraly-app-shell__main metraly-app-shell__main--flush">
-        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo)}
+        {renderActiveScreen(active, setActive, firstRunMode, title, handleShowDemo, dashboards)}
       </main>
 
       {mobileNavOpen && (
@@ -266,7 +293,7 @@ const App = () => {
       )}
     </div>
   );
-  return <TweaksProvider>{shell}</TweaksProvider>;
+  return shell;
 };
 export default App;
 // hmr test Mon Jun  1 12:24:12 MSK 2026

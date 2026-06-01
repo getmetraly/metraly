@@ -99,6 +99,10 @@ func (f *fakeDashboardRepo) ListTemplates(ctx context.Context) ([]*domain.Dashbo
 	return nil, nil
 }
 
+func (f *fakeDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Context) error {
+	return nil
+}
+
 func newTestDashboardHandler(repo *fakeDashboardRepo) *DashboardHandler {
 	return NewDashboardHandler(biz.NewDashboardSvc(repo, cache.NewNoopDashboardCache()))
 }

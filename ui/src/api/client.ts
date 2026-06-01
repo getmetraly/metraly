@@ -227,24 +227,6 @@ function defaultFilters(): DashboardFilters {
 }
 
 function resolveDashboardApiId(id: string): string {
-  if (id === 'overview') {
-    return 'sandbox-overview';
-  }
-  if (id === 'cto') {
-    return 'sandbox-cto';
-  }
-  if (id === 'vp') {
-    return 'sandbox-vp';
-  }
-  if (id === 'tl') {
-    return 'sandbox-tl';
-  }
-  if (id === 'devops') {
-    return 'sandbox-devops';
-  }
-  if (id === 'ic') {
-    return 'sandbox-ic';
-  }
   return id;
 }
 
@@ -293,6 +275,8 @@ function mapDashboardIndex(dashboard: ApiDashboard): DashboardIndexEntry {
   return {
     id: dashboard.id,
     name: dashboard.name,
+    description: dashboard.description || undefined,
+    icon: dashboard.icon || undefined,
     sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
     sourceTemplateId: dashboard.sourceTemplateId || undefined,
     visibility: dashboard.isPublic ? 'org' : 'private',

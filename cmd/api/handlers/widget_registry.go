@@ -63,6 +63,9 @@ func newWidgetProcessorRegistry(h *PreviewHandler) *widgetProcessorRegistry {
 	r.register("section-header", func(context.Context, string, json.RawMessage, *domain.Dashboard) (any, error) {
 		return map[string]any{}, nil
 	})
+	r.register("health-gauge", func(ctx context.Context, _ string, config json.RawMessage, _ *domain.Dashboard) (any, error) {
+		return h.gaugeData(ctx, parseWidgetMetric(config, "health-score"))
+	})
 
 	return r
 }

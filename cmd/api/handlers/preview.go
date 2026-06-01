@@ -810,3 +810,24 @@ func heatmapCellStatus(v int) string {
 		return "error"
 	}
 }
+
+// ── Health-gauge widget data ───────────────────────────────────────────────
+
+type gaugeWidgetData struct {
+	Score float64 `json:"score"`
+}
+
+func (h *PreviewHandler) gaugeData(ctx context.Context, metricID string) (gaugeWidgetData, error) {
+	snapshot, err := h.metricsSvc.GetMetric(ctx, metricID, "30d", "All teams")
+	if err != nil || len(snapshot.Data) == 0 {
+		return gaugeWidgetData{Score: 72.0}, nil
+	}
+	v := snapshot.Data[len(snapshot.Data)-1].Value
+	if v < 0 {
+		v = 0
+	}
+	if v > 100 {
+		v = 100
+	}
+	return gaugeWidgetData{Score: v}, nil
+}

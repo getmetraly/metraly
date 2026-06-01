@@ -6,6 +6,8 @@ interface UseDashboardResult {
   dashboard: Dashboard | null;
   widgetData: Record<string, any>;
   isLoading: boolean;
+  isDashboardLoading: boolean;
+  isWidgetDataLoading: boolean;
   error: string | null;
   refresh: () => void;
 }
@@ -14,6 +16,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [widgetData, setWidgetData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(true);
+  const [isWidgetDataLoading, setIsWidgetDataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const dashboardIdRef = useRef(dashboardId);
@@ -28,6 +32,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setDashboard(null);
     setWidgetData({});
     setIsLoading(true);
+    setIsDashboardLoading(true);
+    setIsWidgetDataLoading(false);
     setError(null);
 
     async function fetchData() {
@@ -35,6 +41,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
         const dash = await fetchDashboard(requestId);
         if (dashboardIdRef.current !== requestId) return;
         setDashboard(dash);
+        setIsDashboardLoading(false);
+        setIsWidgetDataLoading(true);
 
         const dataResponse = await fetchDashboardData(requestId);
         if (dashboardIdRef.current !== requestId) return;
@@ -44,6 +52,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
           dataMap[`${dash.id}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
+        setIsWidgetDataLoading(false);
       } catch (err) {
         if (dashboardIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Failed to load dashboard");
@@ -62,6 +71,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setDashboard(null);
     setWidgetData({});
     setIsLoading(true);
+    setIsDashboardLoading(true);
+    setIsWidgetDataLoading(false);
     setError(null);
 
     const requestId = dashboardId;
@@ -70,6 +81,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
         const dash = await fetchDashboard(requestId);
         if (dashboardIdRef.current !== requestId) return;
         setDashboard(dash);
+        setIsDashboardLoading(false);
+        setIsWidgetDataLoading(true);
 
         const dataResponse = await fetchDashboardData(requestId);
         if (dashboardIdRef.current !== requestId) return;
@@ -79,6 +92,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
           dataMap[`${dash.id}-${item.instanceId}`] = item.data;
         });
         setWidgetData(dataMap);
+        setIsWidgetDataLoading(false);
       } catch (err) {
         if (dashboardIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Failed to load dashboard");
@@ -97,6 +111,8 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     dashboard,
     widgetData,
     isLoading,
+    isDashboardLoading,
+    isWidgetDataLoading,
     error,
     refresh,
   };

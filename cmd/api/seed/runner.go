@@ -101,12 +101,10 @@ func (r *Runner) seedAdmin(ctx context.Context, email, password string) error {
 }
 
 func (r *Runner) seedDashboards(ctx context.Context) error {
-	for _, dashboard := range sandboxDashboards {
-		if err := r.dashboards.Create(ctx, dashboard); err != nil {
-			return err
-		}
+	if err := r.dashboards.DeleteSystemTemplateDashboards(ctx); err != nil {
+		return fmt.Errorf("delete old system dashboards: %w", err)
 	}
-	return nil
+	return r.dashboards.Create(ctx, sandboxAllWidgets)
 }
 
 func (r *Runner) seedTemplates(ctx context.Context) error {
@@ -291,133 +289,49 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-var sandboxDashboards = []*domain.Dashboard{
-	{
-		ID:               "sandbox-overview",
-		Name:             "Overview",
-		Description:      "Sandbox Inc. first-run overview",
-		Icon:             "home",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("overview"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "overview-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
-			{InstanceID: "overview-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
-			{InstanceID: "overview-stat-lead", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "lead-time", "showSparkline": true, "colorKey": "purple"})},
-			{InstanceID: "overview-ai-1", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "deployment frequency"})},
-			{InstanceID: "overview-ai-2", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "PR review time"})},
-			{InstanceID: "overview-activity", WidgetType: "recent-activity", Config: mustJSON(map[string]any{"type": "recent-activity", "maxItems": 10})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "overview-stat-health", X: 0, Y: 0, W: 3, H: 2},
-			{InstanceID: "overview-stat-deploy", X: 3, Y: 0, W: 3, H: 2},
-			{InstanceID: "overview-stat-lead", X: 6, Y: 0, W: 3, H: 2},
-			{InstanceID: "overview-ai-1", X: 0, Y: 2, W: 6, H: 3},
-			{InstanceID: "overview-ai-2", X: 6, Y: 2, W: 6, H: 3},
-			{InstanceID: "overview-activity", X: 0, Y: 5, W: 12, H: 3},
-		},
+var sandboxAllWidgets = &domain.Dashboard{
+	ID:               "sandbox-all-widgets",
+	Name:             "Metraly Demo Dashboard",
+	Description:      "All Metraly widgets with seeded data",
+	Icon:             "dashboard",
+	OwnerID:          "admin-seed",
+	IsPublic:         true,
+	SourceType:       domain.DashboardSourceSystemTemplate,
+	SourceTemplateID: stringPtr("all-widgets"),
+	Widgets: []domain.WidgetInstance{
+		{InstanceID: "all-section-exec", WidgetType: "section-header", Config: mustJSON(map[string]any{"type": "section-header", "title": "Executive Overview"})},
+		{InstanceID: "all-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
+		{InstanceID: "all-stat-lead", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "lead-time", "showSparkline": true, "colorKey": "purple"})},
+		{InstanceID: "all-stat-cfr", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "cfr", "showSparkline": true, "colorKey": "warning"})},
+		{InstanceID: "all-stat-mttr", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "mttr", "showSparkline": true, "colorKey": "error"})},
+		{InstanceID: "all-dora", WidgetType: "dora-overview", Config: mustJSON(map[string]any{"type": "dora-overview"})},
+		{InstanceID: "all-gauge", WidgetType: "health-gauge", Config: mustJSON(map[string]any{"type": "health-gauge", "metricId": "health-score"})},
+		{InstanceID: "all-metric-pr", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "pr-cycle", "chartVariant": "area", "showCompare": false})},
+		{InstanceID: "all-compare", WidgetType: "compare-bar-chart", Config: mustJSON(map[string]any{"type": "compare-bar-chart", "metricId": "velocity"})},
+		{InstanceID: "all-heatmap", WidgetType: "heatmap", Config: mustJSON(map[string]any{"type": "heatmap", "rowGroupBy": "team", "columns": 14})},
+		{InstanceID: "all-leaderboard", WidgetType: "leaderboard", Config: mustJSON(map[string]any{"type": "leaderboard", "metricId": "velocity"})},
+		{InstanceID: "all-table", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "pr-queue", "maxRows": 5})},
+		{InstanceID: "all-burndown", WidgetType: "sprint-burndown", Config: mustJSON(map[string]any{"type": "sprint-burndown", "showTaskList": false})},
+		{InstanceID: "all-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "delivery health"})},
+		{InstanceID: "all-anomaly", WidgetType: "anomaly-detector", Config: mustJSON(map[string]any{"type": "anomaly-detector"})},
+		{InstanceID: "all-activity", WidgetType: "recent-activity", Config: mustJSON(map[string]any{"type": "recent-activity", "maxItems": 8})},
 	},
-	{
-		ID:               "sandbox-cto",
-		Name:             "CTO Dashboard",
-		Description:      "Sandbox Inc. strategic overview",
-		Icon:             "trendingUp",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("cto"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "cto-stat-health", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "health-score", "showSparkline": true, "colorKey": "cyan"})},
-			{InstanceID: "cto-stat-deploy", WidgetType: "stat-card", Config: mustJSON(map[string]any{"type": "stat-card", "metricId": "deploy-freq", "showSparkline": true, "colorKey": "success"})},
-			{InstanceID: "cto-dora", WidgetType: "dora-overview", Config: mustJSON(map[string]any{"type": "dora-overview"})},
-			{InstanceID: "cto-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "inline", "topicHint": "security"})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "cto-stat-health", X: 0, Y: 0, W: 3, H: 2},
-			{InstanceID: "cto-stat-deploy", X: 3, Y: 0, W: 3, H: 2},
-			{InstanceID: "cto-dora", X: 0, Y: 2, W: 8, H: 3},
-			{InstanceID: "cto-ai", X: 8, Y: 2, W: 4, H: 3},
-		},
-	},
-	{
-		ID:               "sandbox-vp",
-		Name:             "VP Engineering Dashboard",
-		Description:      "Delivery health and team performance",
-		Icon:             "users",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("vp"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "vp-pr-cycle", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "pr-cycle", "chartVariant": "bar-horizontal", "showCompare": false})},
-			{InstanceID: "vp-heatmap", WidgetType: "heatmap", Config: mustJSON(map[string]any{"type": "heatmap", "rowGroupBy": "team", "columns": 14})},
-			{InstanceID: "vp-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "inline", "topicHint": "pr cycle time"})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "vp-pr-cycle", X: 0, Y: 0, W: 6, H: 3},
-			{InstanceID: "vp-heatmap", X: 6, Y: 0, W: 6, H: 3},
-			{InstanceID: "vp-ai", X: 0, Y: 3, W: 12, H: 2},
-		},
-	},
-	{
-		ID:               "sandbox-tl",
-		Name:             "Tech Lead Dashboard",
-		Description:      "CI health and PR queue",
-		Icon:             "gitPR",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("tl"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "tl-ci-pass", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "ci-pass", "chartVariant": "area", "showCompare": false})},
-			{InstanceID: "tl-pr-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "pr-queue", "maxRows": 5})},
-			{InstanceID: "tl-ci-failures", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "ci-failures", "maxRows": 5})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "tl-ci-pass", X: 0, Y: 0, W: 6, H: 3},
-			{InstanceID: "tl-pr-queue", X: 6, Y: 0, W: 6, H: 3},
-			{InstanceID: "tl-ci-failures", X: 0, Y: 3, W: 12, H: 3},
-		},
-	},
-	{
-		ID:               "sandbox-devops",
-		Name:             "DevOps Dashboard",
-		Description:      "Deploy frequency, MTTR, and incidents",
-		Icon:             "cpu",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("devops"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "devops-deploy", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "deploy-freq", "chartVariant": "area", "showCompare": false})},
-			{InstanceID: "devops-mttr", WidgetType: "metric-chart", Config: mustJSON(map[string]any{"type": "metric-chart", "metricId": "mttr", "chartVariant": "area", "showCompare": false})},
-			{InstanceID: "devops-incidents", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "incidents", "maxRows": 5})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "devops-deploy", X: 0, Y: 0, W: 6, H: 3},
-			{InstanceID: "devops-mttr", X: 6, Y: 0, W: 6, H: 3},
-			{InstanceID: "devops-incidents", X: 0, Y: 3, W: 12, H: 3},
-		},
-	},
-	{
-		ID:               "sandbox-ic",
-		Name:             "My Dashboard",
-		Description:      "Personal sandbox view",
-		Icon:             "activity",
-		OwnerID:          "admin-seed",
-		IsPublic:         true,
-		SourceType:       domain.DashboardSourceSystemTemplate,
-		SourceTemplateID: stringPtr("ic"),
-		Widgets: []domain.WidgetInstance{
-			{InstanceID: "ic-my-prs", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "my-prs", "maxRows": 5})},
-			{InstanceID: "ic-review-queue", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "review-queue", "maxRows": 5})},
-			{InstanceID: "ic-burndown", WidgetType: "sprint-burndown", Config: mustJSON(map[string]any{"type": "sprint-burndown", "showTaskList": true})},
-		},
-		Layout: []domain.WidgetLayout{
-			{InstanceID: "ic-my-prs", X: 0, Y: 0, W: 6, H: 3},
-			{InstanceID: "ic-review-queue", X: 6, Y: 0, W: 6, H: 3},
-			{InstanceID: "ic-burndown", X: 0, Y: 3, W: 12, H: 3},
-		},
+	Layout: []domain.WidgetLayout{
+		{InstanceID: "all-section-exec", X: 0, Y: 0, W: 12, H: 1},
+		{InstanceID: "all-stat-deploy", X: 0, Y: 1, W: 3, H: 2},
+		{InstanceID: "all-stat-lead", X: 3, Y: 1, W: 3, H: 2},
+		{InstanceID: "all-stat-cfr", X: 6, Y: 1, W: 3, H: 2},
+		{InstanceID: "all-stat-mttr", X: 9, Y: 1, W: 3, H: 2},
+		{InstanceID: "all-dora", X: 0, Y: 3, W: 8, H: 3},
+		{InstanceID: "all-gauge", X: 8, Y: 3, W: 4, H: 3},
+		{InstanceID: "all-metric-pr", X: 0, Y: 6, W: 6, H: 3},
+		{InstanceID: "all-compare", X: 6, Y: 6, W: 6, H: 3},
+		{InstanceID: "all-heatmap", X: 0, Y: 9, W: 8, H: 3},
+		{InstanceID: "all-leaderboard", X: 8, Y: 9, W: 4, H: 3},
+		{InstanceID: "all-table", X: 0, Y: 12, W: 6, H: 3},
+		{InstanceID: "all-burndown", X: 6, Y: 12, W: 6, H: 3},
+		{InstanceID: "all-ai", X: 0, Y: 15, W: 12, H: 3},
+		{InstanceID: "all-anomaly", X: 0, Y: 18, W: 6, H: 2},
+		{InstanceID: "all-activity", X: 6, Y: 18, W: 6, H: 3},
 	},
 }

@@ -102,6 +102,10 @@ func (f *fakeDashboardRepoAuth) ListTemplates(_ context.Context) ([]*domain.Dash
 	return nil, nil
 }
 
+func (f *fakeDashboardRepoAuth) DeleteSystemTemplateDashboards(_ context.Context) error {
+	return nil
+}
+
 // — helpers —
 
 func dashboardRouter(h *handlers.DashboardHandler) http.Handler {

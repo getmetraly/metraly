@@ -1,7 +1,6 @@
 import React from "react";
 import { MetralyTopbar, PulseMarker } from "@metraly/ui";
 import { Icon } from "../components/shared/Icon";
-import { useTweaks } from "../context/TweaksContext";
 
 interface AppTopbarProps {
   title?: string;
@@ -10,8 +9,7 @@ interface AppTopbarProps {
 }
 
 export function AppTopbar({ title, subtitle, onOpenMobileNav }: AppTopbarProps) {
-  const { tweaks } = useTweaks();
-  const density = tweaks.density as "compact" | "comfortable" | "spacious";
+  const density = 'comfortable' as const;
 
   const actions = (
     <>

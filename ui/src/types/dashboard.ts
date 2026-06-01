@@ -73,6 +73,8 @@ export interface DashboardCacheEntry {
 export interface DashboardIndexEntry {
   id: string;
   name: string;
+  description?: string;
+  icon?: string;
   sourceType: DashboardSourceType;
   sourceTemplateId?: SystemTemplateId;
   visibility: DashboardVisibility;

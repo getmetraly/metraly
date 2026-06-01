@@ -75,6 +75,9 @@ func (r *recordingDashboardRepo) UpdateShare(ctx context.Context, id string, isP
 func (r *recordingDashboardRepo) ListTemplates(ctx context.Context) ([]*domain.DashboardTemplate, error) {
 	return nil, nil
 }
+func (r *recordingDashboardRepo) DeleteSystemTemplateDashboards(ctx context.Context) error {
+	return nil
+}
 
 type recordingPluginRepo struct {
 	created []*domain.Plugin
@@ -149,8 +152,8 @@ func TestRunnerSeedsSandboxIncData(t *testing.T) {
 	if got := len(users.created); got != 1 {
 		t.Fatalf("expected one seeded user, got %d", got)
 	}
-	if got := len(dashboards.created); got < 6 {
-		t.Fatalf("expected seeded dashboards, got %d", got)
+	if got := len(dashboards.created); got != 1 {
+		t.Fatalf("expected exactly 1 seeded dashboard (sandbox-all-widgets), got %d", got)
 	}
 	if got := len(plugins.created); got == 0 {
 		t.Fatal("expected seeded plugins")
