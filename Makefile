@@ -98,10 +98,17 @@ brandbook-install:
 	cd $(BRANDBOOK_UI_DIR) && npm install
 
 brandbook-dist-check:
-	@test -d $(BRANDBOOK_UI_DIST) || (echo "missing $(BRANDBOOK_UI_DIST) (run: make brandbook-build)"; exit 1)
+	@test -f $(BRANDBOOK_UI_DIST)/index.js && \
+	test -f $(BRANDBOOK_UI_DIST)/index.cjs && \
+	test -f $(BRANDBOOK_UI_DIST)/index.d.ts && \
+	test -f $(BRANDBOOK_UI_DIST)/styles/metraly-ui.css || \
+	(echo "missing @metraly/ui dist artifacts (run: make brandbook-build)"; exit 1)
 docker-brandbook-dist-check:
-	@$(DOCKER_COMPOSE) exec ui test -d /brandbook/packages/ui/dist || \
-		(echo "missing /brandbook/packages/ui/dist in ui container (run: make brandbook-build)" && exit 1)
+	@$(DOCKER_COMPOSE) exec ui sh -c 'test -f /brandbook/packages/ui/dist/index.js && \
+	test -f /brandbook/packages/ui/dist/index.cjs && \
+	test -f /brandbook/packages/ui/dist/index.d.ts && \
+	test -f /brandbook/packages/ui/dist/styles/metraly-ui.css' || \
+	(echo "missing @metraly/ui dist artifacts in container (run: make brandbook-build)"; exit 1)
 
 brandbook-watch:
 	cd $(BRANDBOOK_UI_DIR) && npm run build -- --watch
