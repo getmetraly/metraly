@@ -4,27 +4,37 @@
 
 import { z } from 'zod';
 
-// — Result kinds and granularity —
+// — Result kinds, shapes, granularity, time range —
 
 export const ResultKindSchema = z.enum([
   'timeseries', 'scalar', 'breakdown', 'dora', 'activity', 'table', 'heatmap', 'insight', 'anomaly',
 ]);
 
+export const ResultShapeSchema = z.enum([
+  'stat-card', 'metric-chart', 'compare-bar-chart', 'leaderboard',
+  'health-gauge', 'sprint-burndown', 'anomaly-detector', 'data-table',
+  'dora-overview', 'recent-activity', 'heatmap', 'ai-insight',
+]);
+
 export const GranularitySchema = z.enum(['day', 'week', 'month']);
+
+export const TimeRangePresetSchema = z.enum([
+  'last_7d', 'last_14d', 'last_30d', 'last_60d', 'last_90d',
+]);
 
 // — MetricQuery (frontend canonical) —
 
 export const MetricQuerySchema = z.object({
   metricId: z.string().min(1),
   resultKind: ResultKindSchema,
-  timeRange: z.string().min(1),
+  resultShape: ResultShapeSchema,
+  timeRangePreset: TimeRangePresetSchema,
   granularity: GranularitySchema.optional(),
   filters: z.record(z.string(), z.array(z.string())).optional(),
   groupBy: z.array(z.string()).optional(),
-  params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])).optional(),
 });
 
-export type MetricQuerySchemaType = z.infer<typeof MetricQuerySchema>;
 
 // — Quality + Lineage —
 
@@ -48,36 +58,49 @@ export const LineageContractSchema = z.object({
 
 export const ResultStatusSchema = z.enum(['ready', 'empty', 'stale', 'partial', 'error']);
 
+export const QueryResultErrorSchema = z.object({
+  code: z.string().min(1),
+  message: z.string().min(1),
+  retryable: z.boolean().optional(),
+});
+
 export const QueryResultEnvelopeSchema = z.object({
   queryKey: z.string().min(1),
-  result: z.unknown(),
+  result: z.unknown().optional(),
   status: ResultStatusSchema,
+  error: QueryResultErrorSchema.optional(),
   quality: DataQualityContractSchema.optional(),
   lineage: LineageContractSchema.optional(),
   version: z.number().int(),
   sequence: z.number().int(),
   updatedAt: z.string().min(1),
+}).superRefine((value, ctx) => {
+  if (value.status === 'ready' && value.result === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'ready result requires result payload',
+      path: ['result'],
+    });
+  }
+  if (value.status === 'error' && !value.error) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'error status requires error payload',
+      path: ['error'],
+    });
+  }
 });
 
-export type QueryResultEnvelopeSchemaType = z.infer<typeof QueryResultEnvelopeSchema>;
 
 // — Snapshot request + response —
 
-export const SnapshotQueryItemSchema = z.object({
-  queryKey: z.string().min(1),
-  query: MetricQuerySchema,
-});
 
-export const SnapshotRequestSchema = z.object({
-  queries: z.array(SnapshotQueryItemSchema).min(1),
-});
 
 export const SnapshotResponseSchema = z.object({
   dashboardId: z.string().min(1),
   results: z.array(QueryResultEnvelopeSchema),
 });
 
-export type SnapshotResponseSchemaType = z.infer<typeof SnapshotResponseSchema>;
 
 // — WebSocket events —
 
@@ -105,15 +128,18 @@ export const WsHeartbeatSchema = z.object({
   serverTime: z.string().optional(),
 });
 
-export const WsQueryResultUpdatedSchema = z.object({
+const WsQueryResultUpdatedSchema = z.object({
   type: z.literal('queryResult.updated'),
   dashboardId: z.string().min(1),
   queryKey: z.string().min(1),
+  status: ResultStatusSchema.default('ready'),
+  result: z.unknown().optional(),
+  error: QueryResultErrorSchema.optional(),
+  quality: DataQualityContractSchema.optional(),
+  lineage: LineageContractSchema.optional(),
   version: z.number().int(),
   sequence: z.number().int(),
   updatedAt: z.string().min(1),
-  /** Optional inline result; if present, use it directly instead of triggering a refetch. */
-  result: z.unknown().optional(),
 });
 
 export const WsEventSchema = z.discriminatedUnion('type', [
@@ -124,5 +150,3 @@ export const WsEventSchema = z.discriminatedUnion('type', [
   WsQueryResultUpdatedSchema,
 ]);
 
-export type WsEvent = z.infer<typeof WsEventSchema>;
-export type WsQueryResultUpdated = z.infer<typeof WsQueryResultUpdatedSchema>;

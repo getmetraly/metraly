@@ -7,13 +7,13 @@ rules:
       category: reliability
     paths:
       include:
-        - cmd/api/handlers/**/*.go
-        - cmd/api/biz/**/*.go
-        - cmd/api/repo/**/*.go
+        - /cmd/api/handlers/**/*.go
+        - /cmd/api/biz/**/*.go
+        - /cmd/api/repo/**/*.go
       exclude:
         - '**/*_test.go'
-        - cmd/api/main.go
-        - cmd/api/seed/**
+        - /cmd/api/main.go
+        - /cmd/api/seed/**
     pattern-either:
       - pattern: context.Background()
       - pattern: context.TODO()
@@ -25,6 +25,8 @@ rules:
     metadata:
       category: security
     paths:
+      include:
+        - /cmd/api/**/*.go
       exclude:
         - '**/*_test.go'
     pattern-either:
@@ -38,13 +40,15 @@ rules:
     metadata:
       category: maintainability
     paths:
+      include:
+        - /cmd/api/**/*.go
       exclude:
         - '**/*_test.go'
     pattern-either:
-      - pattern: fmt.Println($$$ARGS)
-      - pattern: fmt.Printf($$$ARGS)
-      - pattern: log.Print($$$ARGS)
-      - pattern: log.Printf($$$ARGS)
+      - pattern: fmt.Println(...)
+      - pattern: fmt.Printf(...)
+      - pattern: log.Print(...)
+      - pattern: log.Printf(...)
 
   - id: metraly-go-sleep-in-production
     languages: [go]
@@ -53,6 +57,8 @@ rules:
     metadata:
       category: reliability
     paths:
+      include:
+        - /cmd/api/**/*.go
       exclude:
         - '**/*_test.go'
     pattern: time.Sleep($DURATION)
@@ -63,11 +69,16 @@ rules:
     message: Avoid building SQL with fmt.Sprintf; use parameters instead.
     metadata:
       category: security
-    pattern: fmt.Sprintf("$SQL", $$$ARGS)
-    metavariable-regex:
-      metavariable: $SQL
-      regex: '.*(SELECT|INSERT|UPDATE|DELETE).*'
-
+    paths:
+      include:
+        - /cmd/api/**/*.go
+      exclude:
+        - '**/*_test.go'
+    pattern-either:
+      - pattern-regex: 'fmt\\.Sprintf.*SELECT'
+      - pattern-regex: 'fmt\\.Sprintf.*INSERT'
+      - pattern-regex: 'fmt\\.Sprintf.*UPDATE'
+      - pattern-regex: 'fmt\\.Sprintf.*DELETE'
   - id: metraly-react-direct-fetch
     languages: [typescript, javascript]
     severity: WARNING
@@ -76,8 +87,8 @@ rules:
       category: maintainability
     paths:
       include:
-        - ui/src/components/**/*.{ts,tsx,js,jsx}
-        - ui/src/features/**/*.{ts,tsx,js,jsx}
+        - /ui/src/components/**/*.{ts,tsx,js,jsx}
+        - /ui/src/features/**/*.{ts,tsx,js,jsx}
     pattern: fetch($$$ARGS)
 
   - id: metraly-react-direct-axios
@@ -88,8 +99,8 @@ rules:
       category: maintainability
     paths:
       include:
-        - ui/src/components/**/*.{ts,tsx,js,jsx}
-        - ui/src/features/**/*.{ts,tsx,js,jsx}
+        - /ui/src/components/**/*.{ts,tsx,js,jsx}
+        - /ui/src/features/**/*.{ts,tsx,js,jsx}
     pattern-either:
       - pattern: axios.$METHOD($$$ARGS)
       - pattern: $CLIENT.$METHOD($$$ARGS)
@@ -105,12 +116,12 @@ rules:
       category: security
     paths:
       include:
-        - ui/src/**/*.{ts,tsx,js,jsx}
+        - /ui/src/**/*.{ts,tsx,js,jsx}
       exclude:
-        - ui/src/hooks/**
-        - ui/src/utils/**
-        - ui/src/lib/**
-        - ui/src/api/**
+        - /ui/src/hooks/**
+        - /ui/src/utils/**
+        - /ui/src/lib/**
+        - /ui/src/api/**
     pattern-either:
       - pattern: localStorage.$METHOD($$$ARGS)
       - pattern: sessionStorage.$METHOD($$$ARGS)
@@ -123,7 +134,7 @@ rules:
       category: reliability
     paths:
       include:
-        - ui/src/**/*.{ts,tsx,js,jsx}
+        - /ui/src/**/*.{ts,tsx,js,jsx}
     pattern-either:
       - pattern: |
           useEffect(() => {

@@ -19,19 +19,6 @@ export const makeTimeSeries = (
   );
 };
 
-export const makeHeatData = (
-  rows: number,
-  cols: number,
-  density = 0.4,
-  seed = 77,
-): number[][] => {
-  const r = seededRand(seed);
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () =>
-      r() < density ? Math.floor(r() * 5) + 1 : 0,
-    ),
-  );
-};
 
 export function makeHeatmapWidgetData(
   rowLabels: string[] = ['Platform', 'Backend', 'Frontend', 'Mobile', 'Data'],

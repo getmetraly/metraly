@@ -1,10 +1,10 @@
-import React, { createElement, type ReactNode } from 'react';
+import type React from 'react';
+import { createElement, type ReactNode } from 'react';
 import {
   MetralyButton as BaseMetralyButton,
   MetralyInput as BaseMetralyInput,
   MetralySelect as BaseMetralySelect,
   MetralyCheckbox as BaseMetralyCheckbox,
-  MetralySwitch as BaseMetralySwitch,
 } from '@metraly/ui';
 import type { MetralySelectOption } from '@metraly/ui';
 
@@ -95,23 +95,3 @@ export function MetralyCheckbox(props: MetralyCheckboxProps) {
   return createElement(BaseMetralyCheckbox as unknown as React.ElementType, props);
 }
 
-// ─── MetralySwitch ───────────────────────────────────────────────────────────
-
-type MetralySwitchProps = {
-  id?: string;
-  name?: string;
-  label?: ReactNode;
-  description?: ReactNode;
-  hint?: ReactNode;
-  checked?: boolean;
-  defaultChecked?: boolean;
-  disabled?: boolean;
-  loading?: boolean;
-  error?: boolean;
-  className?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-};
-
-export function MetralySwitch(props: MetralySwitchProps) {
-  return createElement(BaseMetralySwitch as unknown as React.ElementType, props);
-}

@@ -221,14 +221,6 @@ export const DESCRIPTOR_BY_LIBRARY_ID = new Map<string, WidgetDescriptor>(
   WIDGET_DESCRIPTORS.map((d) => [d.libraryId, d]),
 );
 
-/**
- * Look up the FIRST descriptor whose runtimeType matches.
- * When multiple library IDs share a runtime type (e.g. deploy-freq / lead-time → stat-card),
- * this returns the first match; callers that need an exact library ID must use config.metricId etc.
- */
-export function descriptorByRuntimeType(runtimeType: string): WidgetDescriptor | undefined {
-  return WIDGET_DESCRIPTORS.find((d) => d.runtimeType === runtimeType);
-}
 
 /**
  * Reconstruct the editor library ID from a persisted widget instance.

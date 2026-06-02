@@ -37,7 +37,7 @@ func (a *AsanaAdapter) Fetch() ([]AsanaTask, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(a.APIKey, "")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

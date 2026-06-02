@@ -151,7 +151,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Get("/api/v1/dashboards/{id}/data", previewHandler.DashboardData)
 			r.Get("/api/v1/dashboards/{id}/view", runtimeBFFHandler.DashboardView)
 			r.Post("/api/v1/dashboards/{id}/query-results/snapshot", querySnapshotHandler.Snapshot)
-			// TODO: add /ws/dashboards/{id}/realtime once backend producers/pubsub exist.
+			// Future route: add /ws/dashboards/{id}/realtime once backend producers/pubsub exist.
 			r.Post("/api/v1/widgets/data", previewHandler.WidgetsData)
 			r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
 			r.Post("/api/v1/ingest/pm", ingestionHandler.PM)

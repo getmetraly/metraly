@@ -1,0 +1,11 @@
+title = "Metraly local gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore local runtime artifacts and nested worktrees"
+paths = [
+  '''(^|/)\.run/.*$''',
+  '''(^|/)\.worktrees/.*$''',
+]

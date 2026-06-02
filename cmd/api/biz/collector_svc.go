@@ -155,13 +155,13 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 	if err := s.runRepo.UpdateCollectorRun(ctx, run); err != nil {
 		// Transition to running failed — attempt to mark as failed using a fresh context
 		// so that client disconnection cannot leave the row stuck at 'started'.
-		return s.failRunBackground(run, "lifecycle_error", "update run to running: "+err.Error())
+		return s.failRunBackground(ctx, run, "lifecycle_error", "update run to running: "+err.Error())
 	}
 
 	// Decrypt credential — secret is scoped to this function and cleared after use.
 	secret, err := s.sourceSvc.DecryptSecretForSource(ctx, sc)
 	if err != nil {
-		return s.failRunBackground(run, "credential_error", "could not decrypt credential: "+err.Error())
+		return s.failRunBackground(ctx, run, "credential_error", "could not decrypt credential: "+err.Error())
 	}
 
 	result, collectErr := collector.Collect(ctx, *sc, secret, run.Cursor)
@@ -173,16 +173,16 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 			"source_id", sourceID,
 			"error_category", categorizeCollectorError(collectErr),
 		)
-		return s.failRunBackground(run, categorizeCollectorError(collectErr), collectErr.Error())
+		return s.failRunBackground(ctx, run, categorizeCollectorError(collectErr), collectErr.Error())
 	}
 	if result == nil {
-		return s.failRunBackground(run, "unknown", "collector returned nil result")
+		return s.failRunBackground(ctx, run, "unknown", "collector returned nil result")
 	}
 
 	run.RateLimitState = result.RateLimitState
 	run.RetryAfter = result.RetryAfter
 	if result.RateLimitState == domain.RateLimitStateThrottled || result.RateLimitState == domain.RateLimitStateCooldown {
-		return s.failRunBackground(run, "rate_limited", "source is rate limited")
+		return s.failRunBackground(ctx, run, "rate_limited", "source is rate limited")
 	}
 
 	// Stamp this run's ID on events before persisting.
@@ -194,7 +194,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 
 	outcomes, err := s.eventRepo.InsertRawSourceEventsBatchWithOutcomes(ctx, result.Events)
 	if err != nil {
-		return s.failRunBackground(run, "storage_error", "failed to persist raw events: "+err.Error())
+		return s.failRunBackground(ctx, run, "storage_error", "failed to persist raw events: "+err.Error())
 	}
 	inserted := 0
 	for _, o := range outcomes {
@@ -251,15 +251,16 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 	return run, nil
 }
 
-// failRunBackground writes the failure status using context.Background() so that
-// a canceled request context cannot prevent the DB write.
-func (s *CollectorSvc) failRunBackground(run *domain.CollectorRun, errorCategory, errorMessage string) (*domain.CollectorRun, error) {
+// failRunBackground writes the failure status using context.WithoutCancel(ctx)
+// so that a canceled request context cannot prevent the DB write while still
+// preserving request-scoped values such as tracing metadata.
+func (s *CollectorSvc) failRunBackground(ctx context.Context, run *domain.CollectorRun, errorCategory, errorMessage string) (*domain.CollectorRun, error) {
 	finished := time.Now().UTC()
 	run.Status = domain.CollectorRunStatusFailed
 	run.FinishedAt = &finished
 	run.ErrorCategory = errorCategory
 	run.ErrorMessage = errorMessage
-	_ = s.runRepo.UpdateCollectorRun(context.Background(), run)
+	_ = s.runRepo.UpdateCollectorRun(context.WithoutCancel(ctx), run)
 	slog.Warn("collector_run.failed",
 		"run_id", run.ID,
 		"source_id", run.SourceConnectionID,

@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"strconv"
 	"time"
@@ -131,7 +130,7 @@ func newRuntime(ctx context.Context, cfg config.AppConfig) (*runtimeDeps, error)
 	redisCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	if err := pingRedis(redisCtx, rdb); err != nil {
-		log.Printf("redis unavailable; using degraded cache mode: %v", err)
+		slog.WarnContext(ctx, "redis unavailable; using degraded cache mode", "error", err)
 		if rdb != nil {
 			_ = rdb.Close()
 		}

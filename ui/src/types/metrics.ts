@@ -21,13 +21,6 @@ export interface MetricTimeSeries {
   unit: string;
 }
 
-import { TimeRange, TeamName, RepoName } from './common';
-
-export interface MetricQueryParams {
-  timeRange: TimeRange;
-  team?: TeamName;
-  repo?: RepoName;
-}
 
 export interface MetricDataResponse {
   metricId: MetricId;
@@ -40,16 +33,8 @@ export interface MetricDataResponse {
   labels?: string[];
 }
 
-import { DORALevel } from './common';
+import type { DORALevel } from './common';
 
-export interface MetricBreakdownItem {
-  name: string;
-  team: TeamName;
-  value: string;
-  valueRaw: number;
-  doraLevel: DORALevel;
-  delta: string;
-}
 
 export interface DORAMetricDetail {
   id: 'deploy-freq' | 'lead-time' | 'cfr' | 'mttr';

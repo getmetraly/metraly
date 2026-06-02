@@ -5,19 +5,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { client } from '../../../api/client';
 import type { MetricQuery } from './metric-query.types';
+import { resolveTimeRangePreset } from './metric-query.types';
 import type { QueryResultEnvelope } from './metric-query-result.types';
 import { tanstackQueryKey } from './query-key';
 import { QueryResultEnvelopeSchema, SnapshotResponseSchema } from './query-schemas';
-
-const DAYS_BY_TOKEN: Record<string, number> = {
-  '7d': 7,
-  'now-7d': 7,
-  '14d': 14,
-  '30d': 30,
-  'now-30d': 30,
-  '60d': 60,
-  '90d': 90,
-};
 
 export interface SnapshotQueryItem {
   queryKey: string;
@@ -27,37 +18,40 @@ export interface SnapshotQueryItem {
 export interface BackendSnapshotQuery {
   metricId: string;
   resultKind: string;
+  resultShape: string;
   granularity: string;
   start: string;
   end: string;
   filters?: Record<string, string>;
   groupBy?: string[];
-  params?: Record<string, string | number | boolean>;
+  params?: Record<string, string | number | boolean | string[]>;
 }
 
-function resolveTimeRange(token: string): { start: string; end: string } {
-  const now = new Date();
-  const days = DAYS_BY_TOKEN[token] ?? 30;
-  const start = new Date(now);
-  start.setDate(start.getDate() - days);
-  return { start: start.toISOString(), end: now.toISOString() };
+/**
+ * MVP backend accepts one value per filter. Multi-value execution is deferred.
+ * QueryKey still includes all values to avoid unsafe dedupe.
+ */
+function toBackendFilters(filters?: Record<string, string[]>): Record<string, string> | undefined {
+  if (!filters) return undefined;
+  const out: Record<string, string> = {};
+  for (const [key, values] of Object.entries(filters)) {
+    if (values.length === 0) continue;
+    // MVP limitation: multi-value filters use first value only.
+    out[key] = values[0];
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function toBackendQuery(query: MetricQuery): BackendSnapshotQuery {
-  const { start, end } = resolveTimeRange(query.timeRange);
+  const { start, end } = resolveTimeRangePreset(query.timeRangePreset);
   return {
     metricId: query.metricId,
     resultKind: query.resultKind,
+    resultShape: query.resultShape,
     granularity: query.granularity ?? 'day',
     start,
     end,
-    ...(query.filters
-      ? {
-          filters: Object.fromEntries(
-            Object.entries(query.filters).map(([key, values]) => [key, values[0] ?? '']),
-          ),
-        }
-      : {}),
+    filters: toBackendFilters(query.filters),
     ...(query.groupBy ? { groupBy: query.groupBy } : {}),
     ...(query.params ? { params: query.params } : {}),
   };
@@ -102,10 +96,3 @@ export async function fetchSingleQueryAndSeedCache(
   return QueryResultEnvelopeSchema.parse(matching);
 }
 
-export function createFakeSnapshotAdapter(fixtures: QueryResultEnvelope[]) {
-  return async (
-    dashboardId: string,
-    _queries: SnapshotQueryItem[],
-    queryClient: QueryClient,
-  ): Promise<QueryResultEnvelope[]> => seedCache(dashboardId, queryClient, fixtures);
-}

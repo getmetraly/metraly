@@ -1,6 +1,6 @@
-import { WidgetConfig, WidgetType } from './widgets';
-import { TimeRange, TeamName, RepoName } from './common';
-import { ActivityEvent } from './user';
+import type { WidgetConfig, WidgetType } from './widgets';
+import type { TimeRange, TeamName, RepoName } from './common';
+import type { ActivityEvent } from './user';
 
 export interface DashboardFilters {
   timeRange: TimeRange;
@@ -55,21 +55,6 @@ export interface Dashboard {
   recentActivity?: ActivityEvent[];
 }
 
-export interface DashboardDraft {
-  dashboardId: string;
-  changes: Partial<Pick<Dashboard, 'name' | 'description' | 'widgets' | 'defaultFilters' | 'visibility'>>;
-  localLayout?: WidgetLayout[];
-  draftedAt: string;
-  baseVersion: number;
-}
-
-export interface DashboardCacheEntry {
-  dashboard: Dashboard;
-  fetchedAt: string;
-  staleSec: number;
-  draft?: DashboardDraft;
-}
-
 export interface DashboardIndexEntry {
   id: string;
   name: string;
@@ -80,16 +65,4 @@ export interface DashboardIndexEntry {
   visibility: DashboardVisibility;
   updatedAt: string;
   hasDraft: boolean;
-}
-
-export interface EmptyWidget {
-  type: 'empty';
-  instanceId: string;
-}
-
-export interface SystemTemplate {
-  templateId: SystemTemplateId;
-  label: string;
-  description: string;
-  dashboard: Omit<Dashboard, 'id' | 'createdBy' | 'createdAt' | 'updatedAt' | 'version'>;
 }

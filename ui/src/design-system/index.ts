@@ -8,7 +8,7 @@ export { AppSidebar as Sidebar } from '../layout/AppSidebar';
 export { AppTopbar as Topbar } from '../layout/AppTopbar';
 export { Icon } from '../components/shared/Icon';
 export { Leaderboard, AIInsightCard, InlineInsight } from '@metraly/ui';
-export { MetralyButton, MetralyInput, MetralySelect, MetralyCheckbox, MetralySwitch } from './adapters/controls';
+export { MetralyButton, MetralyInput, MetralySelect, MetralyCheckbox } from './adapters/controls';
 export { MetralyGauge, MetralyHeatmap } from './adapters/charts';
 export { widgetRegistry } from '../components/dashboard/widgetRegistry';
 

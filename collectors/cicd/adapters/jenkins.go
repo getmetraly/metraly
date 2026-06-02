@@ -38,7 +38,7 @@ func (j *JenkinsAdapter) Fetch() ([]JenkinsBuild, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(j.User, j.Token)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

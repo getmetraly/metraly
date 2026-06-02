@@ -4,11 +4,10 @@
 
 import type { MetricQuery } from './metric-query.types';
 
-/** Visual-only fields excluded from QueryKey. */
+/** Visual-only fields excluded from QueryKey. Never data-affecting. */
 const VISUAL_PARAMS: Record<string, true> = {
   colorKey: true, chartVariant: true, showSparkline: true, colorOverride: true,
-  primaryLabel: true, compareLabel: true, showCompare: true, showDimensions: true,
-  showTaskList: true, userId: true, variant: true,
+  primaryLabel: true, compareLabel: true, showDimensions: true, variant: true,
 };
 const DEFAULT_GRANULARITY = 'day';
 
@@ -16,9 +15,11 @@ const DEFAULT_GRANULARITY = 'day';
  * Build a canonical, deterministic QueryKey string from a MetricQuery.
  *
  * Rules:
- * - Excludes layout fields (x/y/w/h/etc.), widget identity, and pure visual config.
- * - Sorts filters keys and values; sorts groupBy; sorts params keys.
- * - Uses relative timeRange token (not resolved absolute times).
+ * - Excludes layout fields, widget identity, and pure visual config.
+ * - Sorts filter keys and values; does NOT sort groupBy (order is data-affecting).
+ * - Sorts params keys after removing visual-only ones.
+ * - Uses canonical timeRangePreset token (not resolved absolute times).
+ * - resultShape is data-affecting: included to prevent unsafe deduplication.
  * - Stable across re-renders and page reloads.
  */
 export function buildQueryKey(query: MetricQuery): string {
@@ -29,8 +30,6 @@ export function buildQueryKey(query: MetricQuery): string {
           .map((k) => [k, [...(query.filters![k] ?? [])].sort()]),
       )
     : undefined;
-
-  const groupBy = query.groupBy ? [...query.groupBy].sort() : undefined;
 
   const params = query.params
     ? Object.fromEntries(
@@ -44,11 +43,13 @@ export function buildQueryKey(query: MetricQuery): string {
   const canonical: Record<string, unknown> = {
     metricId: query.metricId,
     resultKind: query.resultKind,
-    timeRange: query.timeRange,
+    resultShape: query.resultShape,
+    timeRangePreset: query.timeRangePreset,
     granularity: query.granularity ?? DEFAULT_GRANULARITY,
   };
   if (filters && Object.keys(filters).length > 0) canonical.filters = filters;
-  if (groupBy && groupBy.length > 0) canonical.groupBy = groupBy;
+  // groupBy order preserved — do not sort; order is intentionally data-affecting
+  if (query.groupBy?.length) canonical.groupBy = query.groupBy;
   if (params && Object.keys(params).length > 0) canonical.params = params;
 
   return JSON.stringify(canonical);
@@ -64,8 +65,13 @@ export function tanstackQueryKey(dashboardId: string, queryKey: string): [string
 
 /**
  * Build the TanStack Query queryKey array for the batched snapshot.
- * Shape: ['dashboardSnapshot', dashboardId]
+ * Includes querySignature so that a changed query set triggers a new fetch.
+ * Shape: ['dashboardSnapshot', dashboardId, querySignature]
  */
-export function tanstackSnapshotKey(dashboardId: string): [string, string] {
-  return ['dashboardSnapshot', dashboardId];
+export function tanstackSnapshotKey(
+  dashboardId: string,
+  querySignature: string,
+): [string, string, string] {
+  return ['dashboardSnapshot', dashboardId, querySignature];
 }
+

@@ -20,7 +20,15 @@ func WithRetry(ctx context.Context, fn func() error) error {
 	for i := 0; i < MaxRetries; i++ {
 		if err := fn(); err != nil {
 			lastErr = err
-			time.Sleep(time.Duration(delays[i]) * time.Millisecond)
+			timer := time.NewTimer(time.Duration(delays[i]) * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return ctx.Err()
+			case <-timer.C:
+			}
 			continue
 		}
 		return nil

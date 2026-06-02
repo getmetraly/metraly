@@ -1,11 +1,10 @@
 import axios from 'axios';
-import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, SystemTemplate, WidgetLayout } from '../types/dashboard';
-import type { CreateDashboardRequest, ForkDashboardRequest, ShareDashboardRequest, ShareDashboardResponse, UpdateDashboardRequest } from '../types/api';
+import type { Dashboard, DashboardIndexEntry, DashboardWidgetInstance, DashboardFilters, WidgetLayout } from '../types/dashboard';
+import type { CreateDashboardRequest, UpdateDashboardRequest } from '../types/api';
 import { sanitizeDashboardIcon } from '../features/dashboardWizard/dashboardIcons';
-import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricBreakdownItem as UiMetricBreakdownItem, MetricTimeSeries } from '../types/metrics';
-import type { ActivityEvent, MeResponse } from '../types/user';
+import type { MetricDataResponse, DORAMetricDetail, DORAResponse as UiDORAResponse, MetricTimeSeries } from '../types/metrics';
+import type { ActivityEvent } from '../types/user';
 
-export const USE_MOCK = false;
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '');
 const SESSION_KEY = 'metraly.auth-session';
@@ -51,15 +50,6 @@ type ApiDashboard = {
   updatedAt: string;
 };
 
-type ApiTemplate = {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  category?: string;
-  widgets: DashboardWidgetInstance[];
-  layout: ApiWidgetLayout[];
-};
 
 type ApiWidgetLayout = Omit<WidgetLayout, 'i'> & {
   instanceId?: string;
@@ -67,11 +57,6 @@ type ApiWidgetLayout = Omit<WidgetLayout, 'i'> & {
 };
 
 type DashboardWriteResponse = ApiDashboard;
-type ShareDashboardApiResponse = {
-  isPublic: boolean;
-  shareToken?: string | null;
-  dashboardId: string;
-};
 
 
 type ApiBootstrapResponse = {
@@ -172,9 +157,6 @@ export function loadSession(): AuthSession | null {
   return readSession();
 }
 
-export function saveSession(session: AuthSession) {
-  persistSession(session);
-}
 
 export function clearSession() {
   persistSession(null);
@@ -245,22 +227,6 @@ export async function login(email: string, password: string): Promise<AuthSessio
   return session;
 }
 
-export async function logout() {
-  const current = readSession();
-  if (current?.refreshToken) {
-    try {
-      await rawClient.post('/auth/logout', { refresh_token: current.refreshToken });
-    } catch {
-      // Ignore logout errors during cleanup.
-    }
-  }
-  clearSession();
-}
-
-export async function getMe(): Promise<MeResponse> {
-  const res = await client.get<MeResponse>('/me');
-  return res.data;
-}
 
 function defaultFilters(): DashboardFilters {
   return {
@@ -328,37 +294,6 @@ function mapDashboard(dashboard: ApiDashboard): Dashboard {
   };
 }
 
-function mapDashboardIndex(dashboard: ApiDashboard): DashboardIndexEntry {
-  return {
-    id: dashboard.id,
-    name: dashboard.name,
-    description: dashboard.description || undefined,
-    icon: sanitizeDashboardIcon(dashboard.icon),
-    sourceType: dashboard.sourceType || (dashboard.forkedFromId ? 'forked' : 'user-created'),
-    sourceTemplateId: dashboard.sourceTemplateId || undefined,
-    visibility: dashboard.isPublic ? 'org' : 'private',
-    updatedAt: dashboard.updatedAt,
-    hasDraft: false,
-  };
-}
-
-function mapTemplate(template: ApiTemplate): SystemTemplate {
-  return {
-    templateId: template.id as SystemTemplate['templateId'],
-    label: template.name,
-    description: template.description || '',
-    dashboard: {
-      name: template.name,
-      description: template.description || '',
-      sourceType: 'system-template',
-      sourceTemplateId: template.id as SystemTemplate['templateId'],
-      visibility: 'org',
-      defaultFilters: defaultFilters(),
-      widgets: template.widgets,
-      layout: mapLayoutFromApi(template.layout),
-    },
-  };
-}
 
 function toApiDashboardResponse(dashboard: DashboardWriteResponse): Dashboard {
   return mapDashboard(dashboard);
@@ -398,9 +333,6 @@ function updateDashboardPayload(input: UpdateDashboardRequest): {
   };
 }
 
-function visibilityToIsPublic(visibility: ShareDashboardRequest['visibility']): boolean {
-  return visibility !== 'private';
-}
 
 type MetricDescriptor = {
   label: string;
@@ -511,15 +443,6 @@ export async function getDashboardView(dashboardId: string): Promise<DashboardVi
     viewVersion: res.data.viewVersion,
   };
 }
-export async function getDashboardList(): Promise<DashboardIndexEntry[]> {
-  const res = await client.get<ApiDashboard[]>('/dashboards');
-  return res.data.map(mapDashboardIndex);
-}
-
-export async function getDashboard(id: string): Promise<Dashboard> {
-  const res = await client.get<ApiDashboard>(`/dashboards/${resolveDashboardApiId(id)}`);
-  return mapDashboard(res.data);
-}
 
 export async function createDashboard(input: CreateDashboardRequest): Promise<Dashboard> {
   const res = await client.post<DashboardWriteResponse>('/dashboards', createDashboardPayload(input));
@@ -535,34 +458,6 @@ export async function deleteDashboard(id: string): Promise<void> {
   await client.delete(`/dashboards/${id}`);
 }
 
-export async function forkDashboard(id: string, input: ForkDashboardRequest): Promise<Dashboard> {
-  const res = await client.post<DashboardWriteResponse>(`/dashboards/${id}/fork`, input);
-  return toApiDashboardResponse(res.data);
-}
-
-export async function shareDashboard(id: string, input: ShareDashboardRequest): Promise<ShareDashboardResponse> {
-  const res = await client.put<ShareDashboardApiResponse>(`/dashboards/${id}/share`, {
-    isPublic: visibilityToIsPublic(input.visibility),
-  });
-  const shareToken = res.data.shareToken || undefined;
-  return {
-    visibility: input.visibility,
-    shareToken,
-    shareUrl: shareToken && typeof window !== 'undefined'
-      ? `${window.location.origin}/shared/${shareToken}`
-      : undefined,
-  };
-}
-
-export async function getDashboardData(dashboardId: string): Promise<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }> {
-  const res = await client.get<{ widgets: { instanceId: string; data: unknown | null; error?: string }[]; fetchedAt: string }>(`/dashboards/${resolveDashboardApiId(dashboardId)}/data`);
-  return res.data;
-}
-
-export async function getTemplates(): Promise<SystemTemplate[]> {
-  const res = await client.get<ApiTemplate[]>('/templates');
-  return res.data.map(mapTemplate);
-}
 
 export async function getInsights(): Promise<{ title: string; body: string; action?: string }[]> {
   const res = await client.get<{ title: string; body: string; action?: string }[]>('/insights');
@@ -600,19 +495,6 @@ export async function getMetricData(metricId: string, timeRange = '30d', team = 
   };
 }
 
-export async function getMetricBreakdown(metricId: string, timeRange = '30d'): Promise<UiMetricBreakdownItem[]> {
-  const res = await client.get<{ team: string; value: number }[]>(`/metrics/${metricId}/breakdown`, {
-    params: { timeRange },
-  });
-  return res.data.map((item) => ({
-    name: metricId,
-    team: item.team,
-    value: `${item.value.toFixed(1)}`,
-    valueRaw: item.value,
-    doraLevel: metricLevel(item.value),
-    delta: '',
-  }));
-}
 
 export async function getDORA(timeRange = '30d', team = 'All teams', repo = 'All repos'): Promise<UiDORAResponse> {
   const [deployFrequency, leadTime, changeFailureRate, mttr] = await Promise.all([

@@ -81,14 +81,21 @@ Do not claim app UI integration success against stale `@metraly/ui` artifacts.
 If `../brandbook/packages/ui/dist` is missing, build it before claiming UI runtime health.
 
 
+## GitHub Actions boundary
+
+Do not add GitHub Actions workflows unless explicitly requested by the user.
+
+
 ## Local quality gates
 
 Before claiming implementation-quality completion, prefer:
 
 - `make quality-fast` for the standard local gate
-- `make quality-deep` for race/security/dead-code checks
+- `make quality-deep` for the local deep gate (`race` + `quality-security` + `knip`)
 
-`make quality-deep` is local-tooling dependent. If `gitleaks`, `osv-scanner`, or `semgrep` are missing, record the blocker explicitly instead of marking PASS.
+If `golangci-lint`, `govulncheck`, `osv-scanner`, `gitleaks`, `semgrep`, or `knip` is missing, keep the target failing with an explicit install hint instead of marking PASS.
+
+`make ci` is a local CI-equivalent command only; it is not wired to GitHub Actions.
 
 If UI/build workflow changes, run `make dev-preflight` before claiming the brandbook boundary is healthy.
 ## Source import boundary

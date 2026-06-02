@@ -8,7 +8,7 @@ export * from './query-runtime.types';
 export * from './query-schemas';
 export { buildQueryKey, tanstackQueryKey, tanstackSnapshotKey } from './query-key';
 export { resolveWidgetQuery } from './resolve-widget-query';
-export { buildQuerySubscriptions, diffSubscriptions } from './query-subscriptions';
+export { buildQuerySubscriptions } from './query-subscriptions';
 export { createQueryClient, QueryClientProvider } from './query-client';
 export { useConnectionStore } from './connection-store';
 export { QueryRuntimeProvider } from './QueryRuntimeProvider';
@@ -16,4 +16,3 @@ export { QueryRuntimeContext, useQueryRuntimeContext } from './query-runtime-con
 export { FakeRealtimeSource, WebSocketRealtimeSource, applyQueryResultUpdate } from './query-realtime.client';
 export { useDashboardQueryResults } from './useDashboardQueryResults';
 export { useWidgetQueryResult } from './useWidgetQueryResult';
-export { useRefreshQuery, useRefreshDashboardQueries } from './useRefreshQuery';

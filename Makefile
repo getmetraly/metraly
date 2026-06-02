@@ -29,8 +29,10 @@ help:
 	@echo "  make verify-ui      UI deps + typecheck + lint + tests"
 	@echo "  make verify-api     Go build + tests + vet"
 	@echo "  make verify-runtime Runtime API/dashboard checks"
+	@echo "  make quality-fast   Standard local quality gate"
+	@echo "  make quality-deep   Local deep gate (race + security + knip)"
 	@echo "  make smoke          Fast stack smoke check"
-	@echo "  make ci             Strict full validation (use in CI)"
+	@echo "  make ci             Local CI-equivalent validation; not wired to GitHub Actions"
 	@echo "  make help-all       Show all low-level targets"
 
 
@@ -47,7 +49,7 @@ help-all:
 	@echo "  dev-reset-ui         recreate ui service and clear vite cache"
 	@echo "  dev-check            runtime-check + dependency checks"
 	@echo "  ui-install           npm install in app/ui"
-	@echo "  ui-ci-install        npm ci in app/ui (frozen, for CI)"
+	@echo "  ui-ci-install        npm ci in app/ui (frozen local scripted install)"
 	@echo "  ui-deps-check        verify ui node_modules and runtime deps"
 	@echo "  docker-ui-deps-check verify runtime deps inside ui container"
 	@echo "  brandbook-install    npm install in brandbook/packages/ui"
@@ -76,9 +78,10 @@ help-all:
 	@echo "  make test-ui         Vitest in ui/"
 	@echo "  make race            go test -race ./..."
 	@echo "  make vuln            govulncheck + osv-scanner (fails with install hint if missing)"
-	@echo "  make secrets         gitleaks detect (fails with install hint if missing)"
+	@echo "  make secrets         gitleaks dir current tree (fails with install hint if missing)"
 	@echo "  make semgrep         semgrep scan with .semgrep/ rules (fails with install hint if missing)"
 	@echo "  make knip            Knip unused file/export check"
+	@echo "  make quality-security secrets + vuln + semgrep"
 	@echo "  make quality-go      lint-go + test-go"
 	@echo "  make quality-ui      brandbook boundary + lint-ui + test-ui + ui-build"
 	@echo "  make quality-fast    quality-go + quality-ui (standard local PR gate)"
@@ -433,6 +436,7 @@ mvp-check: runtime-check dashboard-crud-check dashboard-create-render-check dash
 
 ## Lint
 lint-go:
+	@command -v golangci-lint > /dev/null 2>&1 || (echo 'missing golangci-lint. Install: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest'; exit 1)
 	golangci-lint run ./...
 
 lint-ui:
@@ -460,13 +464,14 @@ vuln:
 
 secrets:
 	@command -v gitleaks > /dev/null 2>&1 || (echo 'missing gitleaks. Install: https://github.com/gitleaks/gitleaks'; exit 1)
-	gitleaks detect --source . --redact
+	gitleaks dir . --redact
 
 semgrep:
 	@command -v semgrep > /dev/null 2>&1 || (echo 'missing semgrep. Install: pip install semgrep'; exit 1)
 	semgrep scan --config .semgrep/ . --error
 
 knip:
+	@test -x ui/node_modules/.bin/knip || (echo "missing knip. Install: cd ui && npm install"; exit 1)
 	cd ui && npm run knip
 
 ## Composite quality targets

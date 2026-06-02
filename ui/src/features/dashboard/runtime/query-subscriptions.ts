@@ -8,11 +8,6 @@ import type { DashboardFilters } from '../../../types/dashboard';
 import { buildQueryKey } from './query-key';
 import { resolveWidgetQuery } from './resolve-widget-query';
 
-export interface WidgetQueryEntry {
-  widgetInstanceId: string;
-  queryKey: string;
-  query: MetricQuery;
-}
 
 export interface QuerySubscriptions {
   /** queryKey → set of widgetInstanceIds */
@@ -62,21 +57,3 @@ export function buildQuerySubscriptions(
   return { queryKeyToWidgets, widgetToQueryKey, queries };
 }
 
-/**
- * Compute the diff between two subscription sets.
- * Returns added and removed queryKeys (for resubscription logic).
- */
-export function diffSubscriptions(
-  prev: QuerySubscriptions,
-  next: QuerySubscriptions,
-): { added: string[]; removed: string[] } {
-  const added: string[] = [];
-  const removed: string[] = [];
-  for (const qk of next.queryKeyToWidgets.keys()) {
-    if (!prev.queryKeyToWidgets.has(qk)) added.push(qk);
-  }
-  for (const qk of prev.queryKeyToWidgets.keys()) {
-    if (!next.queryKeyToWidgets.has(qk)) removed.push(qk);
-  }
-  return { added, removed };
-}

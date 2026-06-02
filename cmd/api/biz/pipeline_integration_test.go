@@ -203,7 +203,7 @@ func TestPipeline_DuplicateRawEvents_DoNotInflateCount(t *testing.T) {
 		SourceType:  domain.SourceTypeGitHub,
 		DisplayName: "dup test",
 		Config:      map[string]string{"org": "dup-org"},
-		RawSecret:   "ghp_duptest1234567",
+		RawSecret:   "test-github-secret-for-dedup",
 	})
 	require.NoError(t, err)
 
