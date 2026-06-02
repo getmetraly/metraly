@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import noOnlyTests from "eslint-plugin-no-only-tests";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
@@ -50,7 +51,41 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "@typescript-eslint/consistent-type-imports": "error",
       "no-unused-vars": "off",
+    },
+  },
+  {
+    // Type-aware rules — src only, not test or config files
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/**/*.test.{ts,tsx}",
+      "src/**/__tests__/**/*.{ts,tsx}",
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
+  {
+    // no-only-tests: error in test files
+    files: ["src/**/*.test.{ts,tsx,js,jsx}", "src/**/__tests__/**/*.{ts,tsx,js,jsx}"],
+    plugins: {
+      "no-only-tests": noOnlyTests,
+    },
+    rules: {
+      "no-only-tests/no-only-tests": "error",
+    },
+    languageOptions: {
+      globals: {
+        ...globals.vitest,
+      },
     },
   },
   {

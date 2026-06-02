@@ -6,6 +6,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ func NewIngestionSvc(activityRepo repo.ActivityRepo, metricRepo repo.MetricRepo)
 
 func (s *IngestionSvc) Ingest(ctx context.Context, req domain.IngestionRequest) (*domain.IngestionResult, error) {
 	if s == nil || s.activityRepo == nil || s.metricRepo == nil {
-		return nil, fmt.Errorf("ingestion service unavailable")
+		return nil, errors.New("ingestion service unavailable")
 	}
 
 	normalized, err := normalizeIngestionRequest(req)
@@ -87,15 +88,15 @@ type normalizedIngestionRequest struct {
 func normalizeIngestionRequest(req domain.IngestionRequest) (*normalizedIngestionRequest, error) {
 	source := strings.ToLower(strings.TrimSpace(req.Source))
 	if source == "" {
-		return nil, fmt.Errorf("source is required")
+		return nil, errors.New("source is required")
 	}
 	team := strings.TrimSpace(req.Team)
 	if team == "" {
-		return nil, fmt.Errorf("team is required")
+		return nil, errors.New("team is required")
 	}
 	eventType := strings.TrimSpace(req.EventType)
 	if eventType == "" {
-		return nil, fmt.Errorf("eventType is required")
+		return nil, errors.New("eventType is required")
 	}
 
 	occurredAt := req.OccurredAt.UTC()

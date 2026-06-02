@@ -7,6 +7,7 @@ package biz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -62,7 +63,7 @@ func (c *GitHubActionsCollector) Collect(
 ) (*CollectResult, error) {
 	org := source.Config["org"]
 	if org == "" {
-		return nil, fmt.Errorf("github_actions collector: missing 'org' in source config")
+		return nil, errors.New("github_actions collector: missing 'org' in source config")
 	}
 
 	var since *time.Time
@@ -126,7 +127,7 @@ type ghWorkflowRun struct {
 	ID           int64   `json:"id"`
 	WorkflowID   int64   `json:"workflow_id"`
 	Status       string  `json:"status"`     // queued | in_progress | completed
-	Conclusion   *string `json:"conclusion"` // success | failure | cancelled | skipped | timed_out | action_required | neutral | stale
+	Conclusion   *string `json:"conclusion"` // success | failure | canceled | skipped | timed_out | action_required | neutral | stale
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
 	RunStartedAt string  `json:"run_started_at"` // more precise start time
@@ -252,6 +253,7 @@ func (c *GitHubActionsCollector) listWorkflowRuns(
 		if err != nil {
 			return nil, nil, err
 		}
+		defer resp.Body.Close()
 		if rl := detectRateLimit(resp); rl != nil {
 			return nil, rl, nil
 		}

@@ -49,7 +49,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       }}
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => { void handleSubmit(e); }}
         style={{ width: 'min(100%, 430px)', display: 'grid', gap: 12 }}
         noValidate
       >

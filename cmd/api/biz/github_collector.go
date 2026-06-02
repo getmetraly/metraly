@@ -9,13 +9,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/getmetraly/metraly/cmd/api/domain"
@@ -47,7 +47,7 @@ const (
 //
 // Config keys consumed from SourceConnection.Config:
 //
-//	org  — GitHub organisation login (required)
+//	org  — GitHub organization login (required)
 type GitHubCollector struct {
 	client *http.Client
 }
@@ -74,7 +74,7 @@ func (c *GitHubCollector) Collect(
 ) (*CollectResult, error) {
 	org := source.Config["org"]
 	if org == "" {
-		return nil, fmt.Errorf("github collector: missing 'org' in source config")
+		return nil, errors.New("github collector: missing 'org' in source config")
 	}
 
 	var since *time.Time
@@ -267,6 +267,7 @@ func (c *GitHubCollector) listRepos(ctx context.Context, org, secret string) ([]
 		if err != nil {
 			return nil, nil, err
 		}
+		defer resp.Body.Close()
 		if rl := detectRateLimit(resp); rl != nil {
 			return nil, rl, nil
 		}
@@ -321,6 +322,7 @@ func (c *GitHubCollector) listPRs(
 		if err != nil {
 			return nil, nil, err
 		}
+		defer resp.Body.Close()
 		if rl := detectRateLimit(resp); rl != nil {
 			return nil, rl, nil
 		}
@@ -379,7 +381,7 @@ func (c *GitHubCollector) doRequest(ctx context.Context, secret, rawURL string) 
 	if err != nil {
 		return nil, nil, fmt.Errorf("github request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, githubBodyLimit))
 	if err != nil {
@@ -492,7 +494,3 @@ func newRawID() string {
 	_, _ = rand.Read(b)
 	return "raw_" + hex.EncodeToString(b)
 }
-
-// sanitizeSecret ensures the secret never appears in log output or error messages.
-// Used internally as a reminder comment rather than a runtime redaction.
-func sanitizeSecret(_ string) string { return strings.Repeat("*", 8) }

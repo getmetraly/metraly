@@ -29,5 +29,7 @@ func InsightsHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: "2026-05-01T12:00:00Z",
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, `{"error":{"code":"ENCODE_ERROR","message":"failed to encode insights response"}}`, http.StatusInternalServerError)
+	}
 }

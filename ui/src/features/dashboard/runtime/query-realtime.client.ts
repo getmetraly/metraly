@@ -3,7 +3,7 @@
 // Copyright (C) 2026 Metraly Contributors
 
 import type { QueryClient } from '@tanstack/react-query';
-import type { QueryResultEnvelope } from './metric-query-result.types';
+import type { DataQualityContract, LineageContract, QueryResultEnvelope, QueryResultError, ResultStatus } from './metric-query-result.types';
 import type { SnapshotQueryItem } from './query-snapshot.api';
 import { useConnectionStore } from './connection-store';
 import { tanstackQueryKey } from './query-key';
@@ -12,10 +12,14 @@ import { WsEventSchema } from './query-schemas';
 export interface QueryResultUpdatedEvent {
   dashboardId: string;
   queryKey: string;
+  status: ResultStatus;
   version: number;
   sequence: number;
   updatedAt: string;
   result?: unknown;
+  error?: QueryResultError;
+  quality?: DataQualityContract;
+  lineage?: LineageContract;
 }
 
 export interface RealtimeSourceCallbacks {
@@ -46,7 +50,7 @@ export class FakeRealtimeSource implements RealtimeSource {
   ): void {
     this.callbacks = callbacks;
     this.connected = true;
-    Promise.resolve().then(() => callbacks.onConnected());
+    void Promise.resolve().then(() => callbacks.onConnected());
   }
 
   disconnect(): void {
@@ -75,10 +79,14 @@ export class FakeRealtimeSource implements RealtimeSource {
       this.callbacks.onQueryResultUpdated({
         dashboardId: event.dashboardId,
         queryKey: event.queryKey,
+        status: event.status,
         version: event.version,
         sequence: event.sequence,
         updatedAt: event.updatedAt,
         result: event.result,
+        error: event.error,
+        quality: event.quality,
+        lineage: event.lineage,
       });
     }
   }
@@ -150,6 +158,10 @@ export class WebSocketRealtimeSource implements RealtimeSource {
         return;
       }
       const event = parsed.data;
+      if (event.type === 'subscription.error') {
+        this.callbacks?.onError(new Error(event.message ?? 'subscription error'));
+        return;
+      }
       if (event.type !== 'queryResult.updated') {
         return;
       }
@@ -161,10 +173,14 @@ export class WebSocketRealtimeSource implements RealtimeSource {
       this.callbacks?.onQueryResultUpdated({
         dashboardId: event.dashboardId,
         queryKey: event.queryKey,
+        status: event.status,
         version: event.version,
         sequence: event.sequence,
         updatedAt: event.updatedAt,
         result: event.result,
+        error: event.error,
+        quality: event.quality,
+        lineage: event.lineage,
       });
     };
 
@@ -189,19 +205,23 @@ export function applyQueryResultUpdate(
   dashboardId: string,
   event: QueryResultUpdatedEvent,
 ): void {
+  if (event.dashboardId !== dashboardId) {
+    return;
+  }
   const key = tanstackQueryKey(dashboardId, event.queryKey);
   const current = queryClient.getQueryData<QueryResultEnvelope>(key);
   if (current && event.sequence <= current.sequence) {
     return;
   }
 
-  if (event.result !== undefined) {
+  if (event.result !== undefined || event.status !== 'ready') {
     queryClient.setQueryData<QueryResultEnvelope>(key, {
       queryKey: event.queryKey,
       result: event.result,
-      status: 'ready',
-      quality: current?.quality,
-      lineage: current?.lineage,
+      status: event.status,
+      error: event.error,
+      quality: event.quality ?? current?.quality,
+      lineage: event.lineage ?? current?.lineage,
       version: event.version,
       sequence: event.sequence,
       updatedAt: event.updatedAt,

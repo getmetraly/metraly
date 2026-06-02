@@ -41,17 +41,13 @@ import (
 // @Router /api/v1/health [get]
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"status":"ok"}`))
+	_, _ = w.Write([]byte(`{"status":"ok"}`)) // error unactionable after headers sent
 }
 
 func meHandler(w http.ResponseWriter, r *http.Request) {
 	handlers.MeHandler(w, r)
 }
 
-func activityHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"data":[]}`))
-}
 
 func serviceUnavailableHandler(w http.ResponseWriter, r *http.Request) {
 	handlers.ServiceUnavailable(w, "dashboard service unavailable")
@@ -206,35 +202,35 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 	if deps.EnableLegacyMockEndpoints {
 		r.Get("/api/v1/teams", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"id":1,"name":"Platform"},{"id":2,"name":"Mobile"},{"id":3,"name":"Backend"}]`))
+			_, _ = w.Write([]byte(`[{"id":1,"name":"Platform"},{"id":2,"name":"Mobile"},{"id":3,"name":"Backend"}]`))
 		})
 		r.Get("/api/v1/dashboard", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"prsOpened":14,"prsMerged":28,"blockedTasks":7,"ciFailures":3}`))
+			_, _ = w.Write([]byte(`{"prsOpened":14,"prsMerged":28,"blockedTasks":7,"ciFailures":3}`))
 		})
 		r.Get("/api/v1/teams/{id}", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"id":"1","name":"Platform"}`))
+			_, _ = w.Write([]byte(`{"id":"1","name":"Platform"}`))
 		})
 		r.Get("/api/v1/teams/{id}/overview", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"prsOpened":5,"prsMerged":12,"blockedTasks":2,"ciFailures":1}`))
+			_, _ = w.Write([]byte(`{"prsOpened":5,"prsMerged":12,"blockedTasks":2,"ciFailures":1}`))
 		})
 		r.Get("/api/v1/teams/{id}/activity", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"data":[{"type":"pr_opened","date":"2026-05-01","count":5},{"type":"pr_merged","date":"2026-05-01","count":3}]}`))
+			_, _ = w.Write([]byte(`{"data":[{"type":"pr_opened","date":"2026-05-01","count":5},{"type":"pr_merged","date":"2026-05-01","count":3}]}`))
 		})
 		r.Get("/api/v1/teams/{id}/velocity", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"data":[{"week":"2026-W17","points":25},{"week":"2026-W18","points":32}]}`))
+			_, _ = w.Write([]byte(`{"data":[{"week":"2026-W17","points":25},{"week":"2026-W18","points":32}]}`))
 		})
 		r.Get("/api/v1/teams/{id}/insights", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"insights":["PR review time increased by 15%","Consider adding more automated tests"]}`))
+			_, _ = w.Write([]byte(`{"insights":["PR review time increased by 15%","Consider adding more automated tests"]}`))
 		})
 		r.Get("/api/v1/teams/comparison", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"id":"1","name":"Platform","prs":45,"velocity":28},{"id":"2","name":"Mobile","prs":32,"velocity":22}]`))
+			_, _ = w.Write([]byte(`[{"id":"1","name":"Platform","prs":45,"velocity":28},{"id":"2","name":"Mobile","prs":32,"velocity":22}]`))
 		})
 	}
 	return r
@@ -298,7 +294,7 @@ func main() {
 	fs := http.FileServer(http.Dir(swaggerDir))
 	r.Handle("/swagger/*", http.StripPrefix("/swagger/", fs))
 
-	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
+	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r, ReadHeaderTimeout: 10 * time.Second}
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)

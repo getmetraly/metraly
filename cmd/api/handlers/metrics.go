@@ -34,5 +34,7 @@ func MetricsHandler(w http.ResponseWriter, r *http.Request) {
 		Compare: makeSeries(200, 30, 3.8, 1),
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, `{"error":{"code":"ENCODE_ERROR","message":"failed to encode metrics response"}}`, http.StatusInternalServerError)
+	}
 }

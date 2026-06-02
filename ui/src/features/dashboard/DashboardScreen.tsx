@@ -247,7 +247,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <MetralyButton variant="neutral" size="sm" onClick={handleExitEditMode}>
               Cancel
             </MetralyButton>
-            <MetralyButton variant="primary" size="sm" iconLeft={<Icon name="check" size={13} color="currentColor" />} onClick={handleSaveLayout}>
+            <MetralyButton variant="primary" size="sm" iconLeft={<Icon name="check" size={13} color="currentColor" />} onClick={() => { void handleSaveLayout(); }}>
               Apply
             </MetralyButton>
           </div>
@@ -326,7 +326,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               onDescChange={editor.setDesc}
               onTimeRangeChange={editor.setTimeRange}
               onTeamChange={editor.setTeam}
-              onDelete={handleDelete}
+              onDelete={() => { void handleDelete(); }}
             />
           </div>
         )}

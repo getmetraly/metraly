@@ -4,9 +4,12 @@
 	dashboard-delete-check dashboard-demo-edit-check dashboard-demo-delete-check dashboard-editor-runtime-check restore-demo \
 	dashboard-preview-contract-check dashboard-catalog-contract-check \
 	runtime-check \
-	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check \
+	api-test api-test-handlers api-test-seed ui-typecheck ui-lint ui-test ui-build ui-check brandbook-typecheck brandbook-build brandbook-check check mvp-check \
 	brandbook-install brandbook-dist-check brandbook-watch ui-install ui-deps-check docker-ui-deps-check docker-brandbook-dist-check \
-	dev-preflight dev-up dev-rebuild dev-reset-ui dev-check
+	dev-preflight dev-up dev-rebuild dev-reset-ui dev-check \
+	setup dev dev-fix dev-stop dev-logs verify verify-ui verify-api verify-runtime ci smoke clean-local help-all ui-ci-install \
+	lint-go lint-ui test-go test-ui race vuln secrets semgrep knip \
+	quality-go quality-ui quality-security quality-fast quality-deep quality
 API_PORT := 8000
 DOCKER_COMPOSE := docker compose
 RUN_DIR := .run
@@ -16,46 +19,71 @@ BRANDBOOK_UI_DIR := ../brandbook/packages/ui
 BRANDBOOK_UI_DIST := $(BRANDBOOK_UI_DIR)/dist
 MVP_SOURCE_ID_CMD := python3 -c 'import sys,json; d=json.load(sys.stdin) or []; m=next((s for s in d if s.get("sourceType")=="github" and s.get("displayName")=="MVP GitHub"), None); print(m.get("id","") if m else "")'
 help:
-	@echo "Metraly Make targets"
+	@echo "Metraly — common commands"
+	@echo "  make setup          Install/check deps and build brandbook dist"
+	@echo "  make dev            Start local dev stack after preflight"
+	@echo "  make dev-fix        Repair stale deps/Vite cache/UI container"
+	@echo "  make dev-stop       Stop compose stack"
+	@echo "  make dev-logs       Show api + ui logs"
+	@echo "  make verify         Run non-destructive checks (UI + API + brandbook)"
+	@echo "  make verify-ui      UI deps + typecheck + lint + tests"
+	@echo "  make verify-api     Go build + tests + vet"
+	@echo "  make verify-runtime Runtime API/dashboard checks"
+	@echo "  make smoke          Fast stack smoke check"
+	@echo "  make ci             Strict full validation (use in CI)"
+	@echo "  make help-all       Show all low-level targets"
+
+
+help-all:
+	@echo "Metraly Make targets — full list"
 	@echo "  up/down/restart      Start/stop/restart compose stack"
 	@echo "  rebuild              Rebuild api/ui images"
 	@echo "  ps                   Show compose status"
 	@echo "  logs-api/ui/db/redis Show service logs"
 	@echo "  clean-vite-cache     Remove Vite cache in ui container"
 	@echo "  dev-preflight        Validate/build brandbook ui dist + check UI deps"
-	@echo "  login                Seed admin login and persist bearer token"
-	@echo "  bootstrap            GET /api/v1/app/bootstrap"
-	@echo "  dashboard-view       GET /api/v1/dashboards/sandbox-all-widgets/view"
-	@echo "  dashboard-crud-check Validate dashboard view endpoint for active dashboard"
-	@echo "  connectors-check     GET /api/v1/sources"
-	@echo "  source-id-check      Resolve existing MVP GitHub source id"
-	@echo "  source-create-check  Create or reuse MVP GitHub source id"
-	@echo "  source-test-check    POST /api/v1/sources/{id}/test (create/reuse MVP source)"
-	@echo "  metric-query-check   POST /api/v1/metrics/query"
-	@echo "  runtime-check        health + bootstrap + dashboard-view + connectors"
-	@echo "  dashboard-delete-check       Create temp dashboard, delete it, verify 204 + view 404"
-	@echo "  dashboard-demo-edit-check    Edit Demo dashboard (PUT), verify 200, restore"
-	@echo "  dashboard-demo-delete-check  Delete Demo, verify 204 + 404 + restart does not restore"
-	@echo "  dashboard-editor-runtime-check  Create+update+view dashboard, verify widgetErrors=0"
-	@echo "  dashboard-preview-contract-check Validate preview data shapes"
-	@echo "  dashboard-catalog-contract-check Validate catalog/descriptors/templates contracts"
-	@echo "  restore-demo                 Explicitly recreate Demo dashboard and clear tombstone"
-	@echo "  api-test*            backend test suites"
-	@echo "  ui-install           npm install in app/ui"
-	@echo "  ui-deps-check        verify app/ui node_modules exists"
-	@echo "  docker-ui-deps-check verify /workspace/ui/node_modules in ui container"
-	@echo "  brandbook-install    npm install in brandbook/packages/ui"
-	@echo "  brandbook-build      build brandbook ui dist"
-	@echo "  brandbook-dist-check verify brandbook/packages/ui/dist exists"
-	@echo "  docker-brandbook-dist-check verify /brandbook/packages/ui/dist in ui container"
-	@echo "  brandbook-watch      watch build for brandbook ui package"
 	@echo "  dev-up               dev-preflight + compose up + dependency checks"
 	@echo "  dev-rebuild          dev-preflight + rebuild + dev-up"
 	@echo "  dev-reset-ui         recreate ui service and clear vite cache"
 	@echo "  dev-check            runtime-check + dependency checks"
-	@echo "  check                api + ui + brandbook"
+	@echo "  ui-install           npm install in app/ui"
+	@echo "  ui-ci-install        npm ci in app/ui (frozen, for CI)"
+	@echo "  ui-deps-check        verify ui node_modules and runtime deps"
+	@echo "  docker-ui-deps-check verify runtime deps inside ui container"
+	@echo "  brandbook-install    npm install in brandbook/packages/ui"
+	@echo "  brandbook-build      build brandbook ui dist"
+	@echo "  brandbook-dist-check verify brandbook dist artifacts"
+	@echo "  docker-brandbook-dist-check verify brandbook dist in container"
+	@echo "  brandbook-watch      watch build for brandbook ui package"
+	@echo "  login                Seed admin login and persist bearer token"
+	@echo "  bootstrap            GET /api/v1/app/bootstrap"
+	@echo "  runtime-check        health + bootstrap + dashboard-view + connectors"
+	@echo "  dashboard-view       GET /api/v1/dashboards/sandbox-all-widgets/view"
+	@echo "  dashboard-crud-check Validate dashboard view endpoint"
+	@echo "  metric-query-check   POST /api/v1/metrics/query"
+	@echo "  api-test             backend test suites"
+	@echo "  ui-typecheck         TypeScript check in ui/"
+	@echo "  ui-lint              ESLint in ui/"
+	@echo "  ui-build             Vite production build in ui/ (without re-installing brandbook)"
+	@echo "  ui-test              Vitest in ui/"
+	@echo "  check                api + ui + brandbook full check"
 	@echo "  mvp-check            runtime checks + quality gates"
-
+	@echo ""
+	@echo "Quality targets:"
+	@echo "  make lint-go         golangci-lint run ./..."
+	@echo "  make lint-ui         TypeScript + ESLint in ui/"
+	@echo "  make test-go         go test ./..."
+	@echo "  make test-ui         Vitest in ui/"
+	@echo "  make race            go test -race ./..."
+	@echo "  make vuln            govulncheck + osv-scanner (fails with install hint if missing)"
+	@echo "  make secrets         gitleaks detect (fails with install hint if missing)"
+	@echo "  make semgrep         semgrep scan with .semgrep/ rules (fails with install hint if missing)"
+	@echo "  make knip            Knip unused file/export check"
+	@echo "  make quality-go      lint-go + test-go"
+	@echo "  make quality-ui      brandbook boundary + lint-ui + test-ui + ui-build"
+	@echo "  make quality-fast    quality-go + quality-ui (standard local PR gate)"
+	@echo "  make quality-deep    quality-fast + race + security + knip"
+	@echo "  make quality         alias for quality-deep"
 ps:
 	$(DOCKER_COMPOSE) ps
 
@@ -88,11 +116,25 @@ clean-vite-cache:
 ui-install:
 	cd ui && npm install
 
+ui-ci-install:
+	cd ui && npm ci
+
 ui-deps-check:
+	@test -f ui/package.json || (echo "missing ui/package.json"; exit 1)
 	@test -d ui/node_modules || (echo "missing ui/node_modules (run: make ui-install)"; exit 1)
+	@test -x ui/node_modules/.bin/vite || (echo "missing vite binary (run: make ui-install)"; exit 1)
+	@test -d ui/node_modules/@tanstack/react-query || (echo "missing @tanstack/react-query (run: make ui-install)"; exit 1)
+	@test -d ui/node_modules/zod || (echo "missing zod (run: make ui-install)"; exit 1)
+	@test -d ui/node_modules/@metraly/ui || (echo "missing @metraly/ui link (run: make ui-install && make brandbook-build)"; exit 1)
+	@echo "ui-deps-check: OK"
+
 docker-ui-deps-check:
-	@$(DOCKER_COMPOSE) exec ui sh -c 'test -x /workspace/ui/node_modules/.bin/vite && test -d /workspace/ui/node_modules/@metraly/ui' || \
-		($(DOCKER_COMPOSE) exec ui npm install --ignore-scripts && $(DOCKER_COMPOSE) exec ui sh -c 'test -x /workspace/ui/node_modules/.bin/vite && test -d /workspace/ui/node_modules/@metraly/ui')
+	@$(DOCKER_COMPOSE) exec ui sh -lc 'test -x /workspace/ui/node_modules/.bin/vite && \
+		test -d /workspace/ui/node_modules/@tanstack/react-query && \
+		test -d /workspace/ui/node_modules/zod && \
+		test -d /workspace/ui/node_modules/@metraly/ui' || \
+		(echo "missing UI runtime deps in container (run: make dev-fix)"; exit 1)
+	@echo "docker-ui-deps-check: OK"
 
 brandbook-install:
 	cd $(BRANDBOOK_UI_DIR) && npm install
@@ -117,8 +159,8 @@ dev-preflight:
 	@test -d $(BRANDBOOK_UI_DIR) || (echo "missing $(BRANDBOOK_UI_DIR)"; exit 1)
 	@test -f ui/package.json || (echo "missing ui/package.json"; exit 1)
 	@if [ ! -d ui/node_modules ]; then $(MAKE) ui-install; fi
-	@if [ ! -d $(BRANDBOOK_UI_DIST) ]; then $(MAKE) brandbook-build; fi
-	@$(MAKE) brandbook-dist-check
+	@$(MAKE) ui-deps-check || ($(MAKE) ui-install && $(MAKE) ui-deps-check)
+	@$(MAKE) brandbook-dist-check || ($(MAKE) brandbook-build && $(MAKE) brandbook-dist-check)
 
 dev-up: dev-preflight up docker-ui-deps-check docker-brandbook-dist-check
 
@@ -348,4 +390,94 @@ brandbook-check: brandbook-typecheck brandbook-build
 
 check: api-test ui-check brandbook-check
 
+setup: ui-install brandbook-build brandbook-dist-check ui-deps-check
+
+# dev is a user-friendly alias for dev-up; both do the same preflight + stack bring-up.
+# Keep dev-up for backwards compatibility.
+dev: dev-preflight up docker-ui-deps-check docker-brandbook-dist-check
+
+dev-fix:
+	$(MAKE) ui-install
+	$(MAKE) brandbook-build
+	-$(MAKE) clean-vite-cache
+	$(DOCKER_COMPOSE) rm -sf ui
+	$(DOCKER_COMPOSE) up -d --no-deps ui
+	$(MAKE) docker-ui-deps-check
+	$(MAKE) docker-brandbook-dist-check
+
+dev-stop:
+	$(DOCKER_COMPOSE) down
+
+dev-logs:
+	$(DOCKER_COMPOSE) logs --tail=60 api ui
+
+verify-ui: ui-deps-check ui-typecheck ui-lint ui-test
+
+verify-api:
+	go build -v -o bin/api ./cmd/api/
+	go test ./cmd/api/...
+	go vet ./...
+
+verify-runtime: runtime-check dashboard-editor-runtime-check metric-query-check
+
+verify: verify-ui verify-api brandbook-dist-check
+
+smoke: health bootstrap dashboard-view connectors-check docker-ui-deps-check docker-brandbook-dist-check
+
+ci: ui-ci-install brandbook-build verify
+
+clean-local:
+	rm -rf ui/node_modules/.vite
+
 mvp-check: runtime-check dashboard-crud-check dashboard-create-render-check dashboard-delete-check dashboard-demo-edit-check dashboard-demo-delete-check restore-demo dashboard-editor-runtime-check dashboard-preview-contract-check dashboard-catalog-contract-check source-create-check source-test-check source-collect-check metric-query-check check
+
+## Lint
+lint-go:
+	golangci-lint run ./...
+
+lint-ui:
+	cd ui && npm run typecheck && npm run lint
+
+## Test aliases
+test-go:
+	go test ./...
+
+test-ui:
+	cd ui && npm run test
+
+ui-build:
+	cd ui && npx vite build
+
+## Deep checks
+race:
+	go test -race ./...
+
+vuln:
+	@command -v govulncheck > /dev/null 2>&1 || (echo 'missing govulncheck. Install: go install golang.org/x/vuln/cmd/govulncheck@latest'; exit 1)
+	@command -v osv-scanner > /dev/null 2>&1 || (echo 'missing osv-scanner. Install: https://github.com/google/osv-scanner'; exit 1)
+	govulncheck ./...
+	osv-scanner scan source .
+
+secrets:
+	@command -v gitleaks > /dev/null 2>&1 || (echo 'missing gitleaks. Install: https://github.com/gitleaks/gitleaks'; exit 1)
+	gitleaks detect --source . --redact
+
+semgrep:
+	@command -v semgrep > /dev/null 2>&1 || (echo 'missing semgrep. Install: pip install semgrep'; exit 1)
+	semgrep scan --config .semgrep/ . --error
+
+knip:
+	cd ui && npm run knip
+
+## Composite quality targets
+quality-go: lint-go test-go
+
+quality-ui: brandbook-dist-check lint-ui test-ui ui-build
+
+quality-security: secrets vuln semgrep
+
+quality-fast: quality-go quality-ui
+
+quality-deep: quality-fast race quality-security knip
+
+quality: quality-deep

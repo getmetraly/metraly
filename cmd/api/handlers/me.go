@@ -29,5 +29,7 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, `{"error":{"code":"ENCODE_ERROR","message":"failed to encode current user response"}}`, http.StatusInternalServerError)
+	}
 }

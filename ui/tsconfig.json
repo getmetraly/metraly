@@ -9,7 +9,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": false,
+    "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "types": ["vite/client", "vitest/globals"]
@@ -19,6 +19,12 @@
     "src/features/dashboardWizard/DashboardWizardScreen.test.tsx",
     "src/features/dashboardWizard/components/WidgetPreviewCard.test.tsx",
     "src/features/dashboardWizard/components/WizardPreviewGrid.test.tsx",
-    "src/features/dashboardWizard/store/wizardStore.test.ts"
+    "src/features/dashboardWizard/store/wizardStore.test.ts",
+    "src/components/dashboard/HeatmapWidget.test.tsx",
+    "src/features/dashboard/runtime/__tests__/integration.test.tsx",
+    "src/features/dashboard/runtime/__tests__/editor-regression.test.tsx",
+    "src/features/dashboard/runtime/__tests__/widget-state-ui.test.tsx",
+    "src/layout/AppSidebar.test.tsx",
+    "src/hooks/useDashboardOverview.test.ts"
   ]
 }

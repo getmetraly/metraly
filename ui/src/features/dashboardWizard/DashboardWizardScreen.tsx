@@ -16,6 +16,7 @@ import { buildCreateDashboardRequest } from "../dashboardEditor/payload";
 import { useWizardStore, TEMPLATES, WIDGET_LIBRARY } from "./store/wizardStore";
 import { DashboardBuilderCanvas } from '../../components/dashboard/DashboardBuilderCanvas';
 import type { Dashboard } from '../../types/dashboard';
+import type { WidgetType } from '../../types/widgets';
 import { DASHBOARD_ICON_OPTIONS, sanitizeDashboardIcon } from "./dashboardIcons";
 import { useAppBootstrap } from '../../hooks/AppBootstrapContext';
 
@@ -123,7 +124,7 @@ export const DashboardWizardScreen: React.FC<WizardProps> = ({
     defaultFilters: { timeRange: timeRange as '7d' | '14d' | '30d' | '90d', team, repo: 'All repos' },
     widgets: widgets.map((w) => ({
       instanceId: w.instanceId,
-      widgetType: (w.config.type as import('../../types/widgets').WidgetType),
+      widgetType: w.config.type as WidgetType,
       config: w.config,
     })),
     layout,

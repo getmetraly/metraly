@@ -28,7 +28,6 @@ type MetricCatalog struct {
 func NewMetricCatalog() *MetricCatalog {
 	c := &MetricCatalog{metrics: make(map[string]*domain.MetricDefinition)}
 	for _, m := range mvpMetrics() {
-		m := m
 		c.metrics[m.ID] = &m
 	}
 	return c

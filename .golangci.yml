@@ -1,0 +1,90 @@
+version: "2"
+
+# golangci-lint v2 configuration for Metraly
+# Run: golangci-lint run ./...
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    # --- Correctness ---
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - errorlint
+    - nilerr
+
+    # --- Security ---
+    - gosec
+
+    # --- Context / IO / resource leaks ---
+    - bodyclose
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+
+    # --- Concurrency ---
+    - durationcheck
+    
+    # --- Hygiene ---
+    - nolintlint
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - os.Setenv
+        - os.Unsetenv
+        - os.Remove
+        - (*os.File).Close
+        - (net.Conn).Close
+
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      require-specific: true
+
+  exclusions:
+    # Use lax generated-code handling
+    generated: lax
+    # Built-in presets handle many common false-positive patterns
+    presets:
+      - common-false-positives
+      - std-error-handling
+
+    rules:
+      # Test files: relax errcheck for w.Write, json.Encode, Close patterns common in test handlers
+      - path: "_test\\.go"
+        linters:
+          - errcheck
+        text: "Error return value of .*(Write|Encode|Close|Terminate)"
+
+      # Test files: gosec, noctx, bodyclose, and staticcheck don't apply to scaffolding tests
+      - path: "_test\\.go"
+        linters:
+          - gosec
+          - noctx
+          - bodyclose
+          - staticcheck
+
+      # Main entry point: context.Background() is correct
+      - path: "cmd/api/main\\.go"
+        linters:
+          - noctx
+
+      # Seed: short-lived bootstrap, context.Background() is fine
+      - path: "cmd/api/seed/"
+        linters:
+          - noctx
+      - path: "cmd/api/domain/sources\\.go"
+        linters:
+          - gosec
+        text: "Potential hardcoded credentials"
+
+formatters:
+  exclusions:
+    generated: lax

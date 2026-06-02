@@ -62,7 +62,7 @@ function renderActiveScreen(
 ) {
   const renderers: Record<string, () => React.ReactNode> = {
     'dash-wizard': () => (
-      <DashboardWizardScreen onSave={async (saved) => { const refreshed = await refreshBootstrap(); setActive(saved?.id ?? refreshed?.dashboards?.[0]?.id ?? getInitialDashboardIdFromCache() ?? 'dash-wizard'); }} onCancel={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')} />
+      <DashboardWizardScreen onSave={(saved) => { void (async () => { const refreshed = await refreshBootstrap(); setActive(saved?.id ?? refreshed?.dashboards?.[0]?.id ?? getInitialDashboardIdFromCache() ?? 'dash-wizard'); })(); }} onCancel={() => setActive(getInitialDashboardIdFromCache() ?? 'dash-wizard')} />
     ),
     metrics: () => <MetricsScreen />,
     ai: () => <AIScreen />,

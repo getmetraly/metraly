@@ -92,13 +92,13 @@ export function useDashboards(): UseDashboardsResult {
 
   useEffect(() => {
     const hasCachedData = cached !== null && (cached.dashboards?.length ?? 0) > 0;
-    fetchFromNetwork(hasCachedData);
+    void fetchFromNetwork(hasCachedData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refresh = () => {
     refreshCountRef.current++;
-    fetchFromNetwork(false);
+    void fetchFromNetwork(false);
   };
 
   return {

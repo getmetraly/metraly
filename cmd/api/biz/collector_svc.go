@@ -165,7 +165,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 	}
 
 	result, collectErr := collector.Collect(ctx, *sc, secret, run.Cursor)
-	secret = "" // zero immediately after collector call — NEVER log secret
+	secret = "" //nolint:ineffassign,wastedassign // intentional zeroing of secret material after use; not a bug
 
 	if collectErr != nil {
 		slog.WarnContext(ctx, "collector_run.collect_failed",
@@ -252,7 +252,7 @@ func (s *CollectorSvc) Run(ctx context.Context, runID, workspaceID, sourceID str
 }
 
 // failRunBackground writes the failure status using context.Background() so that
-// a cancelled request context cannot prevent the DB write.
+// a canceled request context cannot prevent the DB write.
 func (s *CollectorSvc) failRunBackground(run *domain.CollectorRun, errorCategory, errorMessage string) (*domain.CollectorRun, error) {
 	finished := time.Now().UTC()
 	run.Status = domain.CollectorRunStatusFailed
@@ -282,7 +282,7 @@ func categorizeCollectorError(err error) string {
 	case containsAny(s, "403", "forbidden", "permission denied"):
 		return "permission_error"
 	case containsAny(s, "context canceled", "context deadline exceeded"):
-		return "cancelled"
+		return "canceled"
 	case containsAny(s, "connection refused", "no such host", "i/o timeout"):
 		return "network_error"
 	default:

@@ -62,7 +62,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setIsDashboardLoading(true);
     setIsWidgetDataLoading(false);
     setError(null);
-    load(requestId);
+    void load(requestId);
   }, [dashboardId]);
 
   const refresh = () => {
@@ -73,7 +73,7 @@ export function useDashboard(dashboardId: string): UseDashboardResult {
     setIsDashboardLoading(true);
     setIsWidgetDataLoading(false);
     setError(null);
-    load(requestId);
+    void load(requestId);
   };
 
   return {

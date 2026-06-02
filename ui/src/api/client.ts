@@ -199,7 +199,7 @@ async function refreshAccessToken(): Promise<AuthSession | null> {
       persistSession(updated);
       return updated;
     })
-    .catch(() => {
+    .catch((): AuthSession | null => {
       clearSession();
       return null;
     })
@@ -625,7 +625,7 @@ export async function getDORA(timeRange = '30d', team = 'All teams', repo = 'All
 }
 
 async function getDORADetail(metricId: string, timeRange: string, team: string, repo: string): Promise<DORAMetricDetail> {
-  const metric = await getMetricData(metricId as any, timeRange, team, repo);
+  const metric = await getMetricData(metricId, timeRange, team, repo);
   const last = metric.current.values[metric.current.values.length - 1] ?? 0;
   const prev = metric.current.values[metric.current.values.length - 2] ?? last;
   return {

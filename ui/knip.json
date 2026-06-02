@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["src/index.tsx", "src/App.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": [
+    "src/**/*.test.{ts,tsx}",
+    "src/**/__tests__/**/*.{ts,tsx}",
+    "src/context/TweaksContext.jsx",
+    "src/design-system/index.ts",
+    "src/components/dashboard/widgetRegistry.tsx"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    "@testing-library/jest-dom",
+    "jest-axe",
+    "jsdom"
+  ]
+}

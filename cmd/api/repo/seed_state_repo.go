@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,7 +22,7 @@ func (r *pgSeedStateRepo) Get(ctx context.Context, key string) (string, bool, er
 	var value string
 	err := r.pool.QueryRow(ctx, `SELECT value FROM seed_state WHERE key=$1`, key).Scan(&value)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return "", false, nil
 		}
 		return "", false, err

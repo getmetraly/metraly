@@ -504,7 +504,6 @@ func TestGitHubActionsCollector_ConclusionMapping(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.rawConclusion, func(t *testing.T) {
 			conclusion := tc.rawConclusion
 			runs := []map[string]any{

@@ -80,6 +80,17 @@ Do not claim app UI integration success against stale `@metraly/ui` artifacts.
 `make dev-preflight` is required before `make up`/`make dev-up`.
 If `../brandbook/packages/ui/dist` is missing, build it before claiming UI runtime health.
 
+
+## Local quality gates
+
+Before claiming implementation-quality completion, prefer:
+
+- `make quality-fast` for the standard local gate
+- `make quality-deep` for race/security/dead-code checks
+
+`make quality-deep` is local-tooling dependent. If `gitleaks`, `osv-scanner`, or `semgrep` are missing, record the blocker explicitly instead of marking PASS.
+
+If UI/build workflow changes, run `make dev-preflight` before claiming the brandbook boundary is healthy.
 ## Source import boundary
 
 App UI must consume brandbook through `app/ui/src/design-system` and published package entrypoints only.

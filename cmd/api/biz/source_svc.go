@@ -178,12 +178,12 @@ func (s *SourceSvc) TestConnection(ctx context.Context, workspaceID, sourceID st
 				Message:   "credential decryption failed",
 				TestedAt:  time.Now().UTC(),
 				LatencyMs: time.Since(start).Milliseconds(),
-			}, nil
+			}, err
 		}
 	}
 
 	result, adapterErr := adapter.TestConnection(ctx, *sc, secret)
-	secret = "" // zero secret after adapter call
+	secret = "" //nolint:ineffassign,wastedassign // intentional zeroing of secret material after use; not a bug
 
 	if result == nil {
 		result = &domain.ConnectionTestResult{

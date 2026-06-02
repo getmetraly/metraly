@@ -192,7 +192,7 @@ func (r *SourceRepo) CreateCollectorRun(ctx context.Context, run *domain.Collect
 		).Scan(&existingSource)
 		if qErr != nil {
 			// Can't verify; treat as idempotent to avoid spurious errors.
-			return nil
+			return nil //nolint:nilerr // idempotent insert intentionally suppresses verification scan failures
 		}
 		if existingSource != run.SourceConnectionID {
 			return ErrRunIDConflict

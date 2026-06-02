@@ -1,0 +1,153 @@
+rules:
+  - id: metraly-go-context-background-in-runtime-code
+    languages: [go]
+    severity: WARNING
+    message: Avoid context.Background()/TODO() in runtime code; thread request or lifecycle context through the call path.
+    metadata:
+      category: reliability
+    paths:
+      include:
+        - cmd/api/handlers/**/*.go
+        - cmd/api/biz/**/*.go
+        - cmd/api/repo/**/*.go
+      exclude:
+        - '**/*_test.go'
+        - cmd/api/main.go
+        - cmd/api/seed/**
+    pattern-either:
+      - pattern: context.Background()
+      - pattern: context.TODO()
+
+  - id: metraly-go-http-client-without-timeout
+    languages: [go]
+    severity: WARNING
+    message: http.Client should set Timeout explicitly unless lifecycle is managed elsewhere.
+    metadata:
+      category: security
+    paths:
+      exclude:
+        - '**/*_test.go'
+    pattern-either:
+      - pattern: http.Client{}
+      - pattern: '&http.Client{}'
+
+  - id: metraly-go-println-in-production
+    languages: [go]
+    severity: WARNING
+    message: Avoid fmt.Println/log.Print in production code; use structured logging.
+    metadata:
+      category: maintainability
+    paths:
+      exclude:
+        - '**/*_test.go'
+    pattern-either:
+      - pattern: fmt.Println($$$ARGS)
+      - pattern: fmt.Printf($$$ARGS)
+      - pattern: log.Print($$$ARGS)
+      - pattern: log.Printf($$$ARGS)
+
+  - id: metraly-go-sleep-in-production
+    languages: [go]
+    severity: WARNING
+    message: time.Sleep in production code needs an explicit lifecycle/backoff rationale.
+    metadata:
+      category: reliability
+    paths:
+      exclude:
+        - '**/*_test.go'
+    pattern: time.Sleep($DURATION)
+
+  - id: metraly-go-sql-string-format
+    languages: [go]
+    severity: WARNING
+    message: Avoid building SQL with fmt.Sprintf; use parameters instead.
+    metadata:
+      category: security
+    pattern: fmt.Sprintf("$SQL", $$$ARGS)
+    metavariable-regex:
+      metavariable: $SQL
+      regex: '.*(SELECT|INSERT|UPDATE|DELETE).*'
+
+  - id: metraly-react-direct-fetch
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Prefer the shared API client/hooks layer over direct fetch in React UI files.
+    metadata:
+      category: maintainability
+    paths:
+      include:
+        - ui/src/components/**/*.{ts,tsx,js,jsx}
+        - ui/src/features/**/*.{ts,tsx,js,jsx}
+    pattern: fetch($$$ARGS)
+
+  - id: metraly-react-direct-axios
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Prefer the shared API client/hooks layer over direct axios calls in React UI files.
+    metadata:
+      category: maintainability
+    paths:
+      include:
+        - ui/src/components/**/*.{ts,tsx,js,jsx}
+        - ui/src/features/**/*.{ts,tsx,js,jsx}
+    pattern-either:
+      - pattern: axios.$METHOD($$$ARGS)
+      - pattern: $CLIENT.$METHOD($$$ARGS)
+    metavariable-regex:
+      metavariable: $METHOD
+      regex: 'get|post|put|patch|delete'
+
+  - id: metraly-browser-storage-outside-approved-modules
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Keep localStorage/sessionStorage access isolated to approved persistence modules.
+    metadata:
+      category: security
+    paths:
+      include:
+        - ui/src/**/*.{ts,tsx,js,jsx}
+      exclude:
+        - ui/src/hooks/**
+        - ui/src/utils/**
+        - ui/src/lib/**
+        - ui/src/api/**
+    pattern-either:
+      - pattern: localStorage.$METHOD($$$ARGS)
+      - pattern: sessionStorage.$METHOD($$$ARGS)
+
+  - id: metraly-react-effect-side-effect-without-cleanup
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Check useEffect side effects that register intervals, listeners, or sockets; missing cleanup is easy to miss.
+    metadata:
+      category: reliability
+    paths:
+      include:
+        - ui/src/**/*.{ts,tsx,js,jsx}
+    pattern-either:
+      - pattern: |
+          useEffect(() => {
+            ...
+            setInterval($$$ARGS)
+            ...
+          }, $$$DEPS)
+      - pattern: |
+          useEffect(() => {
+            ...
+            addEventListener($$$ARGS)
+            ...
+          }, $$$DEPS)
+      - pattern: |
+          useEffect(() => {
+            ...
+            new WebSocket($$$ARGS)
+            ...
+          }, $$$DEPS)
+
+  - id: metraly-comment-todo-without-reference
+    languages: [go, typescript, javascript]
+    severity: WARNING
+    message: TODO/FIXME/HACK should carry an issue number or URL.
+    metadata:
+      category: maintainability
+    pattern-regex: '(?m)//\s*(TODO|FIXME|HACK)(?!.*(#\d+|https?://)).*$'

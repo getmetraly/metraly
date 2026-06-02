@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -265,16 +266,6 @@ type widgetDataItem struct {
 	Error      string `json:"error,omitempty"`
 }
 
-type metricSnapshot struct {
-	MetricID  string                   `json:"metricId"`
-	Label     string                   `json:"label"`
-	Unit      string                   `json:"unit"`
-	Current   domain.MetricDataPoint   `json:"-"`
-	Series    []float64                `json:"series"`
-	Labels    []string                 `json:"labels"`
-	Previous  []float64                `json:"previous"`
-	CurrentTS []domain.MetricDataPoint `json:"-"`
-}
 
 type doraDetail struct {
 	ID              string         `json:"id"`
@@ -909,15 +900,15 @@ type gaugeWidgetData struct {
 
 func (h *PreviewHandler) gaugeData(ctx context.Context, metricID string) (gaugeWidgetData, error) {
 	snapshot, err := h.metricsSvc.GetMetric(ctx, metricID, "30d", "All teams")
-	if err != nil || len(snapshot.Data) == 0 {
-		return gaugeWidgetData{Score: 72.0}, nil
+	if err == nil && len(snapshot.Data) > 0 {
+		v := snapshot.Data[len(snapshot.Data)-1].Value
+		if v < 0 {
+			v = 0
+		}
+		if v > 100 {
+			v = 100
+		}
+		return gaugeWidgetData{Score: math.Round(v*10) / 10}, nil
 	}
-	v := snapshot.Data[len(snapshot.Data)-1].Value
-	if v < 0 {
-		v = 0
-	}
-	if v > 100 {
-		v = 100
-	}
-	return gaugeWidgetData{Score: v}, nil
+	return gaugeWidgetData{Score: 72.0}, nil
 }

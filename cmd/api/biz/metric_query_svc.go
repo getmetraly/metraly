@@ -25,7 +25,7 @@ type MetricQueryRepo interface {
 
 // AllowedFilterKeys is the whitelist of filter dimensions callers may apply.
 // Validated in MetricQuerySvc before dispatching to the repo.
-// Also enforced (silently) in the repo layer as defence-in-depth.
+// Also enforced (silently) in the repo layer as defense-in-depth.
 var AllowedFilterKeys = map[string]bool{
 	"repository_id":        true,
 	"team_id":              true,

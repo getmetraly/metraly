@@ -94,7 +94,7 @@ export const AIScreen = () => {
     <AIWorkspaceLayout
       messages={messages}
       loading={loading}
-      onSend={handleSend}
+      onSend={(text) => { void handleSend(text); }}
       quickPrompts={QUICK_PROMPTS}
       disclaimer="Powered by your private on-premise AI · No data leaves your infrastructure"
     />

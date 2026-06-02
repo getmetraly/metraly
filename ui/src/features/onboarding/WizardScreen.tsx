@@ -260,7 +260,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
                     variant={runtime.testResult?.status === 'ok' ? 'neutral' : 'primary'}
                     size="sm"
                     disabled={runtime.isCreating || runtime.isTesting}
-                    onClick={() => connectSource(source)}
+                    onClick={() => { void connectSource(source); }}
                   >
                     {runtime.isCreating || runtime.isTesting ? 'Connecting…' : runtime.testResult?.status === 'ok' ? 'Re-test' : 'Connect'}
                   </MetralyButton>
@@ -373,7 +373,7 @@ export const WizardScreen: React.FC<WizardScreenProps> = ({ onUseDemo, onFinish 
         footer={
           <StickyWizardFooter
             back={<MetralyButton type="button" variant="ghost" size="md" disabled={stageIdx === 0} onClick={goBack}>Back</MetralyButton>}
-            primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={goNext}>{stage === 'review' ? 'Activate & Continue' : 'Continue'}</MetralyButton>}
+            primary={<MetralyButton type="button" variant="primary" size="md" disabled={!canGoNext} onClick={() => { void goNext(); }}>{stage === 'review' ? 'Activate & Continue' : 'Continue'}</MetralyButton>}
             status={<span style={{ fontSize: 'var(--m-fs-10, 10px)', color: 'var(--m-fg-3, var(--m-fg-1))' }}>Step {stageIdx + 1} / {STAGES.length}</span>}
           />
         }

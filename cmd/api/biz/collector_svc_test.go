@@ -267,7 +267,7 @@ func TestCollectorSvc_Run_ContextCancellation(t *testing.T) {
 
 	run, err := colSvc.Run(context.Background(), "run_cancel", "ws_01", sc.ID)
 	require.Error(t, err)
-	assert.Equal(t, "cancelled", run.ErrorCategory)
+	assert.Equal(t, "canceled", run.ErrorCategory)
 
 	stored, _ := runRepo.GetCollectorRun(context.Background(), "run_cancel")
 	assert.Equal(t, domain.CollectorRunStatusFailed, stored.Status)

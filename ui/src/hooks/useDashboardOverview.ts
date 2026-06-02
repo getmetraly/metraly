@@ -116,7 +116,7 @@ export function useDashboardOverview(): DashboardOverviewData {
       }
     }
 
-    fetchData();
+    void fetchData();
   }, []);
 
   return data;

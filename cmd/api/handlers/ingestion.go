@@ -46,7 +46,7 @@ func (h *IngestionHandler) ingest(w http.ResponseWriter, r *http.Request, source
 	if req.Source == "" {
 		req.Source = source
 	}
-	if req.Source != source && !(source == "pm" && (req.Source == "jira" || req.Source == "linear" || req.Source == "pm")) {
+	if req.Source != source && (source != "pm" || (req.Source != "jira" && req.Source != "linear" && req.Source != "pm")) {
 		respond.Error(w, http.StatusBadRequest, "INVALID_SOURCE", "source does not match endpoint")
 		return
 	}
