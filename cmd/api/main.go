@@ -124,6 +124,7 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 	dashboardHandler := handlers.NewDashboardHandler(deps.DashboardSvc)
 	previewHandler := handlers.NewPreviewHandler(deps.DashboardSvc, deps.TemplateSvc, deps.MetricsSvc, deps.ActivityRepo, deps.InsightRepo)
 	runtimeBFFHandler := handlers.NewRuntimeBFFHandler(deps.DashboardSvc, deps.SourceSvc, previewHandler)
+	querySnapshotHandler := handlers.NewQuerySnapshotHandler(deps.DashboardSvc, previewHandler)
 	ingestionHandler := handlers.NewIngestionHandler(deps.IngestionSvc)
 
 	// Protected routes — all require authentication.
@@ -153,6 +154,8 @@ func NewRouter(deps RouterDeps) *chi.Mux {
 			r.Put("/api/v1/dashboards/{id}/share", dashboardHandler.UpdateShare)
 			r.Get("/api/v1/dashboards/{id}/data", previewHandler.DashboardData)
 			r.Get("/api/v1/dashboards/{id}/view", runtimeBFFHandler.DashboardView)
+			r.Post("/api/v1/dashboards/{id}/query-results/snapshot", querySnapshotHandler.Snapshot)
+			// TODO: add /ws/dashboards/{id}/realtime once backend producers/pubsub exist.
 			r.Post("/api/v1/widgets/data", previewHandler.WidgetsData)
 			r.Post("/api/v1/ingest/github", ingestionHandler.GitHub)
 			r.Post("/api/v1/ingest/pm", ingestionHandler.PM)

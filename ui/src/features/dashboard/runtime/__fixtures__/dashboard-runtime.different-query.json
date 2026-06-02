@@ -1,0 +1,8 @@
+{
+  "dashboardId": "dash-diff-1",
+  "widgets": [
+    { "instanceId": "w-1", "widgetType": "metric-chart", "config": { "type": "metric-chart", "metricId": "pr-cycle", "chartVariant": "area", "showCompare": false } },
+    { "instanceId": "w-2", "widgetType": "stat-card", "config": { "type": "stat-card", "metricId": "lead-time", "showSparkline": true, "colorKey": "cyan" } }
+  ],
+  "defaultFilters": { "timeRange": "30d", "team": "All teams", "repo": "All repos" }
+}

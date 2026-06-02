@@ -1,0 +1,8 @@
+{
+  "queryKey": "{\"metricId\":\"pr-cycle\",\"resultKind\":\"timeseries\",\"timeRange\":\"7d\",\"granularity\":\"day\"}",
+  "result": null,
+  "status": "error",
+  "version": 3,
+  "sequence": 0,
+  "updatedAt": "2026-06-02T10:00:00Z"
+}

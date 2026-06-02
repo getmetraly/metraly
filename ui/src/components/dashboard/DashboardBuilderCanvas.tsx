@@ -5,14 +5,36 @@
 import React, { useState } from "react";
 import { Responsive, WidthProvider, LayoutItem as RGLLayout } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
-import type { Dashboard } from "../../types/dashboard";
+import type { Dashboard, DashboardWidgetInstance } from "../../types/dashboard";
+import type { WidgetConfig } from "../../types/widgets";
 import { widgetRegistry } from "./widgetRegistry";
 // widgetData is Record<string, unknown> — individual widget components use their own type assertions
 import { DashboardWidget, DashboardDropZone, PulseMarker, MetralyButton } from "../../design-system";
 import { Icon } from "../shared/Icon";
 import { sampleWidgetData } from "./previewData";
+import { useWidgetQueryResult } from "../../features/dashboard/runtime";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
+
+// ---------------------------------------------------------------------------
+// ViewModeWidget — calls useWidgetQueryResult and falls back to widgetData
+// ---------------------------------------------------------------------------
+interface ViewModeWidgetProps {
+  widget: DashboardWidgetInstance;
+  widgetData: Record<string, unknown>;
+  scopedInstanceId: string;
+  WidgetComponent: React.FC<{ config: WidgetConfig; data?: unknown; renderMode?: string }>;
+}
+
+function ViewModeWidget({ widget, widgetData, scopedInstanceId, WidgetComponent }: ViewModeWidgetProps) {
+  const runtimeState = useWidgetQueryResult(widget.instanceId);
+  // Use runtime data when ready/stale/reconnecting; fall back to widgetData for backward compat
+  const data =
+    runtimeState.status !== 'idle' && runtimeState.status !== 'error'
+      ? runtimeState.result
+      : widgetData[scopedInstanceId];
+  return <WidgetComponent config={widget.config} data={data} />;
+}
 
 /** Label map for widget type → readable title */
 const WIDGET_TITLE: Record<string, string> = {
@@ -260,7 +282,12 @@ export const DashboardBuilderCanvas: React.FC<DashboardBuilderCanvasProps> = ({
           // view mode
           return (
             <div key={widget.instanceId} style={{ width: "100%", height: "100%" }}>
-              <WidgetComponent config={widget.config} data={resolvedData} />
+              <ViewModeWidget
+                widget={widget}
+                widgetData={widgetData}
+                scopedInstanceId={scopedInstanceId}
+                WidgetComponent={WidgetComponent}
+              />
             </div>
           );
         })}

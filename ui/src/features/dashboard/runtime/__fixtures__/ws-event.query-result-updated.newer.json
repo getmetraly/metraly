@@ -1,0 +1,8 @@
+{
+  "type": "queryResult.updated",
+  "dashboardId": "dash-test-1",
+  "queryKey": "{\"metricId\":\"pr-cycle\",\"resultKind\":\"timeseries\",\"timeRange\":\"7d\",\"granularity\":\"day\"}",
+  "version": 3,
+  "sequence": 2,
+  "updatedAt": "2026-06-02T11:00:00Z"
+}

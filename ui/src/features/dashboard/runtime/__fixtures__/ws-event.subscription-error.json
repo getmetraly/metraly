@@ -1,0 +1,6 @@
+{
+  "type": "subscription.error",
+  "dashboardId": "dash-test-1",
+  "code": "UNAUTHORIZED",
+  "message": "Not authorized to subscribe"
+}

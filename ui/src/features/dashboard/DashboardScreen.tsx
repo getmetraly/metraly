@@ -16,6 +16,7 @@ import {
 import { buildUpdateDashboardRequest } from "../dashboardEditor/payload";
 import { useDashboardEditor } from "../dashboardEditor/useDashboardEditor";
 import { useAppBootstrap } from "../../hooks/AppBootstrapContext";
+import { QueryRuntimeProvider } from './runtime/QueryRuntimeProvider';
 
 
 interface DashboardScreenProps {
@@ -225,7 +226,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       );
     }
 
-    return <DashboardBuilderCanvas mode="view" dashboard={draftDashboard} widgetData={widgetData} />;
+    return (
+      <QueryRuntimeProvider
+        dashboardId={draftDashboard.id}
+        widgets={draftDashboard.widgets}
+        defaultFilters={draftDashboard.defaultFilters}
+      >
+        <DashboardBuilderCanvas mode="view" dashboard={draftDashboard} widgetData={widgetData} />
+      </QueryRuntimeProvider>
+    );
   };
 
 

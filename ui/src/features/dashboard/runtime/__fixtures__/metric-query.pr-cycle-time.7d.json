@@ -1,0 +1,6 @@
+{
+  "metricId": "pr-cycle",
+  "resultKind": "timeseries",
+  "timeRange": "7d",
+  "granularity": "day"
+}

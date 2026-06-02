@@ -1,0 +1,10 @@
+{
+  "queryKey": "{\"metricId\":\"pr-cycle\",\"resultKind\":\"timeseries\",\"timeRange\":\"7d\",\"granularity\":\"day\"}",
+  "result": { "points": [{ "date": "2026-05-26", "value": 4.2 }, { "date": "2026-05-27", "value": 3.8 }] },
+  "status": "ready",
+  "quality": { "level": "full", "coveragePercent": 100 },
+  "lineage": { "metricId": "pr-cycle", "formulaId": "pr-cycle-v1", "formulaVersion": 1, "sourceIds": ["src-1"], "normalizedEventTypes": ["pr.merged"] },
+  "version": 3,
+  "sequence": 1,
+  "updatedAt": "2026-06-02T10:00:00Z"
+}
