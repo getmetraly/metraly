@@ -348,7 +348,7 @@ var sandboxAllWidgets = &domain.Dashboard{
 		{InstanceID: "all-table", WidgetType: "data-table", Config: mustJSON(map[string]any{"type": "data-table", "tableType": "pr-queue", "maxRows": 5})},
 		{InstanceID: "all-burndown", WidgetType: "sprint-burndown", Config: mustJSON(map[string]any{"type": "sprint-burndown", "showTaskList": false})},
 		{InstanceID: "all-ai", WidgetType: "ai-insight", Config: mustJSON(map[string]any{"type": "ai-insight", "variant": "card", "topicHint": "delivery health"})},
-		{InstanceID: "all-anomaly", WidgetType: "anomaly-detector", Config: mustJSON(map[string]any{"type": "anomaly-detector"})},
+		{InstanceID: "all-anomaly", WidgetType: "anomaly-detector", Config: mustJSON(map[string]any{"type": "anomaly-detector", "watchMetrics": []string{"deploy-freq", "lead-time"}})},
 		{InstanceID: "all-activity", WidgetType: "recent-activity", Config: mustJSON(map[string]any{"type": "recent-activity", "maxItems": 8})},
 	},
 	Layout: []domain.WidgetLayout{
